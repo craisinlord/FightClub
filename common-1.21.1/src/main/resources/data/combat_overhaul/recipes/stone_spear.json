@@ -1,0 +1,2 @@
+{"type":"minecraft:crafting_shaped","pattern":["M","S","S"],"key":{"M":{"tag":"minecraft:stone"},"S":{"item":"minecraft:stick"}},"result":{"id":"combat_overhaul:stone_spear","count":1}}
+

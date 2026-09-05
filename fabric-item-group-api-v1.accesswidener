@@ -1,0 +1,19 @@
+accessWidener	v2	intermediary
+transitive-accessible	field	net/minecraft/class_7706	field_40195	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_41059	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40743	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40197	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40198	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40199	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40200	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_41060	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40202	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_41061	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_41062	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40205	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_41063	Lnet/minecraft/class_5321;
+transitive-accessible	field	net/minecraft/class_7706	field_40206	Lnet/minecraft/class_5321;
+accessible	field	net/minecraft/class_7706	field_42466	Lnet/minecraft/class_1761$class_8128;
+transitive-accessible	class	net/minecraft/class_1761$class_7705
+transitive-accessible	class	net/minecraft/class_1761$class_7704
+accessible	class	net/minecraft/class_1761$class_7703

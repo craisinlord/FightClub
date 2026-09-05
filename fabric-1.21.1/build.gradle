@@ -1,0 +1,124 @@
+import org.gradle.util.GradleVersion
+
+buildscript {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    dependencies {
+        if(GradleVersion.current() >= GradleVersion.version('9.0')) {
+            classpath 'net.fabricmc.fabric-loom-remap:net.fabricmc.fabric-loom-remap.gradle.plugin:1.15.5'
+        } else {
+            classpath 'net.fabricmc:fabric-loom:1.10.1'
+        }
+    }
+}
+
+if(GradleVersion.current() >= GradleVersion.version('9.0')) {
+    apply plugin: 'net.fabricmc.fabric-loom-remap'
+} else {
+    apply plugin: 'fabric-loom'
+}
+
+base {
+    archivesName = "${mod_id}-fabric-1.21.1"
+}
+
+// Handle duplicates from common module
+tasks.withType(AbstractCopyTask).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+    withSourcesJar()
+}
+
+// Add common source sets directly
+sourceSets {
+    main {
+        java {
+            srcDirs project(':common-1.21.1').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDir project(':common-1.21.1').sourceSets.main.resources.srcDirs
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:1.21.1"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version_1_21_1}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version_1_21_1}"
+
+    // NeoForge brings this in transitively; common's @Nonnull/@Nullable usage needs it declared explicitly here.
+    compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+
+    // Backs common's homegrown config framework (ConfigBase) - same library NeoForge's ModConfigSpec uses internally.
+    implementation "com.electronwill.night-config:toml:3.8.3"
+}
+
+loom {
+    mixin.defaultRefmapName = "${mod_id}.mixins.refmap.json"
+
+    // Without this, Loom picks a random username per launch, which - since offline-mode player
+    // UUIDs are derived from the username - meant a different player UUID every dev run, so
+    // Matches NeoForge's ModDevGradle default of always logging in as "Dev".
+    runConfigs.configureEach {
+        programArgs.add("--username")
+        programArgs.add("Dev")
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+        version        : project.version,
+        mod_id         : mod_id,
+        mod_name       : mod_name,
+        mod_description: mod_description,
+        mod_license    : mod_license
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching('fabric.mod.json') {
+        expand replaceProperties
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = rootProject.group
+            artifactId = project.base.archivesName.get()
+            version = project.version
+
+            // Fabric Loom remaps the jar to obfuscated Minecraft names at runtime.
+            // remapJar is the distributable artifact; remapSourcesJar has the readable sources.
+            artifact(project.tasks.named('remapJar'))
+            artifact(project.tasks.named('remapSourcesJar')) {
+                classifier = 'sources'
+            }
+
+            pom {
+                name = "${mod_name} (Fabric 1.21.1)"
+                description = mod_description
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'LocalMaven'
+            url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
+        }
+        maven {
+            name = 'Forgejo'
+            url = uri('https://maven.example.invalid/replace-me')
+            credentials {
+                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
+                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
+            }
+        }
+    }
+}

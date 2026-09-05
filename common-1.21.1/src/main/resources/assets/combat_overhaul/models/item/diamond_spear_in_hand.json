@@ -1,0 +1,6 @@
+{
+  "parent": "combat_overhaul:item/spear_in_hand",
+  "textures": {
+    "layer0": "combat_overhaul:item/diamond_spear_in_hand"
+  }
+}

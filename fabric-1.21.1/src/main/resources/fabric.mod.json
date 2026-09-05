@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": ["CraisinLord"],
+  "license": "${mod_license}",
+  "environment": "*",
+  "mixins": ["combat_overhaul.mixins.json"],
+
+  "entrypoints": {
+    "main": [
+      "com.craisinlord.combatoverhaul.fabric.CombatOverhaulFabric"
+    ],
+    "client": [
+      "com.craisinlord.combatoverhaul.fabric.CombatOverhaulFabricClient"
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  }
+}

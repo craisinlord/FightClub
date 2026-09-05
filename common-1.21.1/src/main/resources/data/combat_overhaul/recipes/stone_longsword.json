@@ -1,0 +1,1 @@
+{"type":"minecraft:crafting_shaped","pattern":["M","M","S"],"key":{"M":{"tag":"minecraft:stone"},"S":{"item":"minecraft:stick"}},"result":{"id":"combat_overhaul:stone_longsword","count":1}}
