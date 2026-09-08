@@ -41,7 +41,7 @@ public final class CombatOverhaulFabricEvents {
                     || !CombatVanillaRules.swordBlocks(player, attacker)) return true;
             REDUCED_DAMAGE.set(true);
             try {
-                entity.hurt(source, amount * 0.45f);
+                entity.hurt(source, amount * CombatVanillaRules.swordBlockDamageMultiplier(player.getUseItem()));
             } finally {
                 REDUCED_DAMAGE.set(false);
             }

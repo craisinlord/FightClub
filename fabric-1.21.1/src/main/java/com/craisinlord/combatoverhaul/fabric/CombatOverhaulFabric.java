@@ -13,6 +13,10 @@ import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import com.craisinlord.combatoverhaul.combat.DaggerProjectile;
+import com.craisinlord.combatoverhaul.combat.SpearProjectile;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
@@ -20,6 +24,8 @@ import java.util.List;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 
 public final class CombatOverhaulFabric implements ModInitializer {
+    public static EntityType<DaggerProjectile> DAGGER_PROJECTILE;
+    public static EntityType<SpearProjectile> SPEAR_PROJECTILE;
     private static final String[] MATERIALS = {"wood", "stone", "copper", "iron", "gold", "diamond", "netherite"};
     private static final String[] WEAPONS = {"longsword", "spear", "dagger"};
     // The material spear loop below already registers the existing spear IDs.
@@ -27,6 +33,10 @@ public final class CombatOverhaulFabric implements ModInitializer {
     private static final String[] VANILLA_SPEARS = {"wooden_spear", "golden_spear"};
 
     @Override public void onInitialize() {
+        ResourceLocation daggerId = ResourceLocation.fromNamespaceAndPath(CombatOverhaul.MOD_ID, "dagger_projectile");
+        ResourceLocation spearId = ResourceLocation.fromNamespaceAndPath(CombatOverhaul.MOD_ID, "spear_projectile");
+        DAGGER_PROJECTILE = Registry.register(BuiltInRegistries.ENTITY_TYPE, daggerId, EntityType.Builder.<DaggerProjectile>of(DaggerProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).build("dagger_projectile"));
+        SPEAR_PROJECTILE = Registry.register(BuiltInRegistries.ENTITY_TYPE, spearId, EntityType.Builder.<SpearProjectile>of(SpearProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).build("spear_projectile"));
         List<Item> combatItems = new ArrayList<>();
         for (String material : MATERIALS) for (String weapon : WEAPONS) {
             Item item = Registry.register(BuiltInRegistries.ITEM,

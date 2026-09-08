@@ -1,5 +1,7 @@
 package com.craisinlord.combatoverhaul.combat;
 
+import com.craisinlord.combatoverhaul.CombatOverhaul;
+
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tier;
@@ -11,6 +13,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.Item.TooltipContext;
+import java.util.List;
 
 public final class CombatWeaponItem extends SwordItem {
     private final String material;
@@ -27,7 +33,27 @@ public final class CombatWeaponItem extends SwordItem {
     public String combatWeapon() { return weapon; }
 
     @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
+        if (spec == null) return;
+        tooltip.add(Component.literal("Reach: " + format(spec.reach()) + " blocks"));
+        tooltip.add(Component.literal("Attack style: " + spec.attackStyle().name().toLowerCase(java.util.Locale.ROOT)));
+        tooltip.add(Component.literal("Thrust width: " + format(spec.thrustWidth())));
+        tooltip.add(Component.literal("Sweep: " + format(spec.sweepRadius()) + " blocks / " + format(spec.sweepAngleDegrees()) + "°"));
+        tooltip.add(Component.literal("Penetration: " + spec.penetrationCount()));
+        tooltip.add(Component.literal("Critical hits: " + (spec.criticalHits() ? "yes" : "no")));
+        tooltip.add(Component.literal("Charge: " + spec.chargeTicks() + " ticks, " + format(spec.chargeDamage()) + " damage"));
+        tooltip.add(Component.literal("Recovery: " + spec.recoveryTicks() + " ticks"));
+        if (spec.throwing()) tooltip.add(Component.literal("Throw: " + format(spec.throwVelocity()) + " velocity / " + format(spec.throwRange()) + " blocks"));
+    }
+
+    private static String format(float value) { return String.format(java.util.Locale.ROOT, "%.2f", value); }
+
+    @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        CombatOverhaul.LOGGER.info("[TEMP WEAPON] use item={} weapon={} material={} side={} hand={}",
+                player.getItemInHand(hand), weapon, material, level.isClientSide() ? "client" : "server", hand);
         if (CombatRecovery.active(player)) {
             return InteractionResultHolder.fail(player.getItemInHand(hand));
         }
@@ -53,15 +79,23 @@ public final class CombatWeaponItem extends SwordItem {
 
     @Override
     public void releaseUsing(ItemStack stack, Level level, LivingEntity user, int timeLeft) {
+        CombatOverhaul.LOGGER.info("[TEMP WEAPON] release item={} weapon={} material={} side={} timeLeft={}",
+                stack, weapon, material, level.isClientSide() ? "client" : "server", timeLeft);
         if (level.isClientSide || !(user instanceof Player player)) return;
         if (CombatRecovery.active(player)) return;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
+        CombatOverhaul.LOGGER.info("[TEMP WEAPON] release decision weapon={} specPresent={} throwing={} heldTicks={} chargeTicks={}",
+                weapon, spec != null, spec != null && spec.throwing(),
+                spec == null ? -1 : getUseDuration(stack, player) - timeLeft,
+                spec == null ? -1 : spec.chargeTicks());
         if (spec == null) return;
         int heldTicks = getUseDuration(stack, player) - timeLeft;
-        if (spec.throwing() && (weapon.equals("spear") || heldTicks < Math.max(1, spec.chargeTicks()))) {
+        if (spec.throwing() && (weapon.equals("spear") || weapon.equals("dagger"))) {
+            ItemStack thrownStack = stack.copy();
+            thrownStack.setCount(1);
             var projectile = weapon.equals("spear")
-                    ? new SpearProjectile(level, player, stack.copy())
-                    : new DaggerProjectile(level, player, stack.copy());
+                    ? new SpearProjectile(level, player, thrownStack)
+                    : new DaggerProjectile(level, player, thrownStack);
             projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, spec.throwVelocity(), 1.0f);
             level.addFreshEntity(projectile);
             if (!player.getAbilities().instabuild) stack.shrink(1);

@@ -35,6 +35,6 @@ public final class CombatOverhaulNeoForgeEvents {
         if (REDUCED_DAMAGE.get() || !(event.getEntity() instanceof net.minecraft.world.entity.player.Player player)
                 || !(event.getSource().getDirectEntity() instanceof net.minecraft.world.entity.LivingEntity attacker)
                 || !CombatVanillaRules.swordBlocks(player, attacker)) return;
-        event.setNewDamage(event.getNewDamage() * 0.45f);
+        event.setNewDamage(event.getNewDamage() * CombatVanillaRules.swordBlockDamageMultiplier(player.getUseItem()));
     }
 }

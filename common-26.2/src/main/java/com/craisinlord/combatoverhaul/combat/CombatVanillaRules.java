@@ -16,7 +16,15 @@ public final class CombatVanillaRules {
     private static final Identifier LONGSWORD_OFFHAND = Identifier.fromNamespaceAndPath("combat_overhaul", "longsword_offhand");
     private CombatVanillaRules() {}
 
-    public static boolean isSword(ItemStack stack) { return stack.getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("sword"); }
+    public static boolean isSword(ItemStack stack) { return stack.getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("sword") || isVanillaSword(stack.getItem()); }
+    public static boolean isVanillaSword(Item item) { return item == Items.WOODEN_SWORD || item == Items.STONE_SWORD || item == Items.COPPER_SWORD || item == Items.IRON_SWORD || item == Items.GOLDEN_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD; }
+    public static WeaponSpec swordSpec(ItemStack stack) {
+        if (stack.getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("sword")) return WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "sword");
+        String[] materials = {"wood", "stone", "copper", "iron", "gold", "diamond", "netherite"};
+        Item[] swords = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.COPPER_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
+        for (int i = 0; i < swords.length; i++) if (stack.getItem() == swords[i]) return WeaponSpecs.getOrLoadBuiltin(materials[i], "sword");
+        return null;
+    }
     public static boolean isShield(ItemStack stack) { return stack.is(Items.SHIELD); }
     public static boolean isMace(ItemStack stack) { return stack.is(Items.MACE); }
 
@@ -37,7 +45,12 @@ public final class CombatVanillaRules {
 
     public static boolean swordBlocks(Player defender, Entity attacker) {
         if (!defender.isUsingItem() || !isSword(defender.getUseItem()) || !(attacker instanceof LivingEntity)) return false;
-        return frontal(defender, attacker, 120.0f);
+        WeaponSpec spec = swordSpec(defender.getUseItem());
+        return spec != null && spec.blocking() && frontal(defender, attacker, spec.blockingAngleDegrees());
+    }
+    public static float swordBlockDamageMultiplier(ItemStack stack) {
+        WeaponSpec spec = swordSpec(stack);
+        return spec == null ? 0.45f : spec.blockingDamageMultiplier();
     }
 
     public static boolean frontal(LivingEntity defender, Entity attacker, float angle) {
@@ -55,6 +68,7 @@ public final class CombatVanillaRules {
     }
 
     public static boolean maceSmash(Player player, Entity target) {
+        if (player.level().isClientSide()) return false;
         if (!isMace(player.getMainHandItem()) || !player.isFallFlying() && player.getDeltaMovement().y >= -0.35) return false;
         if (player.getCooldowns().isOnCooldown(player.getMainHandItem())) return false;
         if (!(target instanceof LivingEntity living) || !frontal(player, target, 100.0f)) return false;

@@ -5,6 +5,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -17,6 +18,14 @@ public final class CombatVanillaRules {
     private CombatVanillaRules() {}
 
     public static boolean isSword(ItemStack stack) { return stack.getItem() instanceof SwordItem; }
+    public static WeaponSpec swordSpec(ItemStack stack) {
+        String[] materials = {"wood", "stone", "iron", "gold", "diamond", "netherite"};
+        Item[] swords = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD,
+                Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
+        for (int i = 0; i < swords.length; i++) if (stack.getItem() == swords[i])
+            return WeaponSpecs.getOrLoadBuiltin(materials[i], "sword");
+        return null;
+    }
     public static boolean isShield(ItemStack stack) { return stack.is(Items.SHIELD); }
     public static boolean isMace(ItemStack stack) { return stack.is(Items.MACE); }
 
@@ -37,7 +46,12 @@ public final class CombatVanillaRules {
 
     public static boolean swordBlocks(Player defender, Entity attacker) {
         if (!defender.isUsingItem() || !isSword(defender.getUseItem()) || !(attacker instanceof LivingEntity)) return false;
-        return frontal(defender, attacker, 120.0f);
+        WeaponSpec spec = swordSpec(defender.getUseItem());
+        return spec != null && spec.blocking() && frontal(defender, attacker, spec.blockingAngleDegrees());
+    }
+    public static float swordBlockDamageMultiplier(ItemStack stack) {
+        WeaponSpec spec = swordSpec(stack);
+        return spec == null ? 0.45f : spec.blockingDamageMultiplier();
     }
 
     public static boolean frontal(LivingEntity defender, Entity attacker, float angle) {
@@ -55,6 +69,7 @@ public final class CombatVanillaRules {
     }
 
     public static boolean maceSmash(Player player, Entity target) {
+        if (player.level().isClientSide) return false;
         if (!isMace(player.getMainHandItem()) || !player.isFallFlying() && player.getDeltaMovement().y >= -0.35) return false;
         if (player.getCooldowns().isOnCooldown(Items.MACE)) return false;
         if (!(target instanceof LivingEntity living) || !frontal(player, target, 100.0f)) return false;
