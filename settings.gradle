@@ -15,7 +15,7 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
-rootProject.name = 'Combat Overhaul'
+rootProject.name = 'Fight Club'
 
 include 'common-1.21.1'
 include 'fabric-1.21.1'
@@ -28,3 +28,6 @@ include 'fabric-26.2'
 include 'neoforge-26.2'
 
 
+include 'common-26.3'
+include 'fabric-26.3'
+include 'neoforge-26.3'

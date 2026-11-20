@@ -1,0 +1,38 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "antarchy"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "antarchy"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "U",
+    "T",
+    "W"
+  ],
+  "key": {
+    "U": {
+      "item": "antarchy:uranium_ingot"
+    },
+    "T": {
+      "item": "antarchy:titanium_ingot"
+    },
+    "W": {
+      "item": "fight_club:netherite_spear"
+    }
+  },
+  "result": {
+    "id": "fight_club:antarchy/ultimate/spear",
+    "count": 1
+  }
+}

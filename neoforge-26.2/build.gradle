@@ -10,7 +10,7 @@ base {
 }
 
 neoForge {
-    version = neoforge_version_26_1
+    version = neoforge_version_26_2
     mods {
         create(mod_id) {
             sourceSet sourceSets.main

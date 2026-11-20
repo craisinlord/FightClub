@@ -1,0 +1,183 @@
+package com.craisinlord.fightclub.combat;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import net.minecraft.resources.ResourceLocation;
+
+public record WeaponSpec(
+        String weapon,
+        String material,
+        AttackStyle attackStyle,
+        float attackDamage,
+        float attackSpeed,
+        float reach,
+        float sweepRadius,
+        float sweepAngleDegrees,
+        float thrustWidth,
+        int penetrationCount,
+        boolean criticalHits,
+        float offhandSpeedMultiplier,
+        int chargeTicks,
+        int throwChargeTicks,
+        float chargeDamage,
+        float chargeKnockback,
+        int recoveryTicks,
+        boolean blocking,
+        float blockingAngleDegrees,
+        float blockingDamageMultiplier,
+        boolean throwing,
+        float throwVelocity,
+        float throwRange,
+        float pounceRange,
+        float pounceAngleDegrees,
+        int bashHitCooldownTicks,
+        float spinRadius,
+        int spinCooldownTicks,
+        float hitStreakSpeedBonus,
+        int hitStreakMaxStacks,
+        int hitStreakWindowTicks
+) {
+    /** Daggers: how far a charged pounce can reach, and the half-angle of its aiming cone. */
+    public static final float DEFAULT_POUNCE_RANGE = 6.0f;
+    public static final float DEFAULT_POUNCE_ANGLE = 30.0f;
+    /** Longswords: radius of the charged right-click spin, and the item cooldown after it. */
+    public static final float DEFAULT_SPIN_RADIUS = 3.0f;
+    public static final int DEFAULT_SPIN_COOLDOWN = 60;
+    /** Mace: hit streak attack speed bonus per hit, stack cap, and how long a streak survives a full cooldown. */
+    public static final int DEFAULT_HIT_STREAK_WINDOW = 30;
+    /** Shields: ticks before the next bash after one that hits something (a whiff only waits recovery_ticks). */
+    public static final int DEFAULT_BASH_HIT_COOLDOWN = 60;
+
+    public enum AttackStyle { SWEEP, THRUST, IMPACT, SINGLE_TARGET }
+
+    public static WeaponSpec fromJson(ResourceLocation id, JsonObject json) {
+        String weapon = requiredString(id, json, "weapon");
+        String material = requiredString(id, json, "material");
+        AttackStyle style;
+        try {
+            style = AttackStyle.valueOf(requiredString(id, json, "attack_style").toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new JsonParseException(id + ": attack_style must be sweep, thrust, impact, or single_target");
+        }
+
+        float attackDamage = number(id, json, "attack_damage", 0.0f, 1000.0f);
+        float attackSpeed = number(id, json, "attack_speed", 0.01f, 100.0f);
+        float reach = number(id, json, "reach", 0.0f, 32.0f);
+        float sweepRadius = number(id, json, "sweep_radius", 0.0f, 32.0f);
+        float sweepAngle = number(id, json, "sweep_angle_degrees", 0.0f, 360.0f);
+        float thrustWidth = number(id, json, "thrust_width", 0.0f, 16.0f);
+        int penetration = integer(id, json, "penetration_count", 0, 64);
+        boolean criticalHits = booleanValue(id, json, "critical_hits");
+        float offhandMultiplier = number(id, json, "offhand_speed_multiplier", 0.0f, 1.0f);
+        int chargeTicks = integer(id, json, "charge_ticks", 0, 20 * 60);
+        int throwChargeTicks = json.has("throw_charge_ticks")
+                ? integer(id, json, "throw_charge_ticks", 0, 20 * 60) : 0;
+        float chargeDamage = number(id, json, "charge_damage", 0.0f, 1000.0f);
+        float chargeKnockback = number(id, json, "charge_knockback", 0.0f, 100.0f);
+        int recoveryTicks = integer(id, json, "recovery_ticks", 0, 20 * 60);
+        boolean blocking = booleanValue(id, json, "blocking");
+        float blockingAngle = number(id, json, "blocking_angle_degrees", 0.0f, 360.0f);
+        float blockingMultiplier = number(id, json, "blocking_damage_multiplier", 0.0f, 1.0f);
+        boolean throwing = booleanValue(id, json, "throwing");
+        float throwVelocity = number(id, json, "throw_velocity", 0.0f, 100.0f);
+        float throwRange = number(id, json, "throw_range", 0.0f, 256.0f);
+        float pounceRange = json.has("pounce_range")
+                ? number(id, json, "pounce_range", 0.0f, 32.0f) : DEFAULT_POUNCE_RANGE;
+        float pounceAngle = json.has("pounce_angle_degrees")
+                ? number(id, json, "pounce_angle_degrees", 0.0f, 90.0f) : DEFAULT_POUNCE_ANGLE;
+        float spinRadius = json.has("spin_radius")
+                ? number(id, json, "spin_radius", 0.0f, 16.0f) : DEFAULT_SPIN_RADIUS;
+        int spinCooldown = json.has("spin_cooldown_ticks")
+                ? integer(id, json, "spin_cooldown_ticks", 0, 20 * 60) : DEFAULT_SPIN_COOLDOWN;
+        float streakBonus = json.has("hit_streak_speed_bonus")
+                ? number(id, json, "hit_streak_speed_bonus", 0.0f, 10.0f) : 0.0f;
+        int streakStacks = json.has("hit_streak_max_stacks")
+                ? integer(id, json, "hit_streak_max_stacks", 0, 64) : 0;
+        int streakWindow = json.has("hit_streak_window_ticks")
+                ? integer(id, json, "hit_streak_window_ticks", 0, 20 * 60) : DEFAULT_HIT_STREAK_WINDOW;
+        int bashHitCooldown = json.has("bash_hit_cooldown_ticks")
+                ? integer(id, json, "bash_hit_cooldown_ticks", 0, 20 * 60) : DEFAULT_BASH_HIT_COOLDOWN;
+
+        if (blocking && blockingMultiplier >= 1.0f) {
+            throw new JsonParseException(id + ": blocking_damage_multiplier must reduce damage when blocking is enabled");
+        }
+        if (throwing && (throwVelocity <= 0.0f || throwRange <= 0.0f)) {
+            throw new JsonParseException(id + ": throwing weapons need positive throw_velocity and throw_range");
+        }
+        return new WeaponSpec(weapon, material, style, attackDamage, attackSpeed, reach, sweepRadius,
+                sweepAngle, thrustWidth, penetration, criticalHits, offhandMultiplier, chargeTicks, throwChargeTicks,
+                chargeDamage, chargeKnockback, recoveryTicks, blocking, blockingAngle,
+                blockingMultiplier, throwing, throwVelocity, throwRange, pounceRange, pounceAngle,
+                bashHitCooldown, spinRadius, spinCooldown, streakBonus, streakStacks, streakWindow);
+    }
+
+    /** The spec in the same format {@link #fromJson} reads (the format of the weapon spec files). */
+    public JsonObject toJson() {
+        JsonObject json = new JsonObject();
+        json.addProperty("weapon", weapon);
+        json.addProperty("material", material);
+        json.addProperty("attack_style", attackStyle.name().toLowerCase(java.util.Locale.ROOT));
+        json.addProperty("attack_damage", attackDamage);
+        json.addProperty("attack_speed", attackSpeed);
+        json.addProperty("reach", reach);
+        json.addProperty("sweep_radius", sweepRadius);
+        json.addProperty("sweep_angle_degrees", sweepAngleDegrees);
+        json.addProperty("thrust_width", thrustWidth);
+        json.addProperty("penetration_count", penetrationCount);
+        json.addProperty("critical_hits", criticalHits);
+        json.addProperty("offhand_speed_multiplier", offhandSpeedMultiplier);
+        json.addProperty("charge_ticks", chargeTicks);
+        json.addProperty("throw_charge_ticks", throwChargeTicks);
+        json.addProperty("charge_damage", chargeDamage);
+        json.addProperty("charge_knockback", chargeKnockback);
+        json.addProperty("recovery_ticks", recoveryTicks);
+        json.addProperty("blocking", blocking);
+        json.addProperty("blocking_angle_degrees", blockingAngleDegrees);
+        json.addProperty("blocking_damage_multiplier", blockingDamageMultiplier);
+        json.addProperty("throwing", throwing);
+        json.addProperty("throw_velocity", throwVelocity);
+        json.addProperty("throw_range", throwRange);
+        json.addProperty("pounce_range", pounceRange);
+        json.addProperty("pounce_angle_degrees", pounceAngleDegrees);
+        json.addProperty("bash_hit_cooldown_ticks", bashHitCooldownTicks);
+        json.addProperty("spin_radius", spinRadius);
+        json.addProperty("spin_cooldown_ticks", spinCooldownTicks);
+        json.addProperty("hit_streak_speed_bonus", hitStreakSpeedBonus);
+        json.addProperty("hit_streak_max_stacks", hitStreakMaxStacks);
+        json.addProperty("hit_streak_window_ticks", hitStreakWindowTicks);
+        return json;
+    }
+
+    private static String requiredString(ResourceLocation id, JsonObject json, String key) {
+        if (!json.has(key) || !json.get(key).isJsonPrimitive() || !json.get(key).getAsJsonPrimitive().isString()) {
+            throw new JsonParseException(id + ": missing string field '" + key + "'");
+        }
+        return json.get(key).getAsString();
+    }
+
+    private static boolean booleanValue(ResourceLocation id, JsonObject json, String key) {
+        if (!json.has(key) || !json.get(key).isJsonPrimitive() || !json.get(key).getAsJsonPrimitive().isBoolean()) {
+            throw new JsonParseException(id + ": missing boolean field '" + key + "'");
+        }
+        return json.get(key).getAsBoolean();
+    }
+
+    private static float number(ResourceLocation id, JsonObject json, String key, float min, float max) {
+        if (!json.has(key) || !json.get(key).isJsonPrimitive() || !json.get(key).getAsJsonPrimitive().isNumber()) {
+            throw new JsonParseException(id + ": missing numeric field '" + key + "'");
+        }
+        float value = json.get(key).getAsFloat();
+        if (!Float.isFinite(value) || value < min || value > max) {
+            throw new JsonParseException(id + ": field '" + key + "' must be between " + min + " and " + max);
+        }
+        return value;
+    }
+
+    private static int integer(ResourceLocation id, JsonObject json, String key, int min, int max) {
+        float value = number(id, json, key, min, max);
+        if (value != Math.round(value)) {
+            throw new JsonParseException(id + ": field '" + key + "' must be an integer");
+        }
+        return Math.round(value);
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "fight_club:item/spear_in_hand",
+  "textures": {
+    "layer0": "fight_club:item/copper_spear_in_hand"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "caverns_and_chasms"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "caverns_and_chasms"
+    }
+  ],
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "minecraft:netherite_upgrade_smithing_template"
+  },
+  "base": {
+    "item": "fight_club:diamond_dagger"
+  },
+  "addition": {
+    "item": "caverns_and_chasms:necromium_ingot"
+  },
+  "result": {
+    "id": "fight_club:caverns_and_chasms/necromium/dagger",
+    "count": 1
+  }
+}

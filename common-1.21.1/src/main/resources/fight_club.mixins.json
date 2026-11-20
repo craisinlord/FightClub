@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.craisinlord.fightclub.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["AnvilMenuMixin", "LivingEntityAccessor", "ItemDefaultsMixin", "ItemStackModifiersMixin", "ItemStackBackportSpearMixin", "MobBackportSpearMixin", "LivingEntitySwingMixin", "ShieldItemMixin", "MaceSweepMixin", "ShieldAngleMixin", "SwordSweepMixin", "ThrownTridentMixin", "TridentItemMixin", "DaggerChargeImmunityMixin", "LoyaltyEnchantableMixin"],
+  "client": ["AnvilScreenMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemRendererModelMixin", "MinecraftAccessor", "MinecraftInputMixin", "PlayerRendererSpinMixin", "PounceFovMixin", "PounceOutlineMixin"],
+  "injectors": {"defaultRequire": 1}
+}

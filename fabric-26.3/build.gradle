@@ -1,0 +1,94 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.15.5'
+}
+
+base {
+    archivesName = "${mod_id}-fabric-26.3"
+}
+
+tasks.withType(AbstractCopyTask).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+    withSourcesJar()
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs project(':common-26.3').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDir project(':common-26.3').sourceSets.main.resources.srcDirs
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version_26_3}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version_26_3}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version_26_3}"
+
+    compileOnly "com.google.code.findbugs:jsr305:3.0.2"
+    implementation "com.electronwill.night-config:toml:3.8.3"
+}
+
+loom {
+    runs {
+        configureEach {
+            // Mojang's 26.3 launch arguments add this (26.1/26.2 don't), and Loom 1.15.5 doesn't pass
+            // them on. Without it the dev client overflows the stack in native code (SDL/driver
+            // callbacks) and dies with 0xC0000005 at random points, with no JVM crash log.
+            vmArg '-XX:StackShadowPages=32'
+        }
+    }
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+        version        : project.version,
+        mod_id         : mod_id,
+        mod_name       : mod_name,
+        mod_description: mod_description,
+        mod_license    : mod_license
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching('fabric.mod.json') {
+        expand replaceProperties
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = rootProject.group
+            artifactId = project.base.archivesName.get()
+            version = project.version
+
+            artifact jar
+            artifact sourcesJar
+
+            pom {
+                name = "${mod_name} (Fabric 26.3)"
+                description = mod_description
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'LocalMaven'
+            url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
+        }
+        maven {
+            name = 'Forgejo'
+            url = uri('https://maven.example.invalid/replace-me')
+            credentials {
+                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
+                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fight_club:item/born_in_chaos/dark_metal/dark_metal_longsword"
+  }
+}

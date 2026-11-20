@@ -1,0 +1,30 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "oreganized"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "oreganized"
+    }
+  ],
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "oreganized:electrum_upgrade_smithing_template"
+  },
+  "base": {
+    "item": "fight_club:diamond_longsword"
+  },
+  "addition": {
+    "item": "oreganized:electrum_ingot"
+  },
+  "result": {
+    "id": "fight_club:oreganized/electrum/longsword",
+    "count": 1
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": ["CraisinLord"],
+  "license": "${mod_license}",
+  "environment": "*",
+  "mixins": ["fight_club.mixins.json"],
+
+  "entrypoints": {
+    "main": [
+      "com.craisinlord.fightclub.fabric.FightClubFabric"
+    ],
+    "client": [
+      "com.craisinlord.fightclub.fabric.FightClubFabricClient"
+    ]
+  },
+
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "fabric-api": "*",
+    "minecraft": ">=26.3 <26.4",
+    "java": ">=25"
+  }
+}

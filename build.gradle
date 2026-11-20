@@ -10,7 +10,7 @@ allprojects {
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
 
-    group = findProperty('mod_group_id') ?: 'com.craisinlord.combatoverhaul'
+    group = findProperty('mod_group_id') ?: 'com.craisinlord.fightclub'
     version = findProperty('mod_version') ?: '1.0.0'
 
     repositories {

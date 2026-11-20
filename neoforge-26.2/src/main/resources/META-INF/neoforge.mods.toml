@@ -5,7 +5,7 @@ issueTrackerURL = "https://github.com/Keymasterkid/Combat-Overhaul/issues"
 showAsResourcePack = false
 
 [[mixins]]
-config = "combat_overhaul.mixins.json"
+config = "fight_club.mixins.json"
 
 [[mods]]
 modId = "${mod_id}"

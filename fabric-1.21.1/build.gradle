@@ -58,6 +58,19 @@ dependencies {
 
     // Backs common's homegrown config framework (ConfigBase) - same library NeoForge's ModConfigSpec uses internally.
     implementation "com.electronwill.night-config:toml:3.8.3"
+
+    // Better Combat is an optional integration: compile-only for the compat layer, and present in
+    // dev runs so it can be tested. modLocalRuntime is never bundled or published.
+    modCompileOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-fabric"
+    // Dev runs include Better Combat unless started with -Pdev_better_combat=false
+    // (useful for checking the mod's own attack animations, which BC replaces).
+    if ((findProperty('dev_better_combat') ?: 'true').toString().toBoolean()) {
+        modLocalRuntime "maven.modrinth:better-combat:${better_combat_version_1_21_1}-fabric"
+        modLocalRuntime "maven.modrinth:playeranimator:${player_animator_version_1_21_1}-fabric"
+        modLocalRuntime "maven.modrinth:cloth-config:${cloth_config_version_1_21_1}+fabric"
+        // Nested inside the Better Combat jar, but Loom dev runs don't load nested jars of dependencies.
+        modLocalRuntime "maven.modrinth:tiny-config:${tiny_config_version_1_21_1}-fabric"
+    }
 }
 
 loom {
@@ -66,7 +79,8 @@ loom {
     // Without this, Loom picks a random username per launch, which - since offline-mode player
     // UUIDs are derived from the username - meant a different player UUID every dev run, so
     // Matches NeoForge's ModDevGradle default of always logging in as "Dev".
-    runConfigs.configureEach {
+    // Client only: the dedicated server rejects --username and fails to start.
+    runConfigs.named("client") {
         programArgs.add("--username")
         programArgs.add("Dev")
     }

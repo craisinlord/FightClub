@@ -1,0 +1,33 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "iceandfire"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "iceandfire"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "WX"
+  ],
+  "key": {
+    "W": {
+      "item": "fight_club:iceandfire/dragonbone/longsword"
+    },
+    "X": {
+      "item": "iceandfire:ice_dragon_blood"
+    }
+  },
+  "result": {
+    "id": "fight_club:iceandfire/dragonbone_ice/longsword",
+    "count": 1
+  }
+}

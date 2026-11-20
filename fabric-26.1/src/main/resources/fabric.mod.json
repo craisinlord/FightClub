@@ -7,14 +7,14 @@
   "authors": ["CraisinLord"],
   "license": "${mod_license}",
   "environment": "*",
-  "mixins": ["combat_overhaul.mixins.json"],
+  "mixins": ["fight_club.mixins.json"],
 
   "entrypoints": {
     "main": [
-      "com.craisinlord.combatoverhaul.fabric.CombatOverhaulFabric"
+      "com.craisinlord.fightclub.fabric.FightClubFabric"
     ],
     "client": [
-      "com.craisinlord.combatoverhaul.fabric.CombatOverhaulFabricClient"
+      "com.craisinlord.fightclub.fabric.FightClubFabricClient"
     ]
   },
 

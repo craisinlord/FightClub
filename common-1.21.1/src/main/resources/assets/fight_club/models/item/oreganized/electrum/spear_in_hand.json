@@ -1,0 +1,6 @@
+{
+  "parent": "fight_club:item/spear_in_hand",
+  "textures": {
+    "layer0": "fight_club:item/oreganized/electrum/electrum_spear_in_hand"
+  }
+}

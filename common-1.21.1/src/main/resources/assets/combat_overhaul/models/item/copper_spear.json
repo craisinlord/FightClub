@@ -1,6 +1,0 @@
-{
-  "parent": "combat_overhaul:item/generated",
-  "textures": {
-    "layer0": "combat_overhaul:item/copper_spear"
-  }
-}
