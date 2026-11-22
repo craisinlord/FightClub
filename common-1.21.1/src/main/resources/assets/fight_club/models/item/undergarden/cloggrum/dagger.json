@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fight_club:item/undergarden/cloggrum/cloggrum_dagger"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fight_club:item/mekanism/refined_glowstone/refined_glowstone_longsword_in_hand"
+  },
+  "display": {
+    "firstperson_righthand": {
+      "scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    "firstperson_lefthand": {
+      "scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        55
+      ],
+      "translation": [
+        0,
+        9.2,
+        -0.4
+      ],
+      "scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -55
+      ],
+      "translation": [
+        0,
+        9.2,
+        -0.4
+      ],
+      "scale": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    }
+  }
+}

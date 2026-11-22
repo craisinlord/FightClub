@@ -1,0 +1,7 @@
+{
+  "values": [
+    {"id": "fight_club:generic/silver/longsword", "required": false},
+    {"id": "fight_club:generic/silver/spear", "required": false},
+    {"id": "fight_club:generic/silver/dagger", "required": false}
+  ]
+}

@@ -7,10 +7,6 @@ import net.minecraft.world.entity.player.Player;
 
 import java.lang.reflect.Method;
 
-/**
- * Optional Better Combat integration. 26.x has no Better Combat build on the compile classpath,
- * so its public CombatFlags API is reached reflectively, and only when the mod is installed.
- */
 public final class BetterCombatCompat {
     public static final String MOD_ID = "bettercombat";
     private static Boolean loaded;
@@ -24,10 +20,6 @@ public final class BetterCombatCompat {
         return loaded;
     }
 
-    /**
-     * Pauses Better Combat's own swings (including hold-to-attack) while a Fight Club charge
-     * is held, through Better Combat's public CombatFlags API.
-     */
     public static void setChargeActive(Player player, boolean active) {
         if (!isLoaded() || !(player instanceof ServerPlayer serverPlayer) || lookupFailed) return;
         try {

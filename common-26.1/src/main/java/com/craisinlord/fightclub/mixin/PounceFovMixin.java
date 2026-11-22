@@ -12,11 +12,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Dagger pounce FOV, like the bow's draw zoom: narrows while a pounce is ready, widens during the
- * dash, and punches in briefly on contact. Vanilla eases the FOV toward this value each tick, and
- * the FOV Effects slider scales it.
- */
 @Mixin(AbstractClientPlayer.class)
 public abstract class PounceFovMixin {
     @Unique

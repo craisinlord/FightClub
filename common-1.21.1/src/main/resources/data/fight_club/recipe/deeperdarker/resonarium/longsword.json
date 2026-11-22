@@ -1,0 +1,30 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "deeperdarker"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "deeperdarker"
+    }
+  ],
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "deeperdarker:resonarium_upgrade_smithing_template"
+  },
+  "base": {
+    "item": "fight_club:diamond_longsword"
+  },
+  "addition": {
+    "item": "deeperdarker:resonarium_plate"
+  },
+  "result": {
+    "id": "fight_club:deeperdarker/resonarium/longsword",
+    "count": 1
+  }
+}

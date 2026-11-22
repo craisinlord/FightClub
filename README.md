@@ -12,6 +12,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 - [Weapons and moves](#weapons-and-moves)
 - [Configuration](#configuration)
 - [Weapon specs](#weapon-specs): file locations, fields, overriding a weapon
+- [Other mods' items](#other-mods-items): giving another mod's dagger, longsword, spear or shield Fight Club's moves by datapack
 - [Built-in mod compatibility](#built-in-mod-compatibility): extra materials, Better Combat, Vanilla Backport
 - [Java API](#java-api): adding weapons from another mod, specs in code, models, queries
 - [Troubleshooting](#troubleshooting)
@@ -24,7 +25,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 | Fabric API | Required on Fabric |
 | Better Combat | Optional; see [Better Combat](#better-combat) |
 | Vanilla Backport | Optional; see [Vanilla Backport](#vanilla-backport) |
-| Ice and Fire, Antarchy, Alex's Caves, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) |
+| Ice and Fire, Antarchy, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) |
 
 Fight Club is needed on both the server and the client.
 
@@ -138,6 +139,42 @@ For example, this makes iron spears hit harder and throw farther. Copy the bundl
 
 Save it as `data/mypack/weapons/iron/spear.json` in your datapack.
 
+## Other mods' items
+
+A datapack can give another mod's item a Fight Club weapon's moves, with no code. Put a file at `data/<namespace>/weapon_items/<name>.json`:
+
+```json
+{
+  "weapon": "dagger",
+  "material": "iron",
+  "items": ["examplemod:bone_dagger", "#c:tools/daggers"]
+}
+```
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `weapon` | required | `dagger`, `longsword`, `spear`, `sword` or `shield` |
+| `material` | `iron` (`base` for shields) | Which spec the items use: `weapons/<material>/<weapon>.json`. Use one of Fight Club's, or ship your own spec next to the file |
+| `items` | required | Item ids, or item tags starting with `#`. Ids of mods that aren't installed are skipped, so one file can cover optional mods |
+| `right_click` | `true` | Right click throws daggers and spears and charges the longsword spin. Set it to `false` for items that already do something on right click; they keep that and still get the left-click moves |
+| `spec_stats` | `false` | Replace the item's own attack damage and speed with the spec's. By default the item keeps its own, and the spec supplies everything else (reach, sweeps, charges, throws, recovery) |
+| `spec` | none | Spec fields that differ from the material's spec, such as `charge_damage` or `throw_damage`. The items get their own copy of the spec with these fields replaced, so each weapon's ability damage can be tuned on its own |
+
+For example, a dagger that keeps its own hit damage but pounces for 18 and throws for 9:
+
+```json
+{
+  "weapon": "dagger",
+  "material": "iron",
+  "items": ["examplemod:bone_dagger"],
+  "spec": { "charge_damage": 18, "throw_damage": 9 }
+}
+```
+
+`charge_damage` is the whole charged hit (dagger pounce, spear charge) and the longsword spin's damage; `throw_damage` is the thrown weapon's hit. For items that keep their own damage, the charge bonus is measured against the item's real attack damage, so `charge_damage` still means the total.
+
+Mapped items get the full move set of their weapon: dagger pounce and throw, longsword arc sweep and spin, spear charge, thrust and throw, and for shields the bash, the narrower block angle and the bash pose. Fight Club's own items always use their own spec, and an id listed in a file wins over a tag. Changes apply on `/reload`, and the server sends the mappings to every player with the specs.
+
 ## Built-in mod compatibility
 
 ### Extra weapon materials
@@ -150,12 +187,28 @@ When one of these mods is installed, Fight Club registers a longsword, spear and
 | Electrum | Oreganized | `oreganized/electrum` | 1561 | 11.9 / 6.8 / 3.4 | Smithing: diamond Fight Club weapon + electrum ingot | Electrum ingot |
 | Necromium | Caverns & Chasms | `caverns_and_chasms/necromium` | 2031 | 13.3 / 7.6 / 3.8 | Smithing: diamond Fight Club weapon + necromium ingot | Necromium ingot |
 | Dark metal | Born in Chaos | `born_in_chaos/dark_metal` | 1100 | 12.6 / 7.2 / 3.6 | Dark metal ingots and a bone handle | Dark metal ingot |
-| Desert and jungle myrmex chitin | Ice and Fire | `iceandfire/myrmex_desert`, `iceandfire/myrmex_jungle` | 600 | 11.2 / 6.4 / 3.2 | Myrmex chitin and sticks | Myrmex chitin |
 | Dragonbone | Ice and Fire | `iceandfire/dragonbone` | 1660 | 13.3 / 7.6 / 3.8 | Dragonbone and witherbone | Dragonbone |
 | Flamed, iced and electrified dragonbone | Ice and Fire | `iceandfire/dragonbone_fire`, `_ice`, `_lightning` | 2000 | 14.7 / 8.4 / 4.2 | Dragonbone weapon + fire, ice or lightning dragon blood | Dragonbone |
 | Fire, ice and lightning dragonsteel | Ice and Fire | `iceandfire/dragonsteel_fire`, `_ice`, `_lightning` | 8000 | 16.8 / 9.6 / 4.8 | Dragonsteel ingots and witherbone | Dragonsteel ingot |
-| Scarlet neodymium | Alex's Caves | `alexscaves/scarlet_neodymium` | 2031 | 14.0 / 8.0 / 4.0 | Scarlet neodymium ingots and sticks | Scarlet neodymium ingot |
 | Ultimate | Antarchy | `antarchy/ultimate` | 3072 | 47.6 / 27.2 / 13.6 | Uranium ingot and titanium ingot on a netherite Fight Club weapon | Titanium ingot |
+| Zanite | The Aether | `aether/zanite` | 250 | 9.8 / 5.6 / 2.8 | Zanite gemstones and a skyroot stick | Zanite gemstone |
+| Gravitite | The Aether | `aether/gravitite` | 1561 | 11.9 / 6.8 / 3.4 | Enchanted gravitite and a skyroot stick | Enchanted gravitite |
+| Ironwood | Twilight Forest | `twilightforest/ironwood` | 512 | 9.8 / 5.6 / 2.8 | Ironwood ingots and sticks | Ironwood ingot |
+| Steeleaf | Twilight Forest | `twilightforest/steeleaf` | 131 | 11.9 / 6.8 / 3.4 | Steeleaf and sticks | Steeleaf |
+| Knightmetal | Twilight Forest | `twilightforest/knightmetal` | 512 | 11.9 / 6.8 / 3.4 | Knightmetal ingots and sticks | Knightmetal ingot |
+| Fiery | Twilight Forest | `twilightforest/fiery` | 1024 | 13.3 / 7.6 / 3.8 | Fiery ingots and a blaze rod | Fiery ingot |
+| Bronze | Mekanism | `mekanism/bronze` | 375 | 9.8 / 5.6 / 2.8 | Bronze ingots and sticks | Bronze ingot |
+| Lapis lazuli | Mekanism | `mekanism/lapis_lazuli` | 128 | 8.4 / 4.8 / 2.4 | Lapis lazuli and sticks | Lapis lazuli |
+| Osmium | Mekanism | `mekanism/osmium` | 1024 | 13.3 / 7.6 / 3.8 | Osmium ingots and sticks | Osmium ingot |
+| Refined glowstone | Mekanism | `mekanism/refined_glowstone` | 384 | 9.8 / 5.6 / 2.8 | Refined glowstone ingots and sticks | Refined glowstone ingot |
+| Refined obsidian | Mekanism | `mekanism/refined_obsidian` | 4096 | 17.5 / 10.0 / 5.0 | Refined obsidian ingots and sticks | Refined obsidian ingot |
+| Steel | Mekanism | `mekanism/steel` | 500 | 11.9 / 6.8 / 3.4 | Steel ingots and an iron ingot handle | Steel ingot |
+| Resonarium | Deeper and Darker | `deeperdarker/resonarium` | 1601 | 11.9 / 6.8 / 3.4 | Smithing: diamond Fight Club weapon + resonarium template + resonarium plate | Resonarium plate |
+| Warden | Deeper and Darker | `deeperdarker/warden` | 2519 | 14.7 / 8.4 / 4.2 | Smithing: netherite Fight Club weapon + warden template + reinforced echo shard | Reinforced echo shard |
+| Cloggrum | The Undergarden | `undergarden/cloggrum` | 286 | 11.9 / 6.8 / 3.4 | Cloggrum ingots and sticks | Cloggrum ingot |
+| Froststeel | The Undergarden | `undergarden/froststeel` | 575 | 9.8 / 5.6 / 2.8 | Froststeel ingots and sticks | Froststeel ingot |
+| Utherium | The Undergarden | `undergarden/utherium` | 1279 | 12.6 / 7.2 / 3.6 | Utherium crystals and sticks | Utherium crystal |
+| Forgotten | The Undergarden | `undergarden/forgotten` | 1876 | 11.9 / 6.8 / 3.4 | Smithing: cloggrum weapon + forgotten template + forgotten ingot | Forgotten ingot |
 
 The damage column is the bundled spec; pack developers can change it like any other [weapon spec](#weapon-specs). The flamed, iced and electrified dragonbone and the three dragonsteels share one row each because their stats match. The Ultimate weapons are new Fight Club items alongside Antarchy's own ultimate sword and basilisk dagger; they don't replace them.
 

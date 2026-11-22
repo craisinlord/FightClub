@@ -20,32 +20,31 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Third-person held-item tweaks for spears:
- * <ul>
- *   <li>Hold-left-click charge: vanilla's newer spear hold-out item motion (levelled and pushed forward).</li>
- *   <li>Throw wind-up: the arm is raised overhead, which leaves the normal grip pointing the tip
- *   backward. Vanilla swaps the trident to a separate "throwing" model for this; we spin the
- *   spear's model 180 degrees in its own plane instead, so the tip leads.</li>
- * </ul>
- */
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin {
     @Inject(method = "renderArmWithItem", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"))
     private void fightClub$beforeItem(LivingEntity entity, ItemStack stack, ItemDisplayContext context, HumanoidArm arm,
                                       PoseStack poseStack, MultiBufferSource buffer, int light, CallbackInfo ci) {
-        // Held poses and the longsword swing / spin can turn the item in the hand: roll twists it
-        // around the arm's length (the 1.8-style sword block angles the blade outward).
-        org.joml.Vector3f turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemRotation(entity, arm,
+        com.craisinlord.fightclub.client.CombatThirdPerson.ItemTurn turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemTurn(entity, arm,
                 Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
         if (turn != null) {
-            poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(turn.z()));
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(turn.x()));
-            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(turn.y()));
+            if (turn.atFist()) poseStack.rotateAround(turn.rotation(), 0.0F, com.craisinlord.fightclub.client.CombatThirdPerson.FIST_PIVOT, 0.0F);
+            else poseStack.mulPose(turn.rotation());
         }
-        if (!(entity instanceof Player player) || WeaponKind.of(stack) != WeaponKind.SPEAR
-                || !CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
+        if (!(entity instanceof Player player) || !CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
+        WeaponKind kind = WeaponKind.of(stack);
+        if (kind == WeaponKind.DAGGER && player.isUsingItem() && player.getUseItem() == stack
+                && stack.getUseAnimation() == UseAnim.SPEAR) {
+            float partialTick = Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+            float timeHeld = Math.max(0.0F, stack.getUseDuration(player) - (player.getUseItemRemainingTicks() - partialTick + 1.0F));
+            com.craisinlord.fightclub.client.CombatPoseConfig.Pose flip =
+                    com.craisinlord.fightclub.client.CombatPoseConfig.get(com.craisinlord.fightclub.client.CombatPose.DAGGER_THROW_FLIP);
+            float spin = com.craisinlord.fightclub.client.CombatPoseConfig.flip(flip, timeHeld / flip.blendIn());
+            if (spin != 0.0F) CombatModels.setModelSpin(spin);
+            return;
+        }
+        if (kind != WeaponKind.SPEAR) return;
         if (player.isUsingItem() && player.getUseItem() == stack && stack.getUseAnimation() == UseAnim.SPEAR) {
             CombatModels.setModelSpin(180.0F);
             return;

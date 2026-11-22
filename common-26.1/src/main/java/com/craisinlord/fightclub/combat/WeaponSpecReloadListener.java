@@ -47,5 +47,6 @@ public class WeaponSpecReloadListener extends SimpleJsonResourceReloadListener<J
         }
         WeaponSpecs.replace(parsed);
         LOGGER.info("Loaded {} Fight Club weapon specifications", parsed.size());
+        ExternalWeapons.load(manager);
     }
 }

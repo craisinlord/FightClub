@@ -39,12 +39,11 @@ public final class FightClubNeoForge {
             if (!com.craisinlord.fightclub.combat.CombatWeapons.registersOwn(material, weapon)) continue;
             ITEMS.register(material + "_" + weapon, () -> new CombatWeaponItem(material, weapon, tier(material)));
         }
-        // Optional materials from other mods (Ice and Fire, Antarchy, ...), only when the mod is present.
         java.util.List<net.neoforged.neoforge.registries.DeferredHolder<Item, Item>> compatItems = new java.util.ArrayList<>();
         for (CompatMaterial compat : CompatMaterial.values()) {
             if (!compat.isActive(CombatPlatform::isModLoaded)) continue;
             for (String weapon : CompatMaterial.WEAPONS) {
-                compatItems.add(ITEMS.register(compat.itemPath(weapon), () -> new CombatWeaponItem(compat.material, weapon, compat)));
+                compatItems.add(ITEMS.register(compat.itemPath(weapon), () -> new CombatWeaponItem(compat.material, weapon, compat, com.craisinlord.fightclub.compat.CompatAbilities.properties(compat))));
             }
             FightClub.LOGGER.info("Fight Club: enabled {} weapons", compat.material);
         }
@@ -53,8 +52,11 @@ public final class FightClubNeoForge {
         DeferredRegister<net.minecraft.sounds.SoundEvent> sounds = DeferredRegister.create(Registries.SOUND_EVENT, FightClub.MOD_ID);
         com.craisinlord.fightclub.combat.CombatSounds.ALL.forEach((path, sound) -> sounds.register(path, () -> sound));
         sounds.register(modBus);
+        DeferredRegister<net.minecraft.core.particles.ParticleType<?>> particleTypes = DeferredRegister.create(Registries.PARTICLE_TYPE, FightClub.MOD_ID);
+        particleTypes.register(com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP_ID.getPath(),
+                () -> com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP);
+        particleTypes.register(modBus);
         modBus.addListener(FightClubNeoForge::registerPayloadHandlers);
-        // Potion stack size from the config (16 by default, design doc; 1 = vanilla). Read once at startup.
         modBus.addListener((net.neoforged.neoforge.event.ModifyDefaultComponentsEvent event) -> {
             int size = com.craisinlord.fightclub.combat.CombatDefaults.potionStackSize();
             if (size > 1) com.craisinlord.fightclub.combat.CombatDefaults.POTIONS.forEach(potion -> event.modify(potion, builder ->
@@ -87,7 +89,6 @@ public final class FightClubNeoForge {
         FightClub.LOGGER.info("Fight Club 1.21.1 NeoForge initialized");
     }
 
-    /** Creative tab order, like vanilla: grouped by weapon (longswords, spears, daggers), material order within. */
     private static java.util.List<Item> tabItems(java.util.List<net.neoforged.neoforge.registries.DeferredHolder<Item, Item>> compatItems) {
         java.util.List<Item> items = new java.util.ArrayList<>();
         for (String weapon : WEAPONS) {
@@ -109,7 +110,6 @@ public final class FightClubNeoForge {
                         CombatChargeState.handle(player, payload.action(), payload.target());
                     }
                 }));
-        // The handler class touches client-only code; it is only invoked on the client.
         event.registrar("1").playToClient(com.craisinlord.fightclub.combat.CombatPosePayload.TYPE,
                 com.craisinlord.fightclub.combat.CombatPosePayload.STREAM_CODEC,
                 (payload, context) -> context.enqueueWork(() -> NeoForgeClientPackets.handlePose(payload)));

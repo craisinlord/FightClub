@@ -19,27 +19,29 @@ public final class CombatVanillaRules {
     private static final Identifier LONGSWORD_OFFHAND = Identifier.fromNamespaceAndPath("fight_club", "longsword_offhand");
     private CombatVanillaRules() {}
 
-    public static boolean isSword(ItemStack stack) { return stack.getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("sword") || isVanillaSword(stack.getItem()); }
+    public static boolean isSword(ItemStack stack) {
+        return CombatWeapons.is(stack.getItem(), "sword") || isVanillaSword(stack.getItem()) && CombatWeapons.external(stack.getItem()) == null;
+    }
     public static boolean isVanillaSword(Item item) { return item == Items.WOODEN_SWORD || item == Items.STONE_SWORD || item == Items.COPPER_SWORD || item == Items.IRON_SWORD || item == Items.GOLDEN_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD; }
     public static WeaponSpec swordSpec(ItemStack stack) {
-        if (stack.getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("sword")) return WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "sword");
+        if (CombatWeapons.is(stack.getItem(), "sword")) return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(stack.getItem()), "sword");
         String[] materials = {"wood", "stone", "copper", "iron", "gold", "diamond", "netherite"};
         Item[] swords = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.COPPER_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
         for (int i = 0; i < swords.length; i++) if (stack.getItem() == swords[i]) return WeaponSpecs.getOrLoadBuiltin(materials[i], "sword");
         return null;
     }
-    public static boolean isShield(ItemStack stack) { return stack.is(Items.SHIELD); }
+    public static boolean isShield(ItemStack stack) { return CombatWeapons.isShield(stack); }
+
+    public static boolean blocksVanillaSweep(Player player) {
+        ExternalWeapons.Entry external = CombatWeapons.external(player.getMainHandItem().getItem());
+        return external != null && !external.weapon().equals("sword");
+    }
     public static boolean isMace(ItemStack stack) { return stack.is(Items.MACE); }
 
-    /** True when the held weapon can't land normal (jump) crits; read by PlayerCritMixin. */
     public static boolean suppressesCrits(Player player) {
         return chargeOnlyCrits(player.getMainHandItem());
     }
 
-    /**
-     * Spears and tridents whose spec says critical_hits: false crit only on charged hits
-     * (spear_charge_crits): normal crits are suppressed, and every charge hit plays the crit effects.
-     */
     public static boolean chargeOnlyCrits(ItemStack stack) {
         if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SPEAR_CHARGE_CRITS)) return false;
         String kind = CombatTooltips.kindOf(stack);
@@ -48,10 +50,6 @@ public final class CombatVanillaRules {
         return spec != null && !spec.criticalHits();
     }
 
-    /**
-     * Crit feedback for a charge hit: vanilla's crit sound and crit particles, server side. Only
-     * feedback: the charge damage is the bonus, so there is no 1.5x on top.
-     */
     public static void chargeCritEffects(Player player, Entity target) {
         if (player.level().isClientSide() || !chargeOnlyCrits(player.getMainHandItem())) return;
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -59,10 +57,6 @@ public final class CombatVanillaRules {
         player.crit(target);
     }
 
-    /**
-     * True while a spear's left-click charge (vanilla kinetic item use) is running on the server,
-     * so PlayerCritMixin turns its kinetic stab hits into crits for feedback.
-     */
     public static boolean spearChargeCrits(Player player) {
         return !player.level().isClientSide() && CombatChargeState.isLeftCharging(player) && player.isUsingItem()
                 && CombatChargeState.usesItemForCharge(player.getUseItem().getItem()) && chargeOnlyCrits(player.getUseItem());
@@ -71,10 +65,10 @@ public final class CombatVanillaRules {
     public static void applyLongswordRules(Player player) {
         AttributeInstance attackSpeed = player.getAttribute(Attributes.ATTACK_SPEED);
         if (attackSpeed != null) attackSpeed.removeModifier(LONGSWORD_OFFHAND);
-        if (player.getMainHandItem().getItem() instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("longsword")) {
+        if (CombatWeapons.is(player.getMainHandItem().getItem(), "longsword")) {
             player.resetFallDistance();
             if (attackSpeed != null) {
-                WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "longsword");
+                WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(player.getMainHandItem().getItem()), "longsword");
                 if (spec != null && !player.getOffhandItem().isEmpty()) {
                     attackSpeed.addTransientModifier(new AttributeModifier(LONGSWORD_OFFHAND,
                             spec.offhandSpeedMultiplier() - 1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
@@ -101,32 +95,23 @@ public final class CombatVanillaRules {
 
     public static boolean shieldBash(Player player, Entity target) {
         if (!player.isUsingItem() || !isShield(player.getUseItem())) return false;
-        // Same bash timer as the main bash below, not an item cooldown (that would stop blocking).
         long now = player.level().getGameTime();
         Long ready = BASH_READY.get(player.getUUID());
         if (ready != null && now < ready) return false;
         if (!frontal(player, target, 90.0f)) return false;
         CombatPlatform.knockback((LivingEntity) target, 1.6, player.getX() - target.getX(), player.getZ() - target.getZ(), player);
-        bashLanded(player, now, WeaponSpecs.getOrLoadBuiltin("base", "shield"));
+        bashLanded(player, now, CombatWeapons.shieldSpec(player.getUseItem()));
         return true;
     }
 
     private static final java.util.Map<java.util.UUID, Long> BASH_READY = new java.util.concurrent.ConcurrentHashMap<>();
 
-    /**
-     * A bash hit something: lock bashing (only bashing; blocking keeps working) for
-     * bash_hit_cooldown_ticks, and tell the basher's client so its own bash timer matches.
-     */
     private static void bashLanded(Player player, long now, WeaponSpec spec) {
         int hitCooldown = spec == null ? WeaponSpec.DEFAULT_BASH_HIT_COOLDOWN : spec.bashHitCooldownTicks();
         BASH_READY.merge(player.getUUID(), now + hitCooldown, Math::max);
         CombatPlatform.sendToPlayer(player, new CombatPosePayload(player.getId(), CombatPosePayload.BASH_HIT));
     }
 
-    /**
-     * Attack pressed while blocking with a shield (sent by the client, since vanilla swallows
-     * attack clicks during item use): shove everything in front back. Ported from 1.21.1.
-     */
     public static boolean shieldBash(Player player) {
         if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SHIELD_BASH)
                 || !(player.level() instanceof net.minecraft.server.level.ServerLevel level)
@@ -134,7 +119,7 @@ public final class CombatVanillaRules {
         long now = level.getGameTime();
         Long ready = BASH_READY.get(player.getUUID());
         if (ready != null && now < ready) return false;
-        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "shield");
+        WeaponSpec spec = CombatWeapons.shieldSpec(player.getUseItem());
         double range = spec == null ? 2.5 : spec.reach();
         float angle = spec == null ? 100.0f : spec.blockingAngleDegrees();
         double strength = spec == null || spec.chargeKnockback() <= 0.0f ? 1.6 : spec.chargeKnockback();

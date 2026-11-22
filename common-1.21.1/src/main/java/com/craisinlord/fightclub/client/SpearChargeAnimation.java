@@ -8,21 +8,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import org.joml.Quaternionf;
 
-/**
- * The newer vanilla spear's "hold out and charge" animation (MC 26.x {@code SpearAnimations}),
- * ported to 1.21.1 for the hold-left-click spear charge. Our spear uses the same in-hand model
- * as the vanilla spear, so these numbers line up 1:1.
- *
- * <p>Vanilla's charge has phases tied to the kinetic weapon's timers: raise (the spear comes up
- * and levels out), then after a while sway (it starts shaking and tipping as the charge
- * "tires"). Our charge never runs out, so the later lower / raise-back phases are left out.
- */
 public final class SpearChargeAnimation {
-    /** Ticks after the raise finishes before the shaking has fully set in (vanilla: dismount time). */
     private static final int SWAY_AFTER_RAISE = 80;
-    /** Vanilla's sway takes 20 ticks to ramp up. */
     private static final int SWAY_RAMP = 20;
-    /** Vanilla spears' forward_movement (third-person thrust distance). */
     private static final float FORWARD_MOVEMENT = 0.38F;
 
     private SpearChargeAnimation() {}
@@ -30,7 +18,6 @@ public final class SpearChargeAnimation {
     record Params(float raise, float raiseStart, float raiseMiddle, float raiseEnd, float sway,
                   float swayIntensity, float swaySlow, float swayFast) {}
 
-    /** Vanilla's UseParams for a charge held {@code time} ticks. */
     static Params params(Player player, float time) {
         int raiseTicks = Math.max(1, CombatChargeState.chargeTicksFor(player.getMainHandItem()));
         int swayEnd = raiseTicks + SWAY_AFTER_RAISE;
@@ -43,7 +30,6 @@ public final class SpearChargeAnimation {
                 Mth.sin(time * 30.0F * Mth.DEG_TO_RAD) * intensity);
     }
 
-    /** First person: replaces vanilla's arm transform entirely (vanilla's SPEAR use case). */
     public static void firstPerson(PoseStack poseStack, Player player, float time, float side) {
         Params p = params(player, time);
         poseStack.translate(side * 0.56F, -0.52F, -0.72F);
@@ -56,7 +42,6 @@ public final class SpearChargeAnimation {
                 + 90.0F * p.sway() + 2.0F * p.swaySlow())), side * 0.15F, 0.0F, 0.0F);
     }
 
-    /** Third person arm (vanilla {@code thirdPersonHandUse}), blended in by {@code amount}. */
     static void thirdPersonArm(ModelPart arm, ModelPart head, boolean rightArm, Player player, float time, float amount) {
         float invert = rightArm ? 1.0F : -1.0F;
         float yRot = -0.1F * invert + head.yRot;
@@ -77,7 +62,6 @@ public final class SpearChargeAnimation {
         arm.zRot = Mth.lerp(amount, arm.zRot, zRot);
     }
 
-    /** Third person held item (vanilla {@code thirdPersonUseItem}), applied just before the item renders. */
     public static void thirdPersonItem(PoseStack poseStack, Player player, float time, boolean rightArm) {
         if (time <= 0.0F) return;
         Params p = params(player, time);

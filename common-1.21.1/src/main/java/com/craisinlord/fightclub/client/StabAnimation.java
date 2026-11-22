@@ -5,16 +5,9 @@ import com.mojang.math.Axis;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
 
-/**
- * Spear and trident attack swing: a quick straight poke forward along the look direction and back,
- * modelled on vanilla 26.x's spear STAB swing (SpearAnimations.firstPersonAttack and
- * thirdPersonAttackHand), with the same timing: a short wind-up (0-5%), the thrust (5-20%), a hold,
- * then the pull back (40-100%). Only used without Better Combat.
- */
 public final class StabAnimation {
     private StabAnimation() {}
 
-    /** First person, applied after vanilla's arm transform. {@code side} is 1 for the right hand, -1 for the left. */
     public static void firstPerson(PoseStack poseStack, float attack, float side) {
         if (attack <= 0.0F) return;
         float starting = inOutSine(progress(attack, 0.0F, 0.05F));
@@ -25,10 +18,13 @@ public final class StabAnimation {
         poseStack.translate(0.0F, 0.0F, -0.25F * (ending - middle));
     }
 
-    /**
-     * Third person: the attacking arm thrusts forward from the held-item pose, replacing vanilla
-     * 1.21.1's sideways chop (which setupAnim already applied, so the arm is reset first).
-     */
+    public static float extension(float attack) {
+        if (attack <= 0.0F || attack >= 1.0F) return 0.0F;
+        float starting = inOutSine(progress(attack, 0.0F, 0.05F));
+        float ending = inOutExpo(progress(attack, 0.4F, 1.0F));
+        return Mth.clamp(starting - ending, 0.0F, 1.0F);
+    }
+
     public static void thirdPersonArm(ModelPart arm, ModelPart body, float attackTime) {
         if (attackTime <= 0.0F) return;
         float prepare = inOutSine(progress(attackTime, 0.0F, 0.05F));

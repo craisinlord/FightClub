@@ -18,7 +18,6 @@ public final class CombatPlatform {
         if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) PacketDistributor.sendToPlayer(serverPlayer, payload);
     }
 
-    /** Sends to every player tracking this one (excludes the player itself). */
     public static void sendPoseToTracking(Player player, CombatPosePayload payload) {
         PacketDistributor.sendToPlayersTrackingEntity(player, payload);
     }

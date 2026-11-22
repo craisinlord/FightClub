@@ -1,6 +1,0 @@
-{
-  "parent": "fight_club:item/spear_in_hand",
-  "textures": {
-    "layer0": "fight_club:item/alexscaves/scarlet_neodymium/scarlet_neodymium_spear_in_hand"
-  }
-}

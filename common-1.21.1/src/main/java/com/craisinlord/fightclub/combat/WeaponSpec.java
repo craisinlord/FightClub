@@ -35,18 +35,16 @@ public record WeaponSpec(
         int spinCooldownTicks,
         float hitStreakSpeedBonus,
         int hitStreakMaxStacks,
-        int hitStreakWindowTicks
+        int hitStreakWindowTicks,
+        float throwDamage
 ) {
-    /** Daggers: how far a charged pounce can reach, and the half-angle of its aiming cone. */
     public static final float DEFAULT_POUNCE_RANGE = 6.0f;
     public static final float DEFAULT_POUNCE_ANGLE = 30.0f;
-    /** Longswords: radius of the charged right-click spin, and the item cooldown after it. */
     public static final float DEFAULT_SPIN_RADIUS = 3.0f;
     public static final int DEFAULT_SPIN_COOLDOWN = 60;
-    /** Mace: hit streak attack speed bonus per hit, stack cap, and how long a streak survives a full cooldown. */
     public static final int DEFAULT_HIT_STREAK_WINDOW = 30;
-    /** Shields: ticks before the next bash after one that hits something (a whiff only waits recovery_ticks). */
     public static final int DEFAULT_BASH_HIT_COOLDOWN = 60;
+    public static final float DEFAULT_THROW_DAMAGE_MULTIPLIER = 2.0f;
 
     public enum AttackStyle { SWEEP, THRUST, IMPACT, SINGLE_TARGET }
 
@@ -95,6 +93,8 @@ public record WeaponSpec(
                 ? integer(id, json, "hit_streak_max_stacks", 0, 64) : 0;
         int streakWindow = json.has("hit_streak_window_ticks")
                 ? integer(id, json, "hit_streak_window_ticks", 0, 20 * 60) : DEFAULT_HIT_STREAK_WINDOW;
+        float throwDamage = json.has("throw_damage")
+                ? number(id, json, "throw_damage", 0.0f, 1000.0f) : attackDamage * DEFAULT_THROW_DAMAGE_MULTIPLIER;
         int bashHitCooldown = json.has("bash_hit_cooldown_ticks")
                 ? integer(id, json, "bash_hit_cooldown_ticks", 0, 20 * 60) : DEFAULT_BASH_HIT_COOLDOWN;
 
@@ -108,10 +108,9 @@ public record WeaponSpec(
                 sweepAngle, thrustWidth, penetration, criticalHits, offhandMultiplier, chargeTicks, throwChargeTicks,
                 chargeDamage, chargeKnockback, recoveryTicks, blocking, blockingAngle,
                 blockingMultiplier, throwing, throwVelocity, throwRange, pounceRange, pounceAngle,
-                bashHitCooldown, spinRadius, spinCooldown, streakBonus, streakStacks, streakWindow);
+                bashHitCooldown, spinRadius, spinCooldown, streakBonus, streakStacks, streakWindow, throwDamage);
     }
 
-    /** The spec in the same format {@link #fromJson} reads (the format of the weapon spec files). */
     public JsonObject toJson() {
         JsonObject json = new JsonObject();
         json.addProperty("weapon", weapon);
@@ -145,6 +144,7 @@ public record WeaponSpec(
         json.addProperty("hit_streak_speed_bonus", hitStreakSpeedBonus);
         json.addProperty("hit_streak_max_stacks", hitStreakMaxStacks);
         json.addProperty("hit_streak_window_ticks", hitStreakWindowTicks);
+        json.addProperty("throw_damage", throwDamage);
         return json;
     }
 

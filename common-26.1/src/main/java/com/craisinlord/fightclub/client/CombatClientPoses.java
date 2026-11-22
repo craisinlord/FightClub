@@ -21,22 +21,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Client-side animation state for every visible player: the held pose and its blend, plus a few
- * one-shot effects (sword block recoil, shield bash, longsword spin). Everything advances
- * once per tick and is interpolated by partial tick when rendering. Ported from 1.21.1.
- */
 public final class CombatClientPoses {
     private static final Map<Integer, Track> TRACKS = new HashMap<>();
     private static final Set<Integer> REMOTE_CHARGING = new HashSet<>();
-    /** Game time each remote player's charge started (for the dagger ready cue). */
     private static final Map<Integer, Long> REMOTE_CHARGE_START = new HashMap<>();
-    /** Reused every tick (client thread only) instead of allocating a new set. */
     private static final Set<Integer> TICK_IDS = new HashSet<>();
 
     private CombatClientPoses() {}
 
-    /** Called from the loaders' pose packet handlers on the client thread. */
     public static void handlePacket(CombatPosePayload payload) {
         switch (payload.state()) {
             case CombatPosePayload.CHARGE_START -> {
@@ -47,7 +39,6 @@ public final class CombatClientPoses {
             case CombatPosePayload.CHARGE_END -> {
                 REMOTE_CHARGING.remove(payload.entityId());
                 REMOTE_CHARGE_START.remove(payload.entityId());
-                // Sent to ourselves when the server ended a running charge: stop our own charge too.
                 Minecraft client = Minecraft.getInstance();
                 if (client.player != null && client.player.getId() == payload.entityId()) CombatInputClient.serverEndedCharge();
             }
@@ -61,12 +52,10 @@ public final class CombatClientPoses {
         }
     }
 
-    /** Starts the local shield-bash shove (the server decides what it actually hits). */
     public static void playBash(Player player) {
         TRACKS.computeIfAbsent(player.getId(), id -> new Track()).bashTicks = 0.001F;
     }
 
-    /** True while this player holds a hold-left-click charge (ours from input, others' from the server). */
     public static boolean isCharging(Player player) {
         Minecraft client = Minecraft.getInstance();
         return player == client.player ? CombatInputClient.isCharging() : REMOTE_CHARGING.contains(player.getId());
@@ -84,7 +73,6 @@ public final class CombatClientPoses {
             clear();
             return;
         }
-        // Every loaded player, so vanilla-synced states (blocking, mace wind-up) show for others too.
         Set<Integer> ids = TICK_IDS;
         ids.clear();
         ids.addAll(TRACKS.keySet());
@@ -109,31 +97,36 @@ public final class CombatClientPoses {
         }
     }
 
-    /** Ticks after a longsword swing starts within which the next swing is the return cut. */
     private static final long BACKHAND_WINDOW_TICKS = 30;
     private static final Map<Integer, SwingSide> SWING_SIDES = new HashMap<>();
 
     private static final class SwingSide {
         boolean wasSwinging, backhand;
         long lastStart = Long.MIN_VALUE / 2;
+        int duration = 1;
     }
 
-    /**
-     * Longsword swings alternate: right to left, then the return cut left to right, and so on; a pause
-     * of over 1.5 s starts again from the right. Every client works this out from the synced swing, so
-     * all players see the same side.
-     */
+    public static final float THIRD_PERSON_SWING_STRETCH = 1.5F;
+
     private static void tickSwingSide(Player player, long now) {
         SwingSide side = SWING_SIDES.computeIfAbsent(player.getId(), id -> new SwingSide());
         boolean swinging = player.swinging && player.swingingArm == net.minecraft.world.InteractionHand.MAIN_HAND;
         if (swinging && !side.wasSwinging && WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD) {
             side.backhand = now - side.lastStart <= BACKHAND_WINDOW_TICKS && !side.backhand;
             side.lastStart = now;
+            side.duration = Math.max(1, ((com.craisinlord.fightclub.mixin.LivingEntityAccessor) player).fightClub$getCurrentSwingDuration());
         }
         side.wasSwinging = swinging;
     }
 
-    /** True while this player's current longsword swing is the left-to-right return cut. */
+    public static float thirdPersonSwing(Player player, float partialTick) {
+        SwingSide side = SWING_SIDES.get(player.getId());
+        Minecraft client = Minecraft.getInstance();
+        if (side == null || client.level == null) return 0.0F;
+        float t = (client.level.getGameTime() - side.lastStart + partialTick) / (side.duration * THIRD_PERSON_SWING_STRETCH);
+        return t > 0.0F && t < 1.0F ? t : 0.0F;
+    }
+
     public static boolean backhand(Player player) {
         SwingSide side = SWING_SIDES.get(player.getId());
         return side != null && side.backhand;
@@ -148,7 +141,6 @@ public final class CombatClientPoses {
         if (charging) {
             if (kind == WeaponKind.DAGGER) return CombatPose.DAGGER_CHARGE;
             if (kind == WeaponKind.TRIDENT) return CombatPose.TRIDENT_LOWERED;
-            // Vanilla 26.x spears charge with vanilla's own SPEAR use animation (first and third person).
             if (kind == WeaponKind.SPEAR) return CombatPose.NONE;
         }
         if (player.isUsingItem() && player.getUseItem() == main) {
@@ -159,10 +151,8 @@ public final class CombatClientPoses {
         return CombatPose.NONE;
     }
 
-    /** Ticks a dagger shakes after its charge fills (the "ready" cue). */
     private static final float READY_FLASH_TICKS = 6.0F;
 
-    /** Ticks this player's charge has been held, or -1 when not charging (remote: since CHARGE_START arrived). */
     private static float chargeHeld(Minecraft client, Player player) {
         if (player == client.player) return CombatInputClient.chargeHeldTicks(client, 0.0F);
         Long start = REMOTE_CHARGE_START.get(player.getId());
@@ -170,18 +160,12 @@ public final class CombatClientPoses {
         return client.level.getGameTime() - start;
     }
 
-    /**
-     * 1 the moment this player's dagger charge fills, fading to 0 over a few ticks: drives the ready
-     * shake on the dagger in first and third person. Works for everyone, since every client times
-     * remote charges from the synced CHARGE_START.
-     */
     public static float readyFlash(Player player, float partialTick) {
         Track track = TRACKS.get(player.getId());
         if (track == null || track.readyTicks <= 0.0F) return 0.0F;
         return 1.0F - Mth.clamp((track.readyTicks + partialTick) / READY_FLASH_TICKS, 0.0F, 1.0F);
     }
 
-    /** Animation state to draw for this player this frame, or null when nothing is active. */
     public static View view(Player player, float partialTick) {
         Track track = TRACKS.get(player.getId());
         if (track == null) return null;
@@ -195,7 +179,6 @@ public final class CombatClientPoses {
         return new View(track.shown, held, recoil, bash, spin);
     }
 
-    /** One-shot curve: fast push out (first 30%), then a soft settle back. */
     static float punch(float t) {
         if (t <= 0.0F || t >= 1.0F) return 0.0F;
         if (t < 0.3F) {
@@ -210,25 +193,16 @@ public final class CombatClientPoses {
         return punch((ticks + partialTick) / CombatPoseConfig.get(pose).blendIn());
     }
 
-    /** Plays a sound at a player for this client only (each client plays its own copy). */
     static void play(Player player, SoundEvent sound) {
         player.level().playLocalSound(player.getX(), player.getY(), player.getZ(), sound,
                 SoundSource.PLAYERS, 1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F, false);
     }
 
-    /** Smoothstep: soft start and soft landing, so poses settle instead of snapping. */
     static float smooth(float t) {
         t = Mth.clamp(t, 0.0F, 1.0F);
         return t * t * (3.0F - 2.0F * t);
     }
 
-    /**
-     * @param pose   held pose being shown (may be NONE while only effects play)
-     * @param amount held pose blend, 0..1, eased
-     * @param recoil block recoil curve value, 0..1
-     * @param bash   shield bash curve value, 0..1
-     * @param spin   longsword spin progress, 0..1 (linear; 0 when no spin plays)
-     */
     public record View(CombatPose pose, float amount, float recoil, float bash, float spin) {}
 
     private static final class Track {
@@ -239,11 +213,9 @@ public final class CombatClientPoses {
         float spinTicks;
         int lastHurtTime;
         boolean wasSwinging;
-        /** Ticks since this player's dagger charge filled (0 = no cue running). */
         float readyTicks;
         boolean readyFired;
 
-        /** The moment a dagger charge fills: a ting (each client plays its own copy) and the ready shake. */
         void readyCue(Player player, float held) {
             if (readyTicks > 0.0F) readyTicks = readyTicks + 1.0F >= READY_FLASH_TICKS ? 0.0F : readyTicks + 1.0F;
             ItemStack main = player.getMainHandItem();
@@ -258,7 +230,6 @@ public final class CombatClientPoses {
             }
         }
 
-        /** Swing whooshes (Better Combat plays its own), heard by everyone nearby. */
         void sounds(Player player) {
             boolean swinging = player.swinging && player.swingingArm == InteractionHand.MAIN_HAND;
             if (swinging && !wasSwinging && !BetterCombatCompat.isLoaded() && CombatConfig.enabled(CombatConfig.SWING_SOUNDS)) {
@@ -283,12 +254,10 @@ public final class CombatClientPoses {
                 }
                 blend = Math.min(1.0F, blend + 1.0F / CombatPoseConfig.get(shown).blendIn());
             } else if (shown != CombatPose.NONE) {
-                // Blend out (also when switching poses: fully leave the old one first).
                 blend = Math.max(0.0F, blend - 1.0F / CombatPoseConfig.get(shown).blendOut());
                 if (blend <= 0.0F) shown = CombatPose.NONE;
             }
 
-            // Recoil when a hit lands during a sword block (hurtTime jumps back up on each hit).
             if (shown == CombatPose.SWORD_BLOCK && player.hurtTime > lastHurtTime && player.hurtTime > 0) {
                 recoilTicks = 0.001F;
             }

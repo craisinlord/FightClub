@@ -10,26 +10,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * config/fight_club.toml. Every mechanic can be switched off; the file is rewritten on load
- * with any missing options (keeping existing values) and re-read on /reload.
- *
- * <p>[gameplay] and [vanilla] are server settings: the server's values are synced to clients so
- * tooltips and input match the server. [client] is per-player and never synced. Weapon numbers
- * (damage, reach, ...) are not here: they live in the weapon datapack files.
- *
- * <p>Deliberately dependency-free (a tiny TOML subset: [sections], key = true/false/number, #
- * comments), because Fabric doesn't ship a config library.
- */
 public final class CombatConfig {
     private record Option(String section, String key, String comment, Object defaultValue, boolean synced, boolean restart) {}
 
     private static final Map<String, Option> OPTIONS = new LinkedHashMap<>();
-    // Read from the render and server threads while /reload may be writing it.
     private static final Map<String, Object> VALUES = new java.util.concurrent.ConcurrentHashMap<>();
     private static Path file;
 
-    // Gameplay (server, synced)
     public static final String SWORD_BLOCKING = gameplay("sword_blocking", true, "Right-click with a sword to block frontal attacks.");
     public static final String SHIELD_BASH = gameplay("shield_bash", true, "Press attack while blocking with a shield to bash enemies back.");
     public static final String NARROW_SHIELD = gameplay("narrow_shield_angle", true, "Shields only block within their blocking angle (weapons/base/shield.json) instead of vanilla's 180 degrees.");
@@ -44,10 +31,10 @@ public final class CombatConfig {
     public static final String RECOVERY = gameplay("recovery", true, "Special attacks (charged hits, throws, smashes) have a short recovery before the weapon can be used again.");
     public static final String LONGSWORD_SPIN = gameplay("longsword_spin", true, "Hold right-click with a longsword to charge a spin attack that hits everything around you.");
     public static final String MACE_HIT_STREAK = gameplay("mace_hit_streak", true, "Consecutive mace hits stack an attack speed bonus (weapons/base/mace.json); a miss or a pause ends the streak.");
-    // Vanilla changes (server, synced)
+    public static final String ZOMBIE_LONGSWORDS = gameplay("zombie_longswords", true, "Some zombies, husks and zombie villagers spawn holding a longsword.");
+    public static final String SKELETON_KNIVES = gameplay("skeleton_knives", true, "Some skeletons, strays and bogged spawn with a Loyalty dagger they throw. Off also stops existing ones from throwing.");
     public static final String NO_ANVIL_LIMIT = option("vanilla", "remove_anvil_limit", true, true, false, "Remove the anvil's \"Too Expensive!\" limit. XP costs still rise as in vanilla.");
     public static final String POTION_STACK = option("vanilla", "potion_stack_size", 16, false, true, "Stack size for potions, splash potions and lingering potions (1 = vanilla). Needs a restart.");
-    // Client (per player)
     public static final String ANIMATIONS = option("client", "animations", true, false, false, "Fight Club's weapon poses and attack animations (first and third person).");
     public static final String SWING_SOUNDS = option("client", "swing_sounds", true, false, false, "Swing whooshes for daggers, spears, tridents and longswords (off with Better Combat, which has its own).");
     public static final String CHARGE_INDICATOR = option("client", "charge_indicator", true, false, false, "Show charge progress on the attack indicator while holding a charge.");
@@ -74,7 +61,6 @@ public final class CombatConfig {
         return VALUES.get(key) instanceof Number value ? value.intValue() : ((Number) OPTIONS.get(key).defaultValue()).intValue();
     }
 
-    /** Loads (or creates) the config file. Called at mod init and on /reload. */
     public static synchronized void load(Path configDir) {
         file = configDir.resolve("fight_club.toml");
         Map<String, String> raw = new HashMap<>();
@@ -102,7 +88,6 @@ public final class CombatConfig {
         save();
     }
 
-    /** Re-reads the file if it was loaded before (on /reload). */
     public static void reload() {
         if (file != null) load(file.getParent());
     }
@@ -144,14 +129,12 @@ public final class CombatConfig {
         }
     }
 
-    /** Server settings to send to clients. */
     public static Map<String, String> syncedValues() {
         Map<String, String> synced = new HashMap<>();
         OPTIONS.values().stream().filter(Option::synced).forEach(option -> synced.put(option.key(), String.valueOf(VALUES.get(option.key()))));
         return synced;
     }
 
-    /** Client side: applies the server's settings (client options are left alone). */
     public static void applySynced(Map<String, String> values) {
         values.forEach((key, value) -> {
             Option option = OPTIONS.get(key);

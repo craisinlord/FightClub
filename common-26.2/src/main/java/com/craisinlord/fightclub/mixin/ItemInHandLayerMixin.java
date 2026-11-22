@@ -16,14 +16,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Third-person spear throw wind-up: the arm is raised overhead, which leaves the normal grip
- * pointing the tip backward. Vanilla swaps the trident to a separate "throwing" model for this;
- * we spin the spear's model 180 degrees in its own plane instead, so the tip leads.
- *
- * <p>Only the right-click throw uses the THROW_TRIDENT arm pose; a left-click spear charge shows
- * vanilla's SPEAR pose (see AvatarRendererArmPoseMixin), so it is never flipped.
- */
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin {
     private static final String SUBMIT = "Lnet/minecraft/client/renderer/item/ItemStackRenderState;submit(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;III)V";
@@ -31,16 +23,22 @@ public abstract class ItemInHandLayerMixin {
     @Inject(method = "submitArmWithItem", at = @At(value = "INVOKE", target = SUBMIT))
     private void fightClub$beforeItem(ArmedEntityRenderState state, ItemStackRenderState item, ItemStack stack, HumanoidArm arm,
                                       PoseStack poseStack, SubmitNodeCollector collector, int light, CallbackInfo ci) {
-        // Held poses and the longsword swing / spin can turn the item in the hand: roll twists it
-        // around the arm's length (the 1.8-style sword block holds the blade flat across the body).
-        org.joml.Vector3f turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemRotation(state, arm);
+        com.craisinlord.fightclub.client.CombatThirdPerson.ItemTurn turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemTurn(state, arm);
         if (turn != null) {
-            poseStack.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(turn.z()));
-            poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(turn.x()));
-            poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(turn.y()));
+            if (turn.atFist()) poseStack.rotateAround(turn.rotation(), 0.0F, com.craisinlord.fightclub.client.CombatThirdPerson.FIST_PIVOT, 0.0F);
+            else poseStack.mulPose(turn.rotation());
         }
-        if (WeaponKind.of(stack) != WeaponKind.SPEAR || !CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
+        if (!CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
         HumanoidModel.ArmPose pose = arm == HumanoidArm.RIGHT ? state.rightArmPose : state.leftArmPose;
+        WeaponKind kind = WeaponKind.of(stack);
+        if (kind == WeaponKind.DAGGER && pose == HumanoidModel.ArmPose.THROW_TRIDENT) {
+            com.craisinlord.fightclub.client.CombatPoseConfig.Pose flip =
+                    com.craisinlord.fightclub.client.CombatPoseConfig.get(com.craisinlord.fightclub.client.CombatPose.DAGGER_THROW_FLIP);
+            float spin = com.craisinlord.fightclub.client.CombatPoseConfig.flip(flip, state.ticksUsingItem(arm) / flip.blendIn());
+            if (spin != 0.0F) CombatModels.setModelSpin(spin);
+            return;
+        }
+        if (kind != WeaponKind.SPEAR) return;
         if (pose == HumanoidModel.ArmPose.THROW_TRIDENT) CombatModels.setModelSpin(180.0F);
     }
 

@@ -16,11 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.BiConsumer;
 
-/**
- * Adds weapon-spec attribute modifiers wherever the game iterates an item's modifiers: equipping
- * (forEachModifier by slot) and tooltips (by slot group). Both loaders end these methods the same
- * way, even though NeoForge rewrites their start.
- */
 @Mixin(ItemStack.class)
 public abstract class ItemStackModifiersMixin {
     @Inject(method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlotGroup;Lorg/apache/commons/lang3/function/TriConsumer;)V", at = @At("TAIL"))

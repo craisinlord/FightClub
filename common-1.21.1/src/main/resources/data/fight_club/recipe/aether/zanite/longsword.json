@@ -1,0 +1,35 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "aether"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "aether"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "M",
+    "M",
+    "S"
+  ],
+  "key": {
+    "M": {
+      "tag": "aether:gems/zanite"
+    },
+    "S": {
+      "tag": "aether:skyroot_stick"
+    }
+  },
+  "result": {
+    "id": "fight_club:aether/zanite/longsword",
+    "count": 1
+  }
+}

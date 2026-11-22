@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Uses the in-hand model for held and thrown weapons, keeping the icon in GUIs, on the ground and in frames. */
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererModelMixin {
     @ModifyVariable(method = "render", at = @At("HEAD"), argsOnly = true)
@@ -30,15 +29,17 @@ public abstract class ItemRendererModelMixin {
         return inHand != null ? inHand : model;
     }
 
-    /**
-     * Right after the display transform and before the model is shifted by -0.5 to center it: the
-     * origin here is the model's center, so a Z rotation spins it in its own plane (see
-     * {@link CombatModels#setModelSpin}).
-     */
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V", ordinal = 0))
     private void fightClub$modelSpin(ItemStack stack, ItemDisplayContext context, boolean leftHand, PoseStack poseStack,
                                      MultiBufferSource buffer, int light, int overlay, BakedModel model, CallbackInfo ci) {
+        float roll = CombatModels.modelRoll();
+        if (roll != 0.0F) {
+            float px = CombatModels.rollPivotX(), pz = CombatModels.rollPivotZ();
+            poseStack.translate(px, 0.0F, pz);
+            poseStack.mulPose(Axis.YP.rotationDegrees(roll));
+            poseStack.translate(-px, 0.0F, -pz);
+        }
         float spin = CombatModels.modelSpin();
         if (spin != 0.0F) poseStack.mulPose(Axis.ZP.rotationDegrees(spin));
     }

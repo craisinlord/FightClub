@@ -24,20 +24,16 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/**
- * Client-only entrypoint. Mod-bus listeners go on the mod bus and game-bus listeners on
- * NeoForge.EVENT_BUS; the old @EventBusSubscriber put a game-bus tick listener on the mod bus.
- */
 @Mod(value = FightClub.MOD_ID, dist = Dist.CLIENT)
 public final class FightClubNeoForgeClient {
     public FightClubNeoForgeClient(IEventBus modBus) {
         modBus.addListener(FightClubNeoForgeClient::registerRenderers);
         modBus.addListener(FightClubNeoForgeClient::registerReloadListeners);
+        modBus.addListener((net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent event) -> event.registerSpriteSet(
+                com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP, com.craisinlord.fightclub.client.LongswordSweepParticle.Provider::new));
         NeoForge.EVENT_BUS.addListener(FightClubNeoForgeClient::onClientTick);
-        // Drop a server's settings when leaving it, so they don't carry into singleplayer.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut event) ->
                 com.craisinlord.fightclub.CombatConfig.reload());
-        // In-hand models (longsword, spear, 3D dagger) aren't referenced by any item, so load them explicitly.
         modBus.addListener((net.neoforged.neoforge.client.event.ModelEvent.RegisterAdditional event) ->
                 com.craisinlord.fightclub.client.CombatModels.inHandModelIds().forEach(id ->
                         event.register(net.minecraft.client.resources.model.ModelResourceLocation.standalone(id))));

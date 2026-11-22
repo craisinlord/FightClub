@@ -33,17 +33,50 @@ public final class CombatWeapons {
     }
 
     public static boolean isCombatWeapon(Item item) {
-        return item instanceof CombatWeaponItem || backportSpearMaterial(item) != null;
+        return weapon(item) != null;
     }
 
     public static String weapon(Item item) {
         if (item instanceof CombatWeaponItem weapon) return weapon.combatWeapon();
-        return backportSpearMaterial(item) != null ? "spear" : null;
+        if (backportSpearMaterial(item) != null) return "spear";
+        ExternalWeapons.Entry external = ExternalWeapons.get(item);
+        return external == null || external.weapon().equals("shield") ? null : external.weapon();
     }
 
     public static String material(Item item) {
         if (item instanceof CombatWeaponItem weapon) return weapon.combatMaterial();
-        return backportSpearMaterial(item);
+        String backport = backportSpearMaterial(item);
+        if (backport != null) return backport;
+        ExternalWeapons.Entry external = ExternalWeapons.get(item);
+        return external == null ? null : external.material();
+    }
+
+    public static ExternalWeapons.Entry external(Item item) {
+        if (item instanceof CombatWeaponItem || backportSpearMaterial(item) != null) return null;
+        ExternalWeapons.Entry external = ExternalWeapons.get(item);
+        return external == null || external.weapon().equals("shield") ? null : external;
+    }
+
+    public static boolean usesSpecStats(Item item) {
+        if (item instanceof CombatWeaponItem || backportSpearMaterial(item) != null) return true;
+        ExternalWeapons.Entry external = ExternalWeapons.get(item);
+        return external != null && external.specStats();
+    }
+
+    public static boolean isShield(ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        if (stack.is(net.minecraft.world.item.Items.SHIELD)) return true;
+        ExternalWeapons.Entry external = ExternalWeapons.get(stack.getItem());
+        return external != null && external.weapon().equals("shield");
+    }
+
+    public static WeaponSpec shieldSpec(ItemStack stack) {
+        ExternalWeapons.Entry external = stack.isEmpty() ? null : ExternalWeapons.get(stack.getItem());
+        if (external != null && external.weapon().equals("shield")) {
+            WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(external.material(), "shield");
+            if (spec != null) return spec;
+        }
+        return WeaponSpecs.getOrLoadBuiltin("base", "shield");
     }
 
     public static boolean is(Item item, String weapon) {

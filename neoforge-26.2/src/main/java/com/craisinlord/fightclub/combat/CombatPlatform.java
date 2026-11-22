@@ -23,7 +23,6 @@ public final class CombatPlatform {
         if (player instanceof ServerPlayer serverPlayer) PacketDistributor.sendToPlayer(serverPlayer, payload);
     }
 
-    /** Sends to every player tracking this one (not the player itself, whose client already knows). */
     public static void sendPoseToTracking(Player player, CombatPosePayload payload) {
         if (player instanceof ServerPlayer) PacketDistributor.sendToPlayersTrackingEntity(player, payload);
     }

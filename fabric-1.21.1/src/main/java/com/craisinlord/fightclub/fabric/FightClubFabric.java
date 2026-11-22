@@ -39,6 +39,8 @@ public final class FightClubFabric implements ModInitializer {
         SPEAR_PROJECTILE = Registry.register(BuiltInRegistries.ENTITY_TYPE, spearId, EntityType.Builder.<SpearProjectile>of(SpearProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).build("spear_projectile"));
         com.craisinlord.fightclub.combat.CombatSounds.ALL.forEach((path, sound) ->
                 Registry.register(BuiltInRegistries.SOUND_EVENT, sound.getLocation(), sound));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE, com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP_ID,
+                com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP);
         List<Item> combatItems = new ArrayList<>();
         for (String material : MATERIALS) for (String weapon : WEAPONS) {
             if (!com.craisinlord.fightclub.combat.CombatWeapons.registersOwn(material, weapon)) continue;
@@ -47,17 +49,15 @@ public final class FightClubFabric implements ModInitializer {
                     new CombatWeaponItem(material, weapon, tier(material)));
             combatItems.add(item);
         }
-        // Optional materials from other mods (Ice and Fire, Antarchy, ...), only when the mod is present.
         for (CompatMaterial compat : CompatMaterial.values()) {
             if (!compat.isActive(CombatPlatform::isModLoaded)) continue;
             for (String weapon : CompatMaterial.WEAPONS) {
                 combatItems.add(Registry.register(BuiltInRegistries.ITEM,
                         ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, compat.itemPath(weapon)),
-                        new CombatWeaponItem(compat.material, weapon, compat)));
+                        new CombatWeaponItem(compat.material, weapon, compat, com.craisinlord.fightclub.compat.CompatAbilities.properties(compat))));
             }
             FightClub.LOGGER.info("Fight Club: enabled {} weapons", compat.material);
         }
-        // Vanilla tab order: grouped by weapon (all longswords, then spears, then daggers), material order within.
         combatItems.sort(java.util.Comparator.comparingInt(item -> CompatMaterial.WEAPONS.indexOf(((CombatWeaponItem) item).combatWeapon())));
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT)
                 .register(entries -> combatItems.forEach(entries::accept));
@@ -67,7 +67,6 @@ public final class FightClubFabric implements ModInitializer {
                         .icon(() -> new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "diamond_dagger"))))
                         .displayItems((parameters, output) -> combatItems.forEach(output::accept))
                         .build());
-        // Potion stack size from the config (16 by default, design doc; 1 = vanilla). Read once at startup.
         net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents.MODIFY.register(context -> {
             int size = com.craisinlord.fightclub.combat.CombatDefaults.potionStackSize();
             if (size > 1) com.craisinlord.fightclub.combat.CombatDefaults.POTIONS.forEach(potion -> context.modify(potion, builder ->

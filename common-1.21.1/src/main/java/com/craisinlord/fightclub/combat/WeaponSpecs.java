@@ -12,7 +12,6 @@ public final class WeaponSpecs {
 
     private WeaponSpecs() {}
 
-    /** Source JSON of the server's loaded specs, sent to clients so tooltips and timing match the server. */
     private static final AtomicReference<Map<String, String>> RAW_JSON = new AtomicReference<>(Map.of());
 
     public static void replace(Map<String, WeaponSpec> specs) {
@@ -28,7 +27,6 @@ public final class WeaponSpecs {
         return RAW_JSON.get();
     }
 
-    /** Client side: applies the specs the server sent. Invalid entries are skipped. */
     public static void applySynced(Map<String, String> rawJson) {
         Map<String, WeaponSpec> parsed = new java.util.HashMap<>();
         rawJson.forEach((key, json) -> {
@@ -42,27 +40,26 @@ public final class WeaponSpecs {
         if (!parsed.isEmpty()) replace(parsed, rawJson);
     }
 
-    public static WeaponSpec get(String material, String weapon) {
-        return VALUES.get().get(material + "/" + weapon);
+    private static final AtomicReference<Map<String, WeaponSpec>> MAPPED = new AtomicReference<>(Map.of());
+
+    public static void replaceMapped(Map<String, WeaponSpec> specs) {
+        MAPPED.set(Map.copyOf(specs));
     }
 
-    /**
-     * Specs other mods registered in code (FightClubApi.registerDefaultSpec). They exist on both
-     * sides from mod init, so they need no syncing; datapack files with the same key win over them.
-     */
+    public static WeaponSpec get(String material, String weapon) {
+        String key = material + "/" + weapon;
+        WeaponSpec spec = VALUES.get().get(key);
+        return spec != null ? spec : MAPPED.get().get(key);
+    }
+
     private static final Map<String, WeaponSpec> DEFAULTS = new java.util.concurrent.ConcurrentHashMap<>();
 
     public static void registerDefault(WeaponSpec spec) {
         DEFAULTS.put(spec.material() + "/" + spec.weapon(), spec);
     }
 
-    /** Keys with no bundled file, so repeated lookups (some run every frame) don't re-scan the jar. */
     private static final java.util.Set<String> MISSING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-    /**
-     * The loaded spec, falling back to the file bundled in the mod (before datapacks load, and on
-     * clients that haven't received the server's specs yet). Returns null if neither exists.
-     */
     public static WeaponSpec getOrLoadBuiltin(String material, String weapon) {
         WeaponSpec loaded = get(material, weapon);
         if (loaded != null) return loaded;

@@ -8,7 +8,6 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 public final class FightClubNeoForgeEvents {
     private static final ThreadLocal<Boolean> REDUCED_DAMAGE = ThreadLocal.withInitial(() -> false);
 
-    // Sword right-click blocking is started by ItemDefaultsMixin (shared by both loaders).
     @SubscribeEvent
     public void onCriticalHit(net.neoforged.neoforge.event.entity.player.CriticalHitEvent event) {
         if (CombatVanillaRules.suppressesCrits(event.getEntity())) event.setCriticalHit(false);
@@ -19,14 +18,12 @@ public final class FightClubNeoForgeEvents {
         if (CombatVanillaRules.blocksVanillaSweep(event.getEntity())) event.setSweeping(false);
     }
 
-    /** Sends the server's weapon specs on join (one player) and after /reload (everyone). */
     @SubscribeEvent
     public void onDatapackSync(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
         var payload = com.craisinlord.fightclub.combat.WeaponSpecSyncPayload.current();
         event.getRelevantPlayers().forEach(player -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload));
     }
 
-    /** Longsword offhand penalty follows the offhand live, not just at the moment of attacking. */
     @SubscribeEvent
     public void onPlayerTick(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post event) {
         if (event.getEntity().level().isClientSide) return;

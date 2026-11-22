@@ -26,11 +26,6 @@ public final class CombatRecovery {
         start(player, ticks, player.getMainHandItem().getItem());
     }
 
-    /**
-     * Starts recovery and mirrors it as a vanilla item cooldown on the weapon. Vanilla syncs that
-     * to the client, which draws the hotbar sweep and drives the lowered-weapon pose; it also
-     * blocks right-click use of the weapon until recovery ends.
-     */
     public static void start(Player player, int ticks, net.minecraft.world.item.Item weapon) {
         if (ticks <= 0 || !com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.RECOVERY)) return;
         END_TICKS.put(player.getUUID(), player.level().getGameTime() + ticks);

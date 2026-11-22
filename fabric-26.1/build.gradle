@@ -72,13 +72,5 @@ publishing {
             name = 'LocalMaven'
             url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
         }
-        maven {
-            name = 'Forgejo'
-            url = uri('https://maven.example.invalid/replace-me')
-            credentials {
-                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
-                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
-            }
-        }
     }
 }

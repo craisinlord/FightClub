@@ -1,0 +1,7 @@
+{
+  "values": [
+    {"id": "fight_club:mekanism/refined_glowstone/longsword", "required": false},
+    {"id": "fight_club:mekanism/refined_glowstone/spear", "required": false},
+    {"id": "fight_club:mekanism/refined_glowstone/dagger", "required": false}
+  ]
+}

@@ -25,7 +25,6 @@ base {
     archivesName = "${mod_id}-fabric-1.21.1"
 }
 
-// Handle duplicates from common module
 tasks.withType(AbstractCopyTask).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
@@ -35,7 +34,6 @@ java {
     withSourcesJar()
 }
 
-// Add common source sets directly
 sourceSets {
     main {
         java {
@@ -45,6 +43,16 @@ sourceSets {
             srcDir project(':common-1.21.1').sourceSets.main.resources.srcDirs
         }
     }
+    dev {
+        java {
+            srcDirs project(':common-1.21.1').file('src/dev/java')
+        }
+        resources {
+            srcDirs project(':common-1.21.1').file('src/dev/resources')
+        }
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
 }
 
 dependencies {
@@ -53,22 +61,15 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version_1_21_1}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version_1_21_1}"
 
-    // NeoForge brings this in transitively; common's @Nonnull/@Nullable usage needs it declared explicitly here.
     compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 
-    // Backs common's homegrown config framework (ConfigBase) - same library NeoForge's ModConfigSpec uses internally.
     implementation "com.electronwill.night-config:toml:3.8.3"
 
-    // Better Combat is an optional integration: compile-only for the compat layer, and present in
-    // dev runs so it can be tested. modLocalRuntime is never bundled or published.
     modCompileOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-fabric"
-    // Dev runs include Better Combat unless started with -Pdev_better_combat=false
-    // (useful for checking the mod's own attack animations, which BC replaces).
     if ((findProperty('dev_better_combat') ?: 'true').toString().toBoolean()) {
         modLocalRuntime "maven.modrinth:better-combat:${better_combat_version_1_21_1}-fabric"
         modLocalRuntime "maven.modrinth:playeranimator:${player_animator_version_1_21_1}-fabric"
         modLocalRuntime "maven.modrinth:cloth-config:${cloth_config_version_1_21_1}+fabric"
-        // Nested inside the Better Combat jar, but Loom dev runs don't load nested jars of dependencies.
         modLocalRuntime "maven.modrinth:tiny-config:${tiny_config_version_1_21_1}-fabric"
     }
 }
@@ -76,11 +77,15 @@ dependencies {
 loom {
     mixin.defaultRefmapName = "${mod_id}.mixins.refmap.json"
 
-    // Without this, Loom picks a random username per launch, which - since offline-mode player
-    // UUIDs are derived from the username - meant a different player UUID every dev run, so
-    // Matches NeoForge's ModDevGradle default of always logging in as "Dev".
-    // Client only: the dedicated server rejects --username and fails to start.
+    mods {
+        register(mod_id) {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.dev
+        }
+    }
+
     runConfigs.named("client") {
+        source sourceSets.dev
         programArgs.add("--username")
         programArgs.add("Dev")
     }
@@ -108,8 +113,6 @@ publishing {
             artifactId = project.base.archivesName.get()
             version = project.version
 
-            // Fabric Loom remaps the jar to obfuscated Minecraft names at runtime.
-            // remapJar is the distributable artifact; remapSourcesJar has the readable sources.
             artifact(project.tasks.named('remapJar'))
             artifact(project.tasks.named('remapSourcesJar')) {
                 classifier = 'sources'
@@ -125,14 +128,6 @@ publishing {
         maven {
             name = 'LocalMaven'
             url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
-        }
-        maven {
-            name = 'Forgejo'
-            url = uri('https://maven.example.invalid/replace-me')
-            credentials {
-                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
-                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
-            }
         }
     }
 }

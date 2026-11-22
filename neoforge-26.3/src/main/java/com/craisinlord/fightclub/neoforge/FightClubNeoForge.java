@@ -31,11 +31,15 @@ public final class FightClubNeoForge {
     private static final String[] WEAPONS = {"longsword", "dagger"};
 
     private static final DeferredRegister<net.minecraft.sounds.SoundEvent> SOUNDS = DeferredRegister.create(Registries.SOUND_EVENT, FightClub.MOD_ID);
+    private static final DeferredRegister<net.minecraft.core.particles.ParticleType<?>> PARTICLE_TYPES = DeferredRegister.create(Registries.PARTICLE_TYPE, FightClub.MOD_ID);
 
     public FightClubNeoForge(IEventBus modBus) {
         com.craisinlord.fightclub.CombatConfig.load(net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get());
         com.craisinlord.fightclub.combat.CombatSounds.ALL.forEach((path, sound) -> SOUNDS.register(path, () -> sound));
         SOUNDS.register(modBus);
+        PARTICLE_TYPES.register(com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP_ID.getPath(),
+                () -> com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP);
+        PARTICLE_TYPES.register(modBus);
         for (String material : MATERIALS) for (String weapon : WEAPONS) {
             Identifier id = Identifier.fromNamespaceAndPath(FightClub.MOD_ID, material + "_" + weapon);
             ITEMS.register(material + "_" + weapon, () -> new CombatWeaponItem(material, weapon, tier(material), ResourceKey.create(Registries.ITEM, id)));
@@ -69,9 +73,10 @@ public final class FightClubNeoForge {
                         CombatChargeState.handle(player, payload.action(), payload.target());
                     }
                 }))
-                // The client handler is registered by FightClubNeoForgeClient (RegisterClientPayloadHandlersEvent).
                 .playToClient(com.craisinlord.fightclub.combat.CombatPosePayload.TYPE,
-                        com.craisinlord.fightclub.combat.CombatPosePayload.STREAM_CODEC);
+                        com.craisinlord.fightclub.combat.CombatPosePayload.STREAM_CODEC)
+                .playToClient(com.craisinlord.fightclub.combat.WeaponItemsPayload.TYPE,
+                        com.craisinlord.fightclub.combat.WeaponItemsPayload.STREAM_CODEC);
     }
 
     private static ToolMaterial tier(String material) {

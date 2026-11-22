@@ -8,11 +8,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/**
- * While a hold-left-click charge is active, vanilla's attack indicator (crosshair or hotbar,
- * whichever the player chose in Options) shows charge progress instead of attack cooldown.
- * No new UI: it fills the same way, and at full charge it reads as "ready" like a full attack.
- */
 @Mixin(Gui.class)
 public abstract class GuiChargeIndicatorMixin {
     @Redirect(method = {"renderCrosshair", "renderItemHotbar"}, at = @At(value = "INVOKE",
@@ -22,12 +17,10 @@ public abstract class GuiChargeIndicatorMixin {
                 && com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.CHARGE_INDICATOR)) {
             return CombatInputClient.chargeProgress(Minecraft.getInstance(), 0.0F);
         }
-        // Longsword spin charge (hold right-click).
         if (com.craisinlord.fightclub.client.LongswordSpinClient.isCharging(player)
                 && com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.CHARGE_INDICATOR)) {
             return com.craisinlord.fightclub.client.LongswordSpinClient.progress(Minecraft.getInstance(), 0.0F);
         }
-        // Shield raised after a bash: the indicator refills as the bash comes off cooldown.
         if (com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.CHARGE_INDICATOR)) {
             float bash = CombatInputClient.bashReadiness(Minecraft.getInstance());
             if (bash < 1.0F) return bash;

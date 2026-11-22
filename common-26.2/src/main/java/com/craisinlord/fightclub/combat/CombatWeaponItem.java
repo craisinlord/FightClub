@@ -33,7 +33,7 @@ public final class CombatWeaponItem extends Item {
 
     private static Item.Properties properties(String material, String weapon, ToolMaterial tier, ResourceKey<Item> id) {
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
-        float damage = spec == null ? 1.0f : spec.attackDamage() - tier.attackDamageBonus();
+        float damage = spec == null ? 0.0f : spec.attackDamage() - 1.0f - tier.attackDamageBonus();
         float speed = spec == null ? 0.0f : spec.attackSpeed() - 4.0f;
         Item.Properties properties = new Item.Properties().setId(id);
         if (weapon.equals("spear")) {
@@ -58,6 +58,10 @@ public final class CombatWeaponItem extends Item {
     public String combatMaterial() { return material; }
     public String combatWeapon() { return weapon; }
 
+    public boolean isPrimaryItemFor(ItemStack stack, net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> enchantment) {
+        return enchantment.value().isPrimaryItem(stack);
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, TooltipDisplay display,
                                 Consumer<Component> tooltip, TooltipFlag flag) {
@@ -65,26 +69,39 @@ public final class CombatWeaponItem extends Item {
         CombatTooltips.append(stack, tooltip);
     }
 
+    public static final int USE_DURATION = 72000;
+
     @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
+        InteractionResult result = use(material, weapon, player, hand);
+        return result != null ? result : InteractionResult.PASS;
+    }
+
+    public static InteractionResult use(String material, String weapon, Player player, InteractionHand hand) {
         if (CombatRecovery.active(player)) return InteractionResult.FAIL;
-        if (hand == InteractionHand.MAIN_HAND && player.getOffhandItem().is(net.minecraft.world.item.Items.SHIELD)) return InteractionResult.PASS;
+        if (hand == InteractionHand.MAIN_HAND && CombatWeapons.isShield(player.getOffhandItem())) return InteractionResult.PASS;
         if (weapon.equals("dagger") || weapon.equals("spear")) {
             player.startUsingItem(hand);
             return InteractionResult.CONSUME;
         }
-        // Longsword: hold to charge a spin (released in releaseUsing).
         if (weapon.equals("longsword") && hand == InteractionHand.MAIN_HAND && LongswordSpin.hasSpin(player.getItemInHand(hand))
                 && !LongswordSpin.onSpinCooldown(player)) {
             player.startUsingItem(hand);
             return InteractionResult.CONSUME;
         }
-        return InteractionResult.PASS;
+        return null;
+    }
+
+    public static boolean canThrow(String material, String weapon) {
+        if (!weapon.equals("dagger") && !weapon.equals("spear")) return false;
+        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
+        return spec != null && spec.throwing()
+                && com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.THROWING);
     }
 
     @Override
     public int getUseDuration(ItemStack stack, LivingEntity user) {
-        return weapon.equals("dagger") || weapon.equals("spear") || weapon.equals("longsword") ? 72000 : super.getUseDuration(stack, user);
+        return weapon.equals("dagger") || weapon.equals("spear") || weapon.equals("longsword") ? USE_DURATION : super.getUseDuration(stack, user);
     }
 
     @Override
@@ -95,19 +112,23 @@ public final class CombatWeaponItem extends Item {
 
     @Override
     public boolean releaseUsing(ItemStack stack, Level level, LivingEntity user, int timeLeft) {
+        return releaseUsing(material, weapon, stack, level, user, timeLeft);
+    }
+
+    public static boolean releaseUsing(String material, String weapon, ItemStack stack, Level level, LivingEntity user, int timeLeft) {
         if (level.isClientSide() || !(user instanceof Player player)) return false;
         if ((weapon.equals("dagger") || weapon.equals("spear")) && CombatChargeState.isLeftCharging(player)) {
             CombatChargeState.releaseLeft(player);
             return true;
         }
         if (weapon.equals("longsword")) {
-            LongswordSpin.release(player, stack, getUseDuration(stack, player) - timeLeft);
+            LongswordSpin.release(player, stack, USE_DURATION - timeLeft);
             return true;
         }
         if (CombatRecovery.active(player)) return false;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
         if (spec == null) return false;
-        int heldTicks = getUseDuration(stack, player) - timeLeft;
+        int heldTicks = USE_DURATION - timeLeft;
         if (spec.throwing() && (weapon.equals("spear") || weapon.equals("dagger"))) {
             if (heldTicks < spec.throwChargeTicks()) return false;
             ItemStack thrownStack = stack.copy();
@@ -126,7 +147,7 @@ public final class CombatWeaponItem extends Item {
         LivingEntity target = ThrustTargeting.find(player, null, spec).stream().findFirst().orElse(null);
         if (target == null) return false;
         player.attack(target);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - spec.attackDamage());
+        float bonus = Math.max(0.0f, spec.chargeDamage() - CombatChargeState.hitDamage(player, spec));
         if (bonus > 0.0f) target.hurtServer((net.minecraft.server.level.ServerLevel) level, player.damageSources().playerAttack(player), bonus);
         if (spec.chargeKnockback() > 0.0f) CombatPlatform.knockback(target, spec.chargeKnockback(), player.getX() - target.getX(), player.getZ() - target.getZ(), player);
         CombatRecovery.start(player, spec.recoveryTicks());
@@ -137,12 +158,22 @@ public final class CombatWeaponItem extends Item {
     public void hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (attacker instanceof Player player && CombatRecovery.active(player)) return;
         super.hurtEnemy(stack, target, attacker);
+        afterHit(material, weapon, target, attacker);
+    }
+
+    private static boolean piercing;
+
+    public static void afterHit(String material, String weapon, LivingEntity target, LivingEntity attacker) {
         if (!attacker.level().isClientSide() && attacker instanceof Player player) {
             WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
-            if (spec != null && spec.attackStyle() == WeaponSpec.AttackStyle.THRUST) {
-                for (LivingEntity pierced : ThrustTargeting.find(player, target, spec)) player.attack(pierced);
+            if (spec != null && spec.attackStyle() == WeaponSpec.AttackStyle.THRUST && !piercing) {
+                piercing = true;
+                try {
+                    for (LivingEntity pierced : ThrustTargeting.find(player, target, spec)) player.attack(pierced);
+                } finally {
+                    piercing = false;
+                }
             }
-            // A normal hit's short recovery must not replace the longer spin cooldown on the hotbar.
             if (spec != null && weapon.equals("longsword") && !LongswordSpin.onSpinCooldown(player)) CombatRecovery.start(player, spec.recoveryTicks());
         }
     }

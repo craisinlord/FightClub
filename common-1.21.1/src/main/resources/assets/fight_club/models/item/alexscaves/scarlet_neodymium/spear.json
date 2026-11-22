@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/handheld",
-  "textures": {
-    "layer0": "fight_club:item/alexscaves/scarlet_neodymium/scarlet_neodymium_spear"
-  }
-}

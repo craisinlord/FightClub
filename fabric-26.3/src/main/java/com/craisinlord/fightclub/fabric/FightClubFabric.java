@@ -32,6 +32,8 @@ public final class FightClubFabric implements ModInitializer {
         com.craisinlord.fightclub.CombatConfig.load(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir());
         com.craisinlord.fightclub.combat.CombatSounds.ALL.forEach((path, sound) ->
                 Registry.register(BuiltInRegistries.SOUND_EVENT, com.craisinlord.fightclub.combat.CombatSounds.id(path), sound));
+        Registry.register(BuiltInRegistries.PARTICLE_TYPE, com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP_ID,
+                com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP);
         Identifier daggerId = Identifier.fromNamespaceAndPath(FightClub.MOD_ID, "dagger_projectile");
         Identifier spearId = Identifier.fromNamespaceAndPath(FightClub.MOD_ID, "spear_projectile");
         DAGGER_PROJECTILE = Registry.register(BuiltInRegistries.ENTITY_TYPE, daggerId, EntityType.Builder.<DaggerProjectile>of(DaggerProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(4).build(ResourceKey.create(Registries.ENTITY_TYPE, daggerId)));

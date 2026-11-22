@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-/** Lets the spear/trident tap fire its held-back attack on release, through vanilla. */
 @Mixin(Minecraft.class)
 public interface MinecraftAccessor {
     @Invoker("startAttack")

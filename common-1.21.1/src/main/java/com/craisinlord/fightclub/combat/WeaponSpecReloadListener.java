@@ -23,7 +23,6 @@ public class WeaponSpecReloadListener extends SimpleJsonResourceReloadListener {
 
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> resources, ResourceManager manager, ProfilerFiller profiler) {
-        // Server data (re)load, at world start and on /reload: re-read the config file too.
         com.craisinlord.fightclub.CombatConfig.reload();
         Map<String, WeaponSpec> parsed = new HashMap<>();
         Map<String, String> raw = new HashMap<>();
@@ -36,8 +35,6 @@ public class WeaponSpecReloadListener extends SimpleJsonResourceReloadListener {
             }
             try {
                 WeaponSpec spec = WeaponSpec.fromJson(resourceId, entry.getValue().getAsJsonObject());
-                // The listener already strips ".json"; trimming again mangled keys
-                // ("iron/dagger" -> "iron/d") so datapack overrides never matched.
                 String weapon = parts[1].endsWith(".json") ? parts[1].substring(0, parts[1].length() - 5) : parts[1];
                 parsed.put(parts[0] + "/" + weapon, spec);
                 raw.put(parts[0] + "/" + weapon, entry.getValue().toString());
@@ -47,5 +44,6 @@ public class WeaponSpecReloadListener extends SimpleJsonResourceReloadListener {
         }
         WeaponSpecs.replace(parsed, raw);
         LOGGER.info("Loaded {} Fight Club weapon specifications", parsed.size());
+        ExternalWeapons.load(manager);
     }
 }

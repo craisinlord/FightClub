@@ -29,14 +29,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * First-person animation for Fight Club weapons. All values come from
- * {@code assets/fight_club/animations/poses.json} (reload with F3+T).
- *
- * <p>When nothing of ours is active, this returns immediately and vanilla, NeoForge's item hooks
- * and Better Combat render untouched. With Better Combat installed, attack swings are always
- * left to it; only our held poses and effects apply.
- */
 @Mixin(ItemInHandRenderer.class)
 public abstract class ItemInHandRendererMixin {
     @Shadow
@@ -65,7 +57,6 @@ public abstract class ItemInHandRendererMixin {
         CombatClientPoses.View view = CombatClientPoses.view(player, partialTick);
         if (mainHand && CombatClientPoses.debugSwing(player) >= 0.0F) swingProgress = CombatClientPoses.debugSwing(player);
 
-        // Hold-left-click spear charge: vanilla's newer spear "hold out and charge" animation.
         float spearCharge = mainHand && !usingThisHand ? CombatClientPoses.spearChargeTicks(player, partialTick) : -1.0F;
         if (spearCharge >= 0.0F) {
             poseStack.pushPose();
@@ -76,23 +67,30 @@ public abstract class ItemInHandRendererMixin {
             return;
         }
 
-        // Dagger throw wind-up: the same pull-back-and-shake vanilla uses for the trident (and our
-        // spear), with the dagger turned so its tip leads like the spear's.
         if (usingThisHand && kind == WeaponKind.DAGGER && stack.getUseAnimation() == UseAnim.SPEAR
                 && player.getUseItemRemainingTicks() > 0) {
             poseStack.pushPose();
             applyItemArmTransform(poseStack, arm, equippedProgress);
-            poseStack.translate(side * -0.5F, 0.7F, 0.1F);
-            poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(side * 35.3F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(side * -9.785F));
-            float timeHeld = stack.getUseDuration(player) - (player.getUseItemRemainingTicks() - partialTick + 1.0F);
-            float power = Math.min(1.0F, timeHeld / 10.0F);
-            if (power > 0.1F) poseStack.translate(0.0F, Mth.sin((timeHeld - 0.1F) * 1.3F) * (power - 0.1F) * 0.004F, 0.0F);
-            poseStack.translate(0.0F, 0.0F, power * 0.2F);
-            poseStack.scale(1.0F, 1.0F, 1.0F + power * 0.2F);
-            poseStack.mulPose(Axis.YN.rotationDegrees(side * 45.0F));
-            fightClub$renderFirstPerson(player, stack, right, poseStack, buffer, light, DAGGER_THROW_SPIN);
+            float timeHeld = Math.max(0.0F, stack.getUseDuration(player) - (player.getUseItemRemainingTicks() - partialTick + 1.0F));
+            CombatPoseConfig.Pose flip = CombatPoseConfig.get(CombatPose.DAGGER_THROW_FLIP);
+            CombatPoseConfig.Pose hold = CombatPoseConfig.get(CombatPose.DAGGER_THROW);
+            Vector3f pos = new Vector3f();
+            Vector3f rot = new Vector3f();
+            Vector3f orient = new Vector3f();
+            CombatPoseConfig.daggerToss(flip, timeHeld / flip.blendIn(), pos, rot, orient);
+            float windup = fightClub$smooth((timeHeld - flip.blendIn()) / hold.blendIn());
+            if (windup > 0.0F) {
+                if (!hold.keys().isEmpty()) {
+                    CombatPoseConfig.Key wound = hold.keys().get(hold.keys().size() - 1);
+                    pos.add(new Vector3f(wound.translation()).mul(windup));
+                    rot.add(new Vector3f(wound.rotation()).mul(windup));
+                    orient.add(new Vector3f(wound.orient()).mul(windup));
+                }
+                float shake = fightClub$shake(player, partialTick) * hold.tremble() * windup;
+                pos.add(shake, shake * 0.6F, 0.0F);
+            }
+            fightClub$daggerHeading(poseStack, side, pos, rot, orient);
+            fightClub$renderFirstPerson(player, stack, right, poseStack, buffer, light, 0.0F);
             poseStack.popPose();
             ci.cancel();
             return;
@@ -106,7 +104,6 @@ public abstract class ItemInHandRendererMixin {
                 held = view.amount();
                 recoil = view.recoil();
             }
-            // The spear charge draws itself above; don't let the blend-out pop back to the old pose.
             if (pose == CombatPose.SPEAR_LOWERED) {
                 pose = CombatPose.NONE;
                 held = 0.0F;
@@ -116,10 +113,8 @@ public abstract class ItemInHandRendererMixin {
             }
         }
         if (view != null && kind == WeaponKind.SHIELD && usingThisHand) bash = view.bash();
-        // Longsword spin (right-click, so it also plays with Better Combat): the blade sweeps across the screen.
         float spin = view != null && mainHand && kind == WeaponKind.LONGSWORD ? view.spin() : 0.0F;
 
-        // Our own attack swings only exist without Better Combat; it animates attacks itself.
         CombatPose swingStyle = CombatPose.NONE;
         if (mainHand && !BetterCombatCompat.isLoaded()) {
             if (kind == WeaponKind.DAGGER) swingStyle = CombatPose.JAB_DAGGER;
@@ -129,8 +124,6 @@ public abstract class ItemInHandRendererMixin {
         boolean customSwing = swingStyle != CombatPose.NONE && swingProgress > 0.0F;
 
         if (held <= 0.0F && recoil <= 0.0F && bash <= 0.0F && dip <= 0.0F && spin <= 0.0F && !customSwing) return;
-        // A vanilla use animation (trident/spear throw wind-up, shield raise) stays vanilla
-        // unless one of our effects is layered on it.
         if (usingThisHand && pose == CombatPose.NONE && bash <= 0.0F) return;
 
         poseStack.pushPose();
@@ -138,7 +131,6 @@ public abstract class ItemInHandRendererMixin {
         boolean jab = swingStyle == CombatPose.JAB_DAGGER || swingStyle == CombatPose.JAB_SPEAR;
         boolean sweep = swingStyle == CombatPose.HEAVY_LONGSWORD;
         if (!usingThisHand && !jab && !sweep) {
-            // Vanilla's sideways swing offset, faded out as a held pose takes over.
             float root = Mth.sqrt(swingProgress);
             poseStack.translate(side * -0.4F * Mth.sin(root * Mth.PI) * keep,
                     0.2F * Mth.sin(root * Mth.TWO_PI) * keep,
@@ -146,17 +138,23 @@ public abstract class ItemInHandRendererMixin {
         }
         applyItemArmTransform(poseStack, arm, equippedProgress);
 
+        float tridentRoll = 0.0F;
+        if (kind == WeaponKind.TRIDENT && mainHand && held > 0.0F && pose == CombatPose.TRIDENT_LOWERED) {
+            tridentRoll = CombatPoseConfig.modelRoll(pose) * held;
+        }
         if (!usingThisHand && keep > 0.0F) {
             if (swingStyle == CombatPose.JAB_SPEAR) {
-                // Spears and tridents: a straight poke, like vanilla 26.x's spear STAB.
+                if (kind == WeaponKind.TRIDENT) {
+                    float out = com.craisinlord.fightclub.client.StabAnimation.extension(swingProgress);
+                    tridentRoll = CombatPoseConfig.modelRoll(CombatPose.JAB_SPEAR) * out;
+                    fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.JAB_SPEAR), out, 0.0F, 0.0F);
+                }
                 com.craisinlord.fightclub.client.StabAnimation.firstPerson(poseStack, swingProgress, side);
             } else if (jab) {
-                // Dagger tap: keyframed tip-first stab when the pose has keys, else the plain forward punch.
                 CombatPoseConfig.Pose jabPose = CombatPoseConfig.get(swingStyle);
                 if (!jabPose.keys().isEmpty()) fightClub$keyed(poseStack, side, jabPose, swingProgress, keep);
                 else fightClub$apply(poseStack, side, jabPose, fightClub$punch(swingProgress) * keep, 0.0F, 0.0F);
             } else if (sweep) {
-                // Consecutive longsword swings alternate: right to left, then the left-to-right return cut.
                 fightClub$arc(poseStack, side, CombatPoseConfig.get(CombatClientPoses.backhand(player)
                         ? CombatPose.HEAVY_LONGSWORD_BACK : swingStyle), swingProgress, keep);
             } else {
@@ -165,8 +163,6 @@ public abstract class ItemInHandRendererMixin {
         }
         if (spin > 0.0F) fightClub$arc(poseStack, side, CombatPoseConfig.get(CombatPose.LONGSWORD_SPIN), spin, 1.0F);
 
-        // Block recoil goes on before the held pose, so it kicks in screen space (down and toward
-        // the camera) instead of along the axes of the turned-flat sword.
         if (recoil > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.BLOCK_RECOIL), recoil, 0.0F, 0.0F);
         if (held > 0.0F) {
             CombatPoseConfig.Pose config = CombatPoseConfig.get(pose);
@@ -176,12 +172,10 @@ public abstract class ItemInHandRendererMixin {
                 progress = com.craisinlord.fightclub.client.LongswordSpinClient.progress(Minecraft.getInstance(), partialTick);
             }
             float shake = progress > 0.0F && progress < 1.0F ? fightClub$shake(player, partialTick) * config.tremble() * progress : 0.0F;
-            // Dagger ready cue: a sharp shake the moment the charge fills (CombatClientPoses.readyFlash).
             if (pose == CombatPose.DAGGER_CHARGE) shake += fightClub$shake(player, partialTick) * 0.04F * CombatClientPoses.readyFlash(player, partialTick);
             float pop = progress >= 1.0F ? config.readyPop() : 0.0F;
             float amount = held;
             if (pose == CombatPose.DAGGER_CHARGE && player == Minecraft.getInstance().player) {
-                // Draw back further as the charge fills, and only snap "ready" with a pounce target locked.
                 amount *= 0.4F + 0.6F * fightClub$smooth(progress);
                 if (!CombatInputClient.pounceReady(Minecraft.getInstance())) pop = 0.0F;
             }
@@ -190,19 +184,20 @@ public abstract class ItemInHandRendererMixin {
         if (dip > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.RECOVERY_DIP), dip, 0.0F, 0.0F);
         if (bash > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.SHIELD_BASH), bash, 0.0F, 0.0F);
 
-        renderItem(player, stack, right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
-                !right, poseStack, buffer, light);
+        if (tridentRoll != 0.0F) CombatModels.setModelRoll(side * tridentRoll, CombatModels.TRIDENT_POLE_X, CombatModels.TRIDENT_POLE_Z);
+        try {
+            renderItem(player, stack, right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
+                    !right, poseStack, buffer, light);
+        } finally {
+            if (tridentRoll != 0.0F) CombatModels.setModelRoll(0.0F, 0.0F, 0.0F);
+        }
         poseStack.popPose();
         ci.cancel();
     }
 
-    /**
-     * Degrees the dagger's model is turned (in its own plane) while winding up a throw. Its
-     * handheld sprite runs corner to corner; this stands the tip up the way the trident's and
-     * spear's do, so the vanilla throw wind-up points it forward.
-     */
     @Unique
-    private static final float DAGGER_THROW_SPIN = 45.0F;
+    private static final org.joml.Quaternionf HANDHELD_FIRST_PERSON_INVERSE =
+            new org.joml.Quaternionf().rotationXYZ(0.0F, -90.0F * Mth.DEG_TO_RAD, 25.0F * Mth.DEG_TO_RAD).conjugate();
 
     @Unique
     private void fightClub$renderFirstPerson(AbstractClientPlayer player, ItemStack stack, boolean right, PoseStack poseStack,
@@ -216,7 +211,21 @@ public abstract class ItemInHandRendererMixin {
         }
     }
 
-    /** Applies a pose scaled by amount; X translation and Y/Z rotation mirror for the left hand. */
+    @Unique
+    private static void fightClub$daggerHeading(PoseStack poseStack, float side, Vector3f pos, Vector3f rot, Vector3f orient) {
+        poseStack.translate(side * pos.x(), pos.y(), pos.z());
+        poseStack.mulPose(Axis.XP.rotationDegrees(rot.x()));
+        poseStack.mulPose(Axis.YP.rotationDegrees(side * rot.y()));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(side * rot.z()));
+        poseStack.mulPose(Axis.XP.rotationDegrees(orient.x()));
+        poseStack.mulPose(Axis.YP.rotationDegrees(side * orient.y()));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(side * orient.z()));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(side * 45.0F));
+        if (side < 0.0F) poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        poseStack.mulPose(HANDHELD_FIRST_PERSON_INVERSE);
+        poseStack.translate(-side * 1.13F / 16.0F, -3.2F / 16.0F, -1.13F / 16.0F);
+    }
+
     @Unique
     private static void fightClub$apply(PoseStack poseStack, float side, CombatPoseConfig.Pose pose,
                                              float amount, float shake, float pop) {
@@ -228,11 +237,6 @@ public abstract class ItemInHandRendererMixin {
         poseStack.mulPose(Axis.ZP.rotationDegrees(side * r.z() * amount));
     }
 
-    /**
-     * Keyframed one-shot motion (dagger jab): the item offset eased from key to key
-     * over progress t, starting from and settling back to no offset. Each key is a translation and a
-     * rotation around Y (yaw), then X (pitch), then Z (roll); X translation and Y/Z mirror for the left hand.
-     */
     @Unique
     private static void fightClub$keyed(PoseStack poseStack, float side, CombatPoseConfig.Pose pose, float t, float amount) {
         if (pose.keys().isEmpty() || t <= 0.0F || t >= 1.0F || amount <= 0.0F) return;
@@ -256,15 +260,6 @@ public abstract class ItemInHandRendererMixin {
         poseStack.mulPose(Axis.ZP.rotationDegrees(side * o.z()));
     }
 
-    /**
-     * Longsword swing and spin: the blade turns round the grip like a clock hand while the hand
-     * travels a short path, all in camera space (so it looks the same at any view pitch). Per key,
-     * {@code translation} moves the hand from the idle hold (x right, y up, z toward the camera) and
-     * {@code rotation} is the blade's heading as [pitch, yaw, roll] in degrees: yaw 0 points straight
-     * ahead and +90 to the left, pitch raises the tip, roll twists the flat round the blade (0 = flat
-     * facing up). The pose's {@code rotation} is the idle hold's heading (where every swing starts and
-     * ends) and its {@code pivot} the grip, relative to vanilla's first-person hand. The left hand mirrors.
-     */
     @Unique
     private static void fightClub$arc(PoseStack poseStack, float side, CombatPoseConfig.Pose pose, float t, float amount) {
         if (pose.keys().isEmpty() || t <= 0.0F || t >= 1.0F || amount <= 0.0F) return;
@@ -272,7 +267,6 @@ public abstract class ItemInHandRendererMixin {
         CombatPoseConfig.Key from = seg.from() < 0 ? null : pose.keys().get(seg.from());
         CombatPoseConfig.Key to = seg.to() < 0 ? null : pose.keys().get(seg.to());
         Vector3f rest = pose.rotation();
-        // Before the first key and after the last, blend with the idle heading (taken the short way round).
         Vector3f a = from != null ? from.rotation() : fightClub$near(rest, to.rotation());
         Vector3f b = to != null ? to.rotation() : fightClub$near(rest, from.rotation());
         Vector3f heading = new Vector3f(a).lerp(b, seg.s());
@@ -280,8 +274,6 @@ public abstract class ItemInHandRendererMixin {
         Vector3f hand = new Vector3f(from == null ? new Vector3f() : from.translation())
                 .lerp(to == null ? new Vector3f() : to.translation(), seg.s()).mul(amount);
         Vector3f grip = pose.pivot();
-        // Hand along its path, then the blade swung round the grip to the heading. The idle heading
-        // is undone first, so the item's own model/display angles drop out.
         poseStack.translate(side * (hand.x() + grip.x()), hand.y() + grip.y(), hand.z() + grip.z());
         poseStack.mulPose(Axis.YP.rotationDegrees(side * heading.y()));
         poseStack.mulPose(Axis.XP.rotationDegrees(heading.x()));
@@ -292,7 +284,6 @@ public abstract class ItemInHandRendererMixin {
         poseStack.translate(-side * grip.x(), -grip.y(), -grip.z());
     }
 
-    /** The idle heading with each angle shifted by whole turns to lie nearest {@code ref}. */
     @Unique
     private static Vector3f fightClub$near(Vector3f rest, Vector3f ref) {
         return new Vector3f(rest.x() + 360.0F * Math.round((ref.x() - rest.x()) / 360.0F),
@@ -305,7 +296,6 @@ public abstract class ItemInHandRendererMixin {
         return Mth.sin((player.tickCount + partialTick) * 2.7F);
     }
 
-    /** Jab curve: fast thrust out over the first 30% of the swing, soft return after. */
     @Unique
     private static float fightClub$punch(float t) {
         if (t <= 0.0F || t >= 1.0F) return 0.0F;

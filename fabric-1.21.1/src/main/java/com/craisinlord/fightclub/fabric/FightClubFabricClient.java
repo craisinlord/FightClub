@@ -29,6 +29,9 @@ public final class FightClubFabricClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         EntityRendererRegistry.register(FightClubFabric.DAGGER_PROJECTILE, com.craisinlord.fightclub.client.WeaponProjectileRenderer::new);
         EntityRendererRegistry.register(FightClubFabric.SPEAR_PROJECTILE, com.craisinlord.fightclub.client.WeaponProjectileRenderer::new);
+        net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry.getInstance().register(
+                com.craisinlord.fightclub.combat.CombatParticles.LONGSWORD_SWEEP,
+                com.craisinlord.fightclub.client.LongswordSweepParticle.Provider::new);
         CombatInputClient.setSender(payload -> {
             if (ClientPlayNetworking.canSend(payload.type())) ClientPlayNetworking.send(payload);
         });
@@ -38,11 +41,9 @@ public final class FightClubFabricClient implements ClientModInitializer {
                 CombatClientPoses.handlePacket(payload));
         ClientPlayNetworking.registerGlobalReceiver(com.craisinlord.fightclub.combat.WeaponSpecSyncPayload.TYPE, (payload, context) ->
                 payload.apply());
-        // Drop a server's settings when leaving it, so they don't carry into singleplayer.
         net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
                 com.craisinlord.fightclub.CombatConfig.reload());
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new PoseReloadListener());
-        // In-hand models (longsword, spear, 3D dagger) aren't referenced by any item, so load them explicitly.
         net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin.register(context ->
                 context.addModels(com.craisinlord.fightclub.client.CombatModels.inHandModelIds()));
         com.craisinlord.fightclub.client.CombatModels.setLookup(id -> Minecraft.getInstance().getModelManager().getModel(id));

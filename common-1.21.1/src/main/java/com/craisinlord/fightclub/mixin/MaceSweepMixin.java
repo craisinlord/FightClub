@@ -13,15 +13,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** The mace's normal attack is a heavy sweep (design doc); a falling hit stays vanilla's smash. */
 @Mixin(MaceItem.class)
 public abstract class MaceSweepMixin {
     @Inject(method = "hurtEnemy", at = @At("HEAD"))
     private void fightClub$sweep(ItemStack stack, LivingEntity target, LivingEntity attacker, CallbackInfoReturnable<Boolean> cir) {
         if (attacker.level().isClientSide || !(attacker instanceof Player player)) return;
-        // Every landed hit counts toward the hit streak (falling smashes too).
         com.craisinlord.fightclub.combat.MaceHitStreak.onHit(player);
-        // A falling hit is vanilla's mace smash, which already knocks back everything nearby.
         if (MaceItem.canSmashAttack(player)) return;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "mace");
         if (spec != null) CombatAttacks.sweep(player, target, spec);

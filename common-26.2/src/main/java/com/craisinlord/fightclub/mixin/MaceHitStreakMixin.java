@@ -10,7 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Counts landed mace hits for the hit streak (see MaceHitStreak). Runs on every hit, with or without Better Combat. */
 @Mixin(MaceItem.class)
 public abstract class MaceHitStreakMixin {
     @Inject(method = "hurtEnemy", at = @At("HEAD"))

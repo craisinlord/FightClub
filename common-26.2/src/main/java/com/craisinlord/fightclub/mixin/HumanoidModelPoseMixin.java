@@ -9,10 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Runs Fight Club's third-person arm poses after vanilla posed the model. Sleeves are children of
- * the arms on 26.x, so they follow automatically. The first-person bare arm doesn't run setupAnim.
- */
 @Mixin(HumanoidModel.class)
 public abstract class HumanoidModelPoseMixin {
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/HumanoidRenderState;)V", at = @At("TAIL"))

@@ -10,8 +10,6 @@ pluginManagement {
 }
 
 plugins {
-    // Bump to ≥0.8.0 so foojay-resolver depends on Gson 2.10.1 instead of 2.9.1,
-    // preventing a classpath conflict that breaks Fabric Loom on JDK 17+.
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 

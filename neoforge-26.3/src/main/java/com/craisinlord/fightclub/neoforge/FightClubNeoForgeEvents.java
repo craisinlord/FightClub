@@ -18,12 +18,17 @@ public final class FightClubNeoForgeEvents {
         ItemStack stack = event.getItemStack();
         if (event.getHand() != InteractionHand.MAIN_HAND || !(stack.getItem() instanceof CombatWeaponItem weapon)
                 || !weapon.combatWeapon().equals("sword")) return;
-        if (event.getEntity().getOffhandItem().is(Items.SHIELD)) return;
+        if (com.craisinlord.fightclub.combat.CombatWeapons.isShield(event.getEntity().getOffhandItem())) return;
         event.getEntity().startUsingItem(event.getHand());
         event.setCanceled(true);
     }
 
-    /** Dagger pounces strike when the dashing player arrives. */
+    @SubscribeEvent
+    public void onDatapackSync(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
+        var payload = com.craisinlord.fightclub.combat.WeaponItemsPayload.current();
+        event.getRelevantPlayers().forEach(player -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload));
+    }
+
     @SubscribeEvent
     public void onPlayerTick(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post event) {
         if (!event.getEntity().level().isClientSide()) com.craisinlord.fightclub.combat.CombatChargeState.tick(event.getEntity());

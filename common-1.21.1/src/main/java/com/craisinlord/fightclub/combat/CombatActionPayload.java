@@ -6,7 +6,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-/** Client to server combat input. {@code target} is the entity id of a dagger pounce target, or -1. */
 public record CombatActionPayload(byte action, int target) implements CustomPacketPayload {
     public CombatActionPayload(byte action) { this(action, -1); }
 

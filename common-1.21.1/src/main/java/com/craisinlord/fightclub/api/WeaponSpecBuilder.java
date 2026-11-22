@@ -4,20 +4,6 @@ import com.craisinlord.fightclub.combat.WeaponSpec;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Builds a weapon spec in code, starting from one of Fight Club's own specs so only the numbers
- * that differ need setting. Field names and limits are the same as in the spec files; see the
- * README's weapon spec table. {@link #build()} validates the result the same way a spec file is
- * validated and throws {@link com.google.gson.JsonParseException} with the field name if a value is out of range.
- *
- * <pre>{@code
- * WeaponSpec spec = FightClubApi.specBuilder("mythril", WeaponType.LONGSWORD)
- *         .copyOf("diamond")
- *         .attackDamage(11.5f)
- *         .attackSpeed(1.1f)
- *         .build();
- * }</pre>
- */
 public final class WeaponSpecBuilder {
     private final String material;
     private final WeaponType type;
@@ -29,10 +15,6 @@ public final class WeaponSpecBuilder {
         copyOf("iron");
     }
 
-    /**
-     * Starts again from another material's spec for the same weapon type, such as {@code "diamond"}
-     * or {@code "netherite"}. New builders start from iron.
-     */
     public WeaponSpecBuilder copyOf(String baseMaterial) {
         WeaponSpec base = FightClubApi.spec(baseMaterial, type);
         if (base == null) throw new IllegalArgumentException("No Fight Club spec for " + baseMaterial + "/" + type.id());
@@ -59,10 +41,8 @@ public final class WeaponSpecBuilder {
     }
     public WeaponSpecBuilder throwChargeTicks(int value) { return set("throw_charge_ticks", value); }
     public WeaponSpecBuilder pounce(float range, float angleDegrees) { return set("pounce_range", range).set("pounce_angle_degrees", angleDegrees); }
-    /** Longswords: the right-click spin's radius and item cooldown (its charge time, damage and knockback come from {@link #charge}). */
     public WeaponSpecBuilder spin(float radius, int cooldownTicks) { return set("spin_radius", radius).set("spin_cooldown_ticks", cooldownTicks); }
 
-    /** Sets any spec field by its file name, for fields without a method above. */
     public WeaponSpecBuilder set(String field, Number value) {
         json.addProperty(field, value);
         return this;

@@ -16,8 +16,16 @@ public final class WeaponSpecs {
         VALUES.set(Collections.unmodifiableMap(Map.copyOf(specs)));
     }
 
+    private static final AtomicReference<Map<String, WeaponSpec>> MAPPED = new AtomicReference<>(Map.of());
+
+    public static void replaceMapped(Map<String, WeaponSpec> specs) {
+        MAPPED.set(Map.copyOf(specs));
+    }
+
     public static WeaponSpec get(String material, String weapon) {
-        return VALUES.get().get(material + "/" + weapon);
+        String key = material + "/" + weapon;
+        WeaponSpec spec = VALUES.get().get(key);
+        return spec != null ? spec : MAPPED.get().get(key);
     }
 
     public static WeaponSpec getOrLoadBuiltin(String material, String weapon) {

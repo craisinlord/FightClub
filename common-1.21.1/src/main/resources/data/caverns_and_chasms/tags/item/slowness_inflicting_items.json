@@ -1,0 +1,7 @@
+{
+  "values": [
+    {"id": "fight_club:caverns_and_chasms/necromium/longsword", "required": false},
+    {"id": "fight_club:caverns_and_chasms/necromium/spear", "required": false},
+    {"id": "fight_club:caverns_and_chasms/necromium/dagger", "required": false}
+  ]
+}

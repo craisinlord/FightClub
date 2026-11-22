@@ -10,13 +10,7 @@ import java.util.Locale;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/**
- * Weapon tooltips, per the design doc: one short translatable line saying what's special about
- * the weapon, and the detailed numbers only while Shift is held. Used for Fight Club's own
- * weapons and for the vanilla weapons the mod changes.
- */
 public final class CombatTooltips {
-    /** Set by the client entrypoints (Screen::hasShiftDown); always false on a dedicated server. */
     private static BooleanSupplier shiftDown = () -> false;
 
     private CombatTooltips() {}
@@ -25,13 +19,12 @@ public final class CombatTooltips {
         shiftDown = supplier;
     }
 
-    /** Which tooltip a stack gets: "longsword", "sword", "axe", ..., or null for none. */
     public static String kindOf(ItemStack stack) {
         Item item = stack.getItem();
         if (CombatWeapons.isCombatWeapon(item)) return CombatWeapons.weapon(item);
         if (item == Items.MACE) return "mace";
         if (item == Items.TRIDENT) return "trident";
-        if (item == Items.SHIELD) return "shield";
+        if (CombatWeapons.isShield(stack)) return "shield";
         if (axeMaterial(item) != null) return "axe";
         if (CombatVanillaRules.swordSpec(stack) != null) return "sword";
         return null;
@@ -40,11 +33,10 @@ public final class CombatTooltips {
     public static void append(ItemStack stack, Consumer<Component> tooltip) {
         String kind = kindOf(stack);
         if (kind == null) return;
-        // Two short lines: what the weapon is for, then its controls. Both only mention mechanics
-        // that are switched on in the config (the server's settings, synced to clients).
         tooltip.accept(Component.translatable("tooltip.fight_club." + descriptionKey(kind)).withStyle(ChatFormatting.GRAY));
         Component controls = controls(kind);
         if (controls != null) tooltip.accept(controls);
+        com.craisinlord.fightclub.compat.CompatAbilities.appendTooltip(stack, tooltip);
         WeaponSpec spec = specFor(stack, kind);
         if (spec == null) return;
         java.util.List<Component> details = details(spec, kind);
@@ -68,7 +60,6 @@ public final class CombatTooltips {
         };
     }
 
-    /** The controls line, joined from the enabled mechanics with " · ", or null if there's nothing to say. */
     private static Component controls(String kind) {
         java.util.List<String> parts = new java.util.ArrayList<>();
         boolean charge = on(com.craisinlord.fightclub.CombatConfig.CHARGED_ATTACKS);
@@ -93,10 +84,6 @@ public final class CombatTooltips {
         return line.withStyle(ChatFormatting.GRAY);
     }
 
-    /**
-     * Only numbers the game actually applies. Reach is shown by Better Combat's own "Attack Range"
-     * line when it's installed; sweep radius and throw range aren't enforced yet.
-     */
     private static java.util.List<Component> details(WeaponSpec spec, String kind) {
         java.util.List<Component> lines = new java.util.ArrayList<>();
         boolean shield = "shield".equals(kind);
@@ -117,7 +104,6 @@ public final class CombatTooltips {
         }
         if (!spec.criticalHits() && !shield && !"mace".equals(kind)) {
             if ("spear".equals(kind) || "trident".equals(kind)) {
-                // Spears and tridents crit only on charged hits (or never, with charges off).
                 if (on(com.craisinlord.fightclub.CombatConfig.SPEAR_CHARGE_CRITS)) {
                     lines.add(stat(on(com.craisinlord.fightclub.CombatConfig.CHARGED_ATTACKS) ? "charge_crits" : "no_crits"));
                 }
@@ -128,7 +114,6 @@ public final class CombatTooltips {
         return lines;
     }
 
-    /** The weapon spec that governs this stack (Fight Club weapon or changed vanilla weapon), or null. */
     public static WeaponSpec specFor(ItemStack stack) {
         String kind = kindOf(stack);
         return kind == null ? null : specFor(stack, kind);
@@ -138,7 +123,8 @@ public final class CombatTooltips {
         Item item = stack.getItem();
         if (CombatWeapons.isCombatWeapon(item)) return CombatWeapons.spec(item);
         return switch (kind) {
-            case "mace", "trident", "shield" -> WeaponSpecs.getOrLoadBuiltin("base", kind);
+            case "mace", "trident" -> WeaponSpecs.getOrLoadBuiltin("base", kind);
+            case "shield" -> CombatWeapons.shieldSpec(stack);
             case "axe" -> WeaponSpecs.getOrLoadBuiltin(axeMaterial(item), "axe");
             case "sword" -> CombatVanillaRules.swordSpec(stack);
             default -> null;

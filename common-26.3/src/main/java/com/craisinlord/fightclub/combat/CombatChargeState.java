@@ -14,21 +14,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Server side of the hold-left-click charge.
- *
- * <p>Daggers and tridents use their own charge state (as on 1.21.1), so the charge can't collide
- * with right-click throws or force vanilla's trident pose. Vanilla 26.x spears are different: their
- * charge <em>is</em> vanilla's kinetic lance charge, which only runs while the item is in use, so a
- * spear charge starts item use on both sides. Clients learn about everyone's charges from
- * {@link CombatPosePayload} and draw spear charges with vanilla's SPEAR use animation.
- */
 public final class CombatChargeState {
     public static final byte START = 0;
     public static final byte RELEASE = 1;
-    /** Attack pressed while blocking with a shield. Vanilla swallows that click, so it gets its own action. */
     public static final byte BASH = 2;
-    /** A swing that hit only air (longsword air sweep, mace hit streak miss). */
     public static final byte MISS_SWING = 10;
     private static final Map<UUID, ChargeState> CHARGES = new ConcurrentHashMap<>();
 
@@ -41,7 +30,6 @@ public final class CombatChargeState {
         else if (action == RELEASE) release(player, targetId);
         else if (action == BASH) CombatVanillaRules.shieldBash(player);
         else if (action == MISS_SWING) {
-            LongswordSpin.airSweep(player);
             MaceHitStreak.onMiss(player);
         }
     }
@@ -63,14 +51,13 @@ public final class CombatChargeState {
         BetterCombatCompat.setChargeActive(player, false);
         Item item = player.getMainHandItem().getItem();
         if (usesItemForCharge(state.item())) {
-            // Vanilla's kinetic weapon did the work while in use; just end the use (no throw).
             if (player.isUsingItem() && player.getUseItem().getItem() == state.item()) player.stopUsingItem();
             return;
         }
         if (CombatRecovery.active(player) || state.item() != item) return;
         int heldTicks = (int) Math.max(0, player.level().getGameTime() - state.startTick());
-        if (item instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("dagger")) {
-            WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "dagger");
+        if (CombatWeapons.is(item, "dagger")) {
+            WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "dagger");
             if (spec != null && heldTicks >= spec.chargeTicks()) startPounce(player, spec, targetId);
             return;
         }
@@ -81,18 +68,11 @@ public final class CombatChargeState {
         chargedAttack(player, target, spec);
     }
 
-    /** A dagger pounce in flight: the client is dashing at the target, the server strikes on arrival. */
     private record Pounce(int targetId, long startTick, Item item, WeaponSpec spec) {}
     private static final Map<UUID, Pounce> POUNCES = new ConcurrentHashMap<>();
-    /** Longest the client dash runs (see PounceClient), plus room for latency. */
     private static final int POUNCE_TIMEOUT_TICKS = 14;
-    /** At timeout the hit still lands this far past normal reach; farther means the dash was blocked. */
     private static final double POUNCE_TIMEOUT_SLACK = 2.0;
 
-    /**
-     * Charged dagger release. The client picked the target and is dashing at it; with no target it
-     * sends -1 and the player lunges forward instead (see {@link #lunge}).
-     */
     private static void startPounce(Player player, WeaponSpec spec, int targetId) {
         if (player.isPassenger() || player.isFallFlying()) return;
         if (targetId < 0 || !(player.level().getEntity(targetId) instanceof LivingEntity target)
@@ -101,22 +81,14 @@ public final class CombatChargeState {
             return;
         }
         POUNCES.put(player.getUUID(), new Pounce(targetId, player.level().getGameTime(), player.getMainHandItem().getItem(), spec));
-        // Better Combat: keep its swings paused through the dash, so a click can't spend the attack early.
         BetterCombatCompat.setChargeActive(player, true);
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(), CombatSounds.DAGGER_SWING,
                 net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 0.8f);
     }
 
-    /** Horizontal speed of a targetless dagger lunge: about 2.5 blocks on the ground. */
     private static final double LUNGE_SPEED = 0.9;
-    /** Longest a dagger charge stays up after it is full; its damage immunity can't be held forever. */
     private static final int DAGGER_MAX_FULL_HOLD_TICKS = 60;
 
-    /**
-     * A full dagger charge released with nothing to strike: a short dash along the look direction,
-     * with a little lift so ground friction doesn't eat it. Server velocity only, like the pounce's
-     * push-off, so the camera moves just as vanilla knockback would move it.
-     */
     private static void lunge(Player player) {
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
@@ -129,13 +101,11 @@ public final class CombatChargeState {
                 net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 1.1f);
     }
 
-    /** True while this player holds a dagger charge: they take no damage (DaggerChargeImmunityMixin). */
     public static boolean isDaggerCharging(Player player) {
         ChargeState state = CHARGES.get(player.getUUID());
         return state != null && isDagger(state.item()) && player.getMainHandItem().getItem() == state.item();
     }
 
-    /** Ends a dagger charge held too long past full, for this player and everyone watching. */
     private static void capDaggerCharge(Player player) {
         ChargeState state = CHARGES.get(player.getUUID());
         if (state == null || !isDagger(state.item())) return;
@@ -144,12 +114,10 @@ public final class CombatChargeState {
         CHARGES.remove(player.getUUID());
         CombatPosePayload end = new CombatPosePayload(player.getId(), CombatPosePayload.CHARGE_END);
         CombatPlatform.sendPoseToTracking(player, end);
-        // The holder's client ends its own charge on this (CombatInputClient.serverEndedCharge).
         CombatPlatform.sendToPlayer(player, end);
         if (!POUNCES.containsKey(player.getUUID())) BetterCombatCompat.setChargeActive(player, false);
     }
 
-    /** Called every server tick for each player. */
     public static void tick(Player player) {
         capDaggerCharge(player);
         MaceHitStreak.tick(player);
@@ -178,14 +146,12 @@ public final class CombatChargeState {
         }
     }
 
-    /** A few crit sparks behind the dashing player, for everyone nearby. */
     private static void dashTrail(Player player) {
         if (!(player.level() instanceof net.minecraft.server.level.ServerLevel level)) return;
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, player.getX(), player.getY(0.5), player.getZ(),
                 3, player.getBbWidth() * 0.3, player.getBbHeight() * 0.2, player.getBbWidth() * 0.3, 0.05);
     }
 
-    /** Horizontal gap between the player's and the target's hitboxes, with a vertical limit. */
     private static double edgeDistance(Player player, LivingEntity target) {
         if (Math.abs(target.getY() - player.getY()) > 2.5) return Double.MAX_VALUE;
         double dx = target.getX() - player.getX(), dz = target.getZ() - player.getZ();
@@ -193,10 +159,9 @@ public final class CombatChargeState {
     }
 
     private static void pounceHit(Player player, LivingEntity target, WeaponSpec spec) {
-        // The pouncing client already shows its own stab; this shows it to everyone else.
         player.swing(InteractionHand.MAIN_HAND, player.getMainHandItem().getAttackAnimation(), false);
         player.attack(target);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - spec.attackDamage());
+        float bonus = Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec));
         if (bonus > 0.0f && player.level() instanceof net.minecraft.server.level.ServerLevel level) {
             target.hurtServer(level, player.damageSources().playerAttack(player), bonus);
         }
@@ -216,7 +181,7 @@ public final class CombatChargeState {
     private static void chargedAttack(Player player, LivingEntity target, WeaponSpec spec) {
         player.swing(InteractionHand.MAIN_HAND, player.getMainHandItem().getAttackAnimation(), false);
         player.attack(target);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - spec.attackDamage());
+        float bonus = Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec));
         if (bonus > 0.0f) target.hurtServer((net.minecraft.server.level.ServerLevel) player.level(),
                 player.damageSources().playerAttack(player), bonus);
         playHit(player, target, CombatSounds.CHARGE_HIT);
@@ -231,45 +196,55 @@ public final class CombatChargeState {
                 net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 0.95f + player.getRandom().nextFloat() * 0.1f);
     }
 
+    static float hitDamage(Player player, WeaponSpec spec) {
+        ItemStack stack = player.getMainHandItem();
+        if (CombatWeapons.external(stack.getItem()) == null || CombatWeapons.usesSpecStats(stack.getItem())) return spec.attackDamage();
+        double[] damage = {1.0};
+        stack.forEachModifier(net.minecraft.world.entity.EquipmentSlot.MAINHAND, (attribute, modifier) -> {
+            if (attribute.is(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
+                    && modifier.operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE) {
+                damage[0] += modifier.amount();
+            }
+        });
+        return (float) damage[0];
+    }
+
     private static WeaponSpec thrustSpec(Item item) {
         if (item == Items.TRIDENT) return WeaponSpecs.getOrLoadBuiltin("base", "trident");
+        if (CombatWeapons.is(item, "spear")) return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "spear");
         if (isSpear(item)) return WeaponSpecs.getOrLoadBuiltin(spearMaterial(item), "spear");
         return null;
     }
 
     public static boolean isChargeWeapon(Item item) {
-        return item instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("dagger")
+        return CombatWeapons.is(item, "dagger") || CombatWeapons.is(item, "spear")
                 || isSpear(item) || item == Items.TRIDENT;
     }
 
-    /** Vanilla kinetic spears: the charge runs as vanilla item use (see the class comment). */
     public static boolean usesItemForCharge(Item item) {
         return isSpear(item);
     }
 
     public static boolean isSpearWeapon(Item item) {
-        return item instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("spear") || isSpear(item);
+        return CombatWeapons.is(item, "spear") || isSpear(item);
     }
 
     public static boolean isDagger(Item item) {
-        return item instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("dagger");
+        return CombatWeapons.is(item, "dagger");
     }
 
     public static boolean isLeftCharging(Player player) { return CHARGES.containsKey(player.getUUID()); }
 
-    /** A right-click release arrived while a left-click charge held the item: treat it as the charge's release. */
     public static void releaseLeft(Player player) { release(player, -1); }
 
-    /** Charge length in ticks for the held charge weapon, for client-side charge progress. */
     public static int chargeTicksFor(ItemStack stack) {
         Item item = stack.getItem();
-        WeaponSpec spec = item instanceof CombatWeaponItem weapon && weapon.combatWeapon().equals("dagger")
-                ? WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "dagger")
+        WeaponSpec spec = CombatWeapons.is(item, "dagger")
+                ? WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "dagger")
                 : thrustSpec(item);
         return spec == null ? 20 : Math.max(1, spec.chargeTicks());
     }
 
-    /** Drops per-player charge state; called on death, respawn and logout. */
     public static void clear(Player player) {
         MaceHitStreak.reset(player);
         LongswordSpin.clear(player);

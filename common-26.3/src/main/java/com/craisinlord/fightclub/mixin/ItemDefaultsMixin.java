@@ -55,7 +55,7 @@ public abstract class ItemDefaultsMixin {
                                                  CallbackInfoReturnable<InteractionResult> cir) {
         Item item = (Item) (Object) this;
         if (!fightClub$isVanillaSword(item)) return;
-        if (hand == InteractionHand.MAIN_HAND && player.getOffhandItem().is(Items.SHIELD)) return;
+        if (hand == InteractionHand.MAIN_HAND && com.craisinlord.fightclub.combat.CombatWeapons.isShield(player.getOffhandItem())) return;
         cir.setReturnValue(CombatRecovery.active(player) ? InteractionResult.FAIL : InteractionResult.CONSUME);
         if (!CombatRecovery.active(player)) player.startUsingItem(hand);
     }
@@ -103,9 +103,6 @@ public abstract class ItemDefaultsMixin {
     @Inject(method = "appendHoverText", at = @At("TAIL"))
     private void fightClub$vanillaWeaponTooltip(ItemStack stack, TooltipContext context, TooltipDisplay display,
                                                 Consumer<Component> tooltip, TooltipFlag flag, CallbackInfo ci) {
-        // Vanilla spears, swords, axes, mace, trident and shield (ShieldItem doesn't override
-        // appendHoverText on 26.x). Fight Club's own weapons add theirs in CombatWeaponItem
-        // (which also reaches here through super), so skip them to avoid doubles.
         if ((Object) this instanceof com.craisinlord.fightclub.combat.CombatWeaponItem) return;
         com.craisinlord.fightclub.combat.CombatTooltips.append(stack, tooltip);
     }
@@ -117,6 +114,7 @@ public abstract class ItemDefaultsMixin {
     }
 
     private static boolean fightClub$isVanillaSword(Item item) {
+        if (com.craisinlord.fightclub.combat.CombatWeapons.external(item) != null) return false;
         return item == Items.WOODEN_SWORD || item == Items.STONE_SWORD || item == Items.COPPER_SWORD
                 || item == Items.IRON_SWORD || item == Items.GOLDEN_SWORD || item == Items.DIAMOND_SWORD
                 || item == Items.NETHERITE_SWORD;

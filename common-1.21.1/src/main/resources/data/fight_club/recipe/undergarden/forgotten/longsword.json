@@ -1,0 +1,30 @@
+{
+  "fabric:load_conditions": [
+    {
+      "condition": "fabric:any_mods_loaded",
+      "values": [
+        "undergarden"
+      ]
+    }
+  ],
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "undergarden"
+    }
+  ],
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "undergarden:forgotten_upgrade_smithing_template"
+  },
+  "base": {
+    "item": "fight_club:undergarden/cloggrum/longsword"
+  },
+  "addition": {
+    "item": "undergarden:forgotten_ingot"
+  },
+  "result": {
+    "id": "fight_club:undergarden/forgotten/longsword",
+    "count": 1
+  }
+}

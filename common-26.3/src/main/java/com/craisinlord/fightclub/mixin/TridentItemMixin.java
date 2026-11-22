@@ -15,12 +15,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * As on 1.21.1, right-click stays vanilla: use() keeps the durability and Riptide checks and the
- * release spawns a real ThrownTrident, so Loyalty, Channeling, Impaling and Riptide all work and it
- * renders with vanilla's trident renderer. Only recovery blocks it, and a right-click release that
- * arrives during a left-click charge ends that charge instead of throwing.
- */
 @Mixin(TridentItem.class)
 public abstract class TridentItemMixin {
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)

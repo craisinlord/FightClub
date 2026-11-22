@@ -23,8 +23,6 @@ public final class ThrustTargeting {
                     if (target == attacker || target == primary || target.isRemoved() || target.isDeadOrDying()) return false;
                     Vec3 offset = target.getBoundingBox().getCenter().subtract(origin);
                     if (offset.dot(direction) < 0.0) return false;
-                    // Test the thrust line against the hitbox widened by the thrust width, not the
-                    // box centre, so short mobs (pigs, baby zombies, spiders) aren't missed.
                     return target.getBoundingBox().inflate(width).clip(origin, end).isPresent()
                             || target.getBoundingBox().inflate(width).contains(origin);
                 }).stream()

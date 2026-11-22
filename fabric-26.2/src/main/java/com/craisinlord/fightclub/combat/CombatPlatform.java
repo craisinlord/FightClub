@@ -26,7 +26,6 @@ public final class CombatPlatform {
         }
     }
 
-    /** Sends to every player tracking this one (not the player itself, whose client already knows). */
     public static void sendPoseToTracking(Player player, CombatPosePayload payload) {
         if (!(player instanceof ServerPlayer)) return;
         for (ServerPlayer watcher : PlayerLookup.tracking(player)) {

@@ -21,14 +21,12 @@ public final class FightClubFabricEvents {
         ServerPlayNetworking.registerGlobalReceiver(CombatActionPayload.TYPE,
                 (payload, context) -> context.server().execute(() ->
                         CombatChargeState.handle(context.player(), payload.action(), payload.target())));
-        // Sword right-click blocking is started by ItemDefaultsMixin (shared by both loaders).
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             CombatVanillaRules.beforeAttack(player);
             return InteractionResult.PASS;
         });
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 CombatVanillaRules.clearPlayerState(handler.getPlayer()));
-        // Send the server's weapon specs on join and after /reload, so clients show the same stats.
         PayloadTypeRegistry.playS2C().register(com.craisinlord.fightclub.combat.WeaponSpecSyncPayload.TYPE,
                 com.craisinlord.fightclub.combat.WeaponSpecSyncPayload.STREAM_CODEC);
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
@@ -43,7 +41,6 @@ public final class FightClubFabricEvents {
                 }
             }
         });
-        // Longsword offhand penalty follows the offhand live, not just at the moment of attacking.
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatVanillaRules.applyLongswordRules(player);

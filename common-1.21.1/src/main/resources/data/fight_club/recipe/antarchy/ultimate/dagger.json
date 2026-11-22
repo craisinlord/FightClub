@@ -16,9 +16,8 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "U",
     "T",
-    "W"
+    "N"
   ],
   "key": {
     "U": {
@@ -27,8 +26,8 @@
     "T": {
       "item": "antarchy:titanium_ingot"
     },
-    "W": {
-      "item": "fight_club:netherite_dagger"
+    "N": {
+      "item": "minecraft:netherite_ingot"
     }
   },
   "result": {

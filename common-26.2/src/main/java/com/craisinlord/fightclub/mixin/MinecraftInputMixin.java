@@ -11,16 +11,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * While a hold-left-click charge is active, the key must not mine, re-attack or use items, and a
- * spear charge's item use (held by the attack key, not the use key) must not be released.
- */
 @Mixin(Minecraft.class)
 public abstract class MinecraftInputMixin {
-    /**
-     * Spear/trident: claim the attack click before vanilla sees it, so the tap-or-hold decision
-     * is ours alone (see CombatInputClient#beforeKeybinds).
-     */
     @Inject(method = "handleKeybinds", at = @At("HEAD"))
     private void fightClub$claimThrustClick(CallbackInfo ci) {
         CombatInputClient.beforeKeybinds((Minecraft) (Object) this);
@@ -28,20 +20,36 @@ public abstract class MinecraftInputMixin {
 
     @Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
     private void fightClub$noAttackWhileCharging(CallbackInfoReturnable<Boolean> cir) {
-        if (CombatInputClient.blocksAttack()) cir.setReturnValue(false);
+        if (CombatInputClient.blocksAttack()
+                || com.craisinlord.fightclub.client.LongswordSpinClient.attackNotReady((Minecraft) (Object) this)) {
+            cir.setReturnValue(false);
+        }
     }
 
-    /** Vanilla went through with the attack (not dropped for an unready weapon etc.): the tap landed. */
+    @Inject(method = "startAttack", at = @At("HEAD"))
+    private void fightClub$resetEntityHit(CallbackInfoReturnable<Boolean> cir) {
+        CombatInputClient.resetEntityHit();
+    }
+
+    @Inject(method = "startAttack", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;attack(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/entity/Entity;)V"))
+    private void fightClub$entityHit(CallbackInfoReturnable<Boolean> cir) {
+        CombatInputClient.markEntityHit();
+    }
+
+    @Inject(method = "startAttack", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/player/LocalPlayer;swing(Lnet/minecraft/world/InteractionHand;)V"))
+    private void fightClub$longswordSwing(CallbackInfoReturnable<Boolean> cir) {
+        net.minecraft.client.player.LocalPlayer player = ((Minecraft) (Object) this).player;
+        if (player != null) CombatInputClient.onAttackSwing(player);
+    }
+
     @Inject(method = "startAttack", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/player/LocalPlayer;swing(Lnet/minecraft/world/InteractionHand;)V"))
     private void fightClub$attackWentThrough(CallbackInfoReturnable<Boolean> cir) {
         CombatInputClient.markAttackWentThrough();
     }
 
-    /**
-     * startAttack only resets the attack timer when the swing hit nothing (air, or an air block):
-     * tell the server, which never hears about misses otherwise (longsword air sweep, mace streak).
-     */
     @Inject(method = "startAttack", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/player/LocalPlayer;resetAttackStrengthTicker()V"))
     private void fightClub$missSwing(CallbackInfoReturnable<Boolean> cir) {
@@ -49,7 +57,6 @@ public abstract class MinecraftInputMixin {
         if (player != null) CombatInputClient.onMissSwing(player);
     }
 
-    /** With the key up continueAttack still runs: it clears vanilla's whiff lockout. */
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void fightClub$noMiningWhileCharging(boolean leftClick, CallbackInfo ci) {
         if (leftClick && CombatInputClient.blocksAttack()) ci.cancel();

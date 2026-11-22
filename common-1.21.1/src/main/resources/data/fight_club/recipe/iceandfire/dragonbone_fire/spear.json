@@ -13,19 +13,16 @@
       "modid": "iceandfire"
     }
   ],
-  "type": "minecraft:crafting_shaped",
+  "type": "minecraft:crafting_shapeless",
   "category": "equipment",
-  "pattern": [
-    "WX"
-  ],
-  "key": {
-    "W": {
+  "ingredients": [
+    {
       "item": "fight_club:iceandfire/dragonbone/spear"
     },
-    "X": {
+    {
       "item": "iceandfire:fire_dragon_blood"
     }
-  },
+  ],
   "result": {
     "id": "fight_club:iceandfire/dragonbone_fire/spear",
     "count": 1

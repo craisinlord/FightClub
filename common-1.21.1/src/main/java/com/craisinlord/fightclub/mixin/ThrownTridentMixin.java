@@ -8,7 +8,6 @@ import net.minecraft.world.entity.projectile.ThrownTrident;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/** Only player-thrown tridents play the Loyalty return sound (design doc: not ones thrown by Drowned). */
 @Mixin(ThrownTrident.class)
 public abstract class ThrownTridentMixin {
     @WrapOperation(method = "tick", at = @At(value = "INVOKE",

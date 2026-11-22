@@ -10,14 +10,6 @@ import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-/**
- * Per-weapon arm swing length (vanilla is 6 ticks): a snappier dagger stab, a heavier longsword.
- * Purely visual: it only applies on the client, and never with Better Combat installed.
- * Haste and Mining Fatigue still scale it, as in vanilla.
- *
- * <p>This runs for every living entity every tick, so it uses an allocation-free
- * {@code @ModifyReturnValue} and bails out on the cheapest check first.
- */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntitySwingMixin {
     @ModifyReturnValue(method = "getCurrentSwingDuration", at = @At("RETURN"))

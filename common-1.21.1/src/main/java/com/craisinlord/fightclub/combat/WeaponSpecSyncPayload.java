@@ -10,26 +10,23 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Server to client, on join and after /reload: the server's weapon specs (material/weapon key to
- * source JSON) and its gameplay config, so client tooltips, input and timing match the server.
- */
-public record WeaponSpecSyncPayload(Map<String, String> specs, Map<String, String> config) implements CustomPacketPayload {
+public record WeaponSpecSyncPayload(Map<String, String> specs, Map<String, String> config, Map<String, String> items) implements CustomPacketPayload {
     public static final Type<WeaponSpecSyncPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath("fight_club", "weapon_specs"));
     public static final StreamCodec<RegistryFriendlyByteBuf, WeaponSpecSyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.map(HashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.STRING_UTF8), WeaponSpecSyncPayload::specs,
             ByteBufCodecs.map(HashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.STRING_UTF8), WeaponSpecSyncPayload::config,
+            ByteBufCodecs.map(HashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.STRING_UTF8), WeaponSpecSyncPayload::items,
             WeaponSpecSyncPayload::new);
 
     public static WeaponSpecSyncPayload current() {
-        return new WeaponSpecSyncPayload(WeaponSpecs.rawJson(), CombatConfig.syncedValues());
+        return new WeaponSpecSyncPayload(WeaponSpecs.rawJson(), CombatConfig.syncedValues(), ExternalWeapons.rawJson());
     }
 
-    /** Client side. */
     public void apply() {
         WeaponSpecs.applySynced(specs);
         CombatConfig.applySynced(config);
+        ExternalWeapons.apply(items);
     }
 
     @Override

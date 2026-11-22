@@ -13,20 +13,12 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.Comparator;
 
-/**
- * Picks the target of a charged dagger pounce: the mob nearest the crosshair inside a cone in
- * front of the player, within pounce range and in line of sight. Runs on both sides: the client
- * picks the target and dashes, the server checks the pick (with slack for latency) and strikes.
- */
 public final class PounceTargeting {
-    /** Hostile mobs lock anywhere in the cone; anything else only when aimed at almost directly. */
     private static final double PASSIVE_ANGLE_DEGREES = 12.0;
-    /** How much distance counts against a candidate compared to angle (radians). */
     private static final double DISTANCE_WEIGHT = 0.35;
 
     private PounceTargeting() {}
 
-    /** Best target for the player's current aim, or null. */
     public static LivingEntity find(Player player, WeaponSpec spec) {
         double range = spec.pounceRange();
         AABB search = player.getBoundingBox().inflate(range + 1.0);
@@ -37,10 +29,6 @@ public final class PounceTargeting {
                 .orElse(null);
     }
 
-    /**
-     * Server check of a client's pick. Allows extra range and angle because the target and the
-     * player's aim have moved on by the time the packet arrives.
-     */
     public static boolean validForServer(Player player, LivingEntity target, WeaponSpec spec) {
         return valid(player, target, spec.pounceRange() + 2.0, spec.pounceAngleDegrees() + 15.0);
     }
@@ -60,12 +48,10 @@ public final class PounceTargeting {
         return angle(player, target) + DISTANCE_WEIGHT * distance(player, target) / Math.max(1.0, range);
     }
 
-    /** Eye to the target's center, less half its width, so big mobs count from their edge. */
     private static double distance(Player player, Entity target) {
         return Math.max(0.0, player.getEyePosition().distanceTo(target.getBoundingBox().getCenter()) - target.getBbWidth() * 0.5);
     }
 
-    /** Radians between the look direction and the target's center. */
     private static double angle(Player player, Entity target) {
         Vec3 toTarget = target.getBoundingBox().getCenter().subtract(player.getEyePosition());
         if (toTarget.lengthSqr() < 1.0E-6) return 0.0;

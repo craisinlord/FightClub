@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fight_club:item/mekanism/steel/steel_dagger"
+  }
+}

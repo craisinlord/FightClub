@@ -28,11 +28,6 @@ public final class CombatRecovery {
         start(player, ticks, player.getMainHandItem());
     }
 
-    /**
-     * Starts recovery and mirrors it as a vanilla item cooldown on the weapon (as on 1.21.1).
-     * Vanilla syncs that to the client, which draws the hotbar sweep and drives the
-     * lowered-weapon ("recovery dip") pose.
-     */
     public static void start(Player player, int ticks, ItemStack weapon) {
         if (ticks <= 0 || !CombatConfig.enabled(CombatConfig.RECOVERY)) return;
         END_TICKS.put(player.getUUID(), player.level().getGameTime() + ticks);

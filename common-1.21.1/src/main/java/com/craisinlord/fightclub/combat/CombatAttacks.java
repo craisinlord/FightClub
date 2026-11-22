@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Shared attack helpers so charged hits and thrust penetration deal sane damage. */
 public final class CombatAttacks {
     private static final ResourceLocation CHARGE_BONUS =
             ResourceLocation.fromNamespaceAndPath("fight_club", "charge_bonus");
@@ -23,24 +22,15 @@ public final class CombatAttacks {
 
     private CombatAttacks() {}
 
-    /**
-     * Records the attack-cooldown progress before vanilla resets it. Penetration damage is
-     * applied from hurtEnemy, which runs after the reset, so it reads this value instead.
-     */
     public static void captureStrength(Player player) {
         ATTACK_STRENGTH.put(player.getUUID(), player.getAttackStrengthScale(0.5F));
     }
 
-    private static float capturedStrength(Player player) {
+    public static float capturedStrength(Player player) {
         Float strength = ATTACK_STRENGTH.get(player.getUUID());
         return strength == null ? 1.0F : strength;
     }
 
-    /**
-     * Performs one normal player attack with extra base damage. Going through Player.attack keeps
-     * enchantments, crits, knockback and durability, and a single hit avoids losing the bonus to
-     * the target's invulnerability frames.
-     */
     public static void attackWithBonus(Player player, LivingEntity target, float bonus) {
         AttributeInstance damage = player.getAttribute(Attributes.ATTACK_DAMAGE);
         boolean applied = damage != null && bonus > 0.0F;
@@ -56,7 +46,6 @@ public final class CombatAttacks {
         }
     }
 
-    /** Damages the mobs lined up behind the primary target without re-running Player.attack. */
     public static void pierce(Player player, LivingEntity primary, WeaponSpec spec) {
         if (spec.penetrationCount() <= 0 || !CombatConfig.enabled(CombatConfig.PENETRATION)) return;
         float strength = capturedStrength(player);
@@ -67,7 +56,8 @@ public final class CombatAttacks {
             if (player.isAlliedTo(pierced)) continue;
             if (pierced.hurt(source, damage) && player.level() instanceof ServerLevel serverLevel) {
                 EnchantmentHelper.doPostAttackEffects(serverLevel, pierced, source);
-                // Sparks where the thrust passes through, so penetration reads at a glance.
+                com.craisinlord.fightclub.compat.CompatAbilities.onHit(player.getMainHandItem(), pierced, player,
+                        com.craisinlord.fightclub.compat.CompatAbilities.Hit.PIERCE);
                 serverLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
                         pierced.getX(), pierced.getY(0.6), pierced.getZ(), 5,
                         pierced.getBbWidth() * 0.25, pierced.getBbHeight() * 0.15, pierced.getBbWidth() * 0.25, 0.2);
@@ -75,12 +65,6 @@ public final class CombatAttacks {
         }
     }
 
-    /**
-     * Data-driven sweep, replacing vanilla's fixed one: hits mobs within the spec's sweep radius
-     * of the target and inside its sweep angle in front of the player. Uses vanilla's conditions
-     * (full charge, on the ground, not sprinting) and damage formula (1 + Sweeping Edge ratio x
-     * damage), so the Sweeping Edge enchantment keeps working.
-     */
     public static void sweep(Player player, LivingEntity primary, WeaponSpec spec) {
         if (spec.sweepRadius() <= 0.0F || !CombatConfig.enabled(CombatConfig.DATA_SWEEPS) || !(player.level() instanceof ServerLevel level)) return;
         float strength = capturedStrength(player);
@@ -105,7 +89,6 @@ public final class CombatAttacks {
         if (radius > 1.25) widerSweepParticles(player);
     }
 
-    /** Two extra sweep arcs beside the normal one, so a wide sweep visibly covers more ground. */
     private static void widerSweepParticles(Player player) {
         if (!(player.level() instanceof ServerLevel level)) return;
         double yaw = Math.toRadians(player.getYRot());
@@ -115,7 +98,6 @@ public final class CombatAttacks {
         for (int side = -1; side <= 1; side += 2) {
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
                     player.getX() + forwardX * 1.1 + rightX * side * 0.95, y,
-                    // With count 0, the X "speed" sets the arc size (quadSize = 1 - x * 0.5): -0.2 is 10% larger.
                     player.getZ() + forwardZ * 1.1 + rightZ * side * 0.95, 0, -0.2, 0.0, 0.0, 0.0);
         }
     }

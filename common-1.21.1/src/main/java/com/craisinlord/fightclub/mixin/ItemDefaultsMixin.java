@@ -36,7 +36,7 @@ public abstract class ItemDefaultsMixin {
                                                  CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
         Item item = (Item) (Object) this;
         if (!fightClub$isBlockingSword(item)) return;
-        if (hand == InteractionHand.MAIN_HAND && player.getOffhandItem().is(Items.SHIELD)) return;
+        if (hand == InteractionHand.MAIN_HAND && com.craisinlord.fightclub.combat.CombatWeapons.isShield(player.getOffhandItem())) return;
         if (CombatRecovery.active(player)) cir.setReturnValue(InteractionResultHolder.fail(player.getItemInHand(hand)));
         else { player.startUsingItem(hand); cir.setReturnValue(InteractionResultHolder.consume(player.getItemInHand(hand))); }
     }
@@ -52,12 +52,11 @@ public abstract class ItemDefaultsMixin {
         if (fightClub$isBlockingSword((Item) (Object) this)) cir.setReturnValue(UseAnim.BLOCK);
     }
 
-    // Only real swords block. Longswords, spears and daggers extend SwordItem but must not.
     private static boolean fightClub$isBlockingSword(Item item) {
         return com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SWORD_BLOCKING)
                 && item instanceof net.minecraft.world.item.SwordItem
-                && !(item instanceof com.craisinlord.fightclub.combat.CombatWeaponItem weapon
-                     && !weapon.combatWeapon().equals("sword"));
+                && !(com.craisinlord.fightclub.combat.CombatWeapons.isCombatWeapon(item)
+                     && !com.craisinlord.fightclub.combat.CombatWeapons.is(item, "sword"));
     }
 
     @Inject(method = "inventoryTick", at = @At("HEAD"))
@@ -68,8 +67,6 @@ public abstract class ItemDefaultsMixin {
 
     @Inject(method = "appendHoverText", at = @At("TAIL"))
     private void fightClub$vanillaWeaponTooltip(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag, CallbackInfo ci) {
-        // Vanilla swords, axes, mace, trident and shield. Fight Club's own weapons add theirs in
-        // CombatWeaponItem (which also reaches here through super), so skip them to avoid doubles.
         if ((Object) this instanceof com.craisinlord.fightclub.combat.CombatWeaponItem) return;
         com.craisinlord.fightclub.combat.CombatTooltips.append(stack, tooltip::add);
     }

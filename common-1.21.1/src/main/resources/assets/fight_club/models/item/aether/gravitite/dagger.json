@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "fight_club:item/aether/gravitite/gravitite_dagger"
+  }
+}

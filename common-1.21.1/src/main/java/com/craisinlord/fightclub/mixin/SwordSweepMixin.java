@@ -13,12 +13,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Data-driven sweep for vanilla swords (Fight Club weapons sweep in CombatWeaponItem). */
 @Mixin(SwordItem.class)
 public abstract class SwordSweepMixin {
     @Inject(method = "hurtEnemy", at = @At("HEAD"))
     private void fightClub$sweep(ItemStack stack, LivingEntity target, LivingEntity attacker, CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof CombatWeaponItem || attacker.level().isClientSide || !(attacker instanceof Player player)) return;
+        if (com.craisinlord.fightclub.combat.CombatWeapons.isCombatWeapon((SwordItem) (Object) this) || attacker.level().isClientSide || !(attacker instanceof Player player)) return;
         WeaponSpec spec = CombatVanillaRules.swordSpec(stack);
         if (spec != null && spec.attackStyle() == WeaponSpec.AttackStyle.SWEEP) CombatAttacks.sweep(player, target, spec);
     }

@@ -16,7 +16,7 @@
   "charge_knockback": 2,
   "recovery_ticks": 0,
   "blocking": true,
-  "blocking_angle_degrees": 0,
+  "blocking_angle_degrees": 120,
   "blocking_damage_multiplier": 0.45,
   "throwing": false,
   "throw_velocity": 0,

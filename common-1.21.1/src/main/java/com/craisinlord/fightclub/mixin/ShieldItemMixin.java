@@ -13,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
-/** ShieldItem's tooltip (banner patterns) doesn't call Item's, so the shield gets its own hook. */
 @Mixin(ShieldItem.class)
 public abstract class ShieldItemMixin {
     @Inject(method = "appendHoverText", at = @At("TAIL"))

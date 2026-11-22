@@ -38,9 +38,6 @@ dependencies {
 loom {
     runs {
         configureEach {
-            // Mojang's 26.3 launch arguments add this (26.1/26.2 don't), and Loom 1.15.5 doesn't pass
-            // them on. Without it the dev client overflows the stack in native code (SDL/driver
-            // callbacks) and dies with 0xC0000005 at random points, with no JVM crash log.
             vmArg '-XX:StackShadowPages=32'
         }
     }
@@ -81,14 +78,6 @@ publishing {
         maven {
             name = 'LocalMaven'
             url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
-        }
-        maven {
-            name = 'Forgejo'
-            url = uri('https://maven.example.invalid/replace-me')
-            credentials {
-                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
-                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
-            }
         }
     }
 }

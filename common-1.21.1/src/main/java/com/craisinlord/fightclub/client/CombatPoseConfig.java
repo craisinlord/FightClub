@@ -18,27 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * First-person pose parameters, read from {@code assets/fight_club/animations/poses.json}.
- * Any resource pack can override the file, and F3+T reloads it, so poses can be tuned in-game
- * without rebuilding. Missing or invalid entries fall back to the built-in defaults below.
- *
- * <p>Values are written for the right hand. For the left hand the renderer mirrors the X
- * translation and the Y/Z rotations, the same way vanilla mirrors its own use poses.
- */
 public class CombatPoseConfig implements ResourceManagerReloadListener {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "combat_poses");
     private static final ResourceLocation FILE =
             ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "animations/poses.json");
 
-    /**
-     * @param translation offset applied after vanilla's arm transform, in first-person units
-     * @param rotation    degrees around X, then Y, then Z
-     * @param blendIn     ticks to ease fully into the pose
-     * @param blendOut    ticks to ease back out to vanilla
-     * @param tremble     shake amplitude that grows with charge progress (0 disables)
-     * @param readyPop    extra push along Z applied once a charge is full (0 disables)
-     */
     public record Pose(Vector3f translation, Vector3f rotation, float blendIn, float blendOut,
                        float tremble, float readyPop, List<Key> keys, Vector3f pivot) {
         public Pose(Vector3f translation, Vector3f rotation, float blendIn, float blendOut, float tremble, float readyPop) {
@@ -51,36 +35,19 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
         }
     }
 
-    /** A keyframe on a one-shot motion's 0..1 progress, eased into from the previous key (or from rest). */
     public interface Keyed {
         float t();
         String ease();
     }
 
-    /**
-     * First-person keyframe at progress t; X translation and Y/Z rotation mirror for the left hand. For the
-     * dagger jab: an item offset, rotation in degrees around Y (yaw), then X (pitch), then Z (roll), turning
-     * around the pose's pivot, then orient (same axis order, around the hand). For the longsword swing and
-     * spin: translation moves the hand from the idle hold and rotation is the blade's heading [pitch, yaw,
-     * roll], swung round the grip (the pose's pivot) from the idle heading (the pose's rotation).
-     */
     public record Key(float t, Vector3f translation, Vector3f rotation, String ease, Vector3f orient) implements Keyed {
         public Key(float t, Vector3f translation, Vector3f rotation, String ease) {
             this(t, translation, rotation, ease, new Vector3f());
         }
     }
 
-    /**
-     * Third-person keyframe: main/off arm angles (as in ArmPose), the upper body's twist in degrees
-     * (positive turns toward the off-hand side, i.e. left for right-handers), and the held item's
-     * extra rotation in degrees: [pitch, yaw, roll], roll twisting it around the arm's length.
-     */
     public record ArmKey(float t, Vector3f main, Vector3f off, float body, Vector3f item, String ease) implements Keyed {}
 
-    /**
-     * Where progress t falls between keys: from/to are key indexes (-1 = the rest pose before the
-     * first key or after the last), s the eased 0..1 position between them.
-     */
     public record Segment(int from, int to, float s) {}
 
     public static Segment segment(List<? extends Keyed> keys, float t) {
@@ -93,7 +60,42 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
         return new Segment(i - 1, i == n ? -1 : i, ease(i == n ? "inout" : keys.get(i).ease(), s));
     }
 
-    /** Easing curves for keyframes: linear, in, out, inout (quadratic), in_cubic, out_cubic. */
+    public static float flip(Pose pose, float t) {
+        if (pose.keys().isEmpty() || t <= 0.0F) return 0.0F;
+        float total = pose.keys().get(pose.keys().size() - 1).rotation().x() - DAGGER_REST_ROTATION.x();
+        if (t >= 1.0F || total == 0.0F) return t >= 1.0F ? -180.0F : 0.0F;
+        Vector3f pos = new Vector3f(), rot = new Vector3f(), orient = new Vector3f();
+        daggerToss(pose, t, pos, rot, orient);
+        return -180.0F * (rot.x() - DAGGER_REST_ROTATION.x()) / Math.abs(total);
+    }
+
+    public static final Vector3f DAGGER_REST_TRANSLATION = new Vector3f(1.13F / 16.0F, 3.2F / 16.0F, 1.13F / 16.0F);
+    public static final Vector3f DAGGER_REST_ROTATION = new Vector3f(20.0F, 0.0F, 0.0F);
+    public static final Vector3f DAGGER_REST_ORIENT = new Vector3f(0.0F, -90.0F, 0.0F);
+
+    public static void daggerToss(Pose flip, float t, Vector3f pos, Vector3f rot, Vector3f orient) {
+        List<Key> keys = flip.keys();
+        if (keys.isEmpty()) {
+            pos.set(DAGGER_REST_TRANSLATION);
+            rot.set(DAGGER_REST_ROTATION);
+            orient.set(DAGGER_REST_ORIENT);
+            return;
+        }
+        Segment seg = segment(keys, Math.max(0.0F, t));
+        if (seg.to() < 0) {
+            Key last = keys.get(keys.size() - 1);
+            pos.set(last.translation());
+            rot.set(last.rotation());
+            orient.set(last.orient());
+            return;
+        }
+        Key from = seg.from() < 0 ? null : keys.get(seg.from());
+        Key to = keys.get(seg.to());
+        pos.set(from != null ? from.translation() : DAGGER_REST_TRANSLATION).lerp(to.translation(), seg.s());
+        rot.set(from != null ? from.rotation() : DAGGER_REST_ROTATION).lerp(to.rotation(), seg.s());
+        orient.set(from != null ? from.orient() : DAGGER_REST_ORIENT).lerp(to.orient(), seg.s());
+    }
+
     public static float ease(String name, float s) {
         return switch (name) {
             case "linear" -> s;
@@ -105,15 +107,6 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
         };
     }
 
-    /**
-     * Third-person arm rotations in degrees, as absolute model angles (vanilla's own poses are
-     * replaced, blended by the pose amount). Written for a right-handed player: {@code main} is
-     * the right arm, {@code off} the left arm; both mirror for left-handed players. {@code off}
-     * may be null, and only applies when the offhand is empty (except shield_bash, where it is
-     * the shield arm). {@code item} (may be null) turns the main-hand item in the hand, in degrees
-     * [pitch, yaw, roll] (roll twists it around the arm's length; sword_block uses it to hold the
-     * blade flat across the body, 1.8 style). {@code keys} keyframe the longsword swing and spin.
-     */
     public record ArmPose(Vector3f main, Vector3f off, float followHead, float walkBob, Vector3f item, List<ArmKey> keys) {
         public ArmPose(Vector3f main, Vector3f off) { this(main, off, 0.0F, 0.0F, null, List.of()); }
         public ArmPose(Vector3f main, Vector3f off, float followHead, float walkBob) { this(main, off, followHead, walkBob, null, List.of()); }
@@ -126,6 +119,14 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
     private static final Map<CombatPose, ArmPose> ARM_DEFAULTS = new EnumMap<>(CombatPose.class);
     private static volatile Map<CombatPose, Pose> poses;
     private static volatile Map<CombatPose, ArmPose> armPoses;
+    private static final Map<CombatPose, Float> ROLL_DEFAULTS = new EnumMap<>(Map.of(
+            CombatPose.TRIDENT_LOWERED, 90.0F, CombatPose.JAB_SPEAR, 90.0F));
+    private static volatile Map<CombatPose, Float> rolls = new EnumMap<>(ROLL_DEFAULTS);
+
+    public static float modelRoll(CombatPose pose) {
+        Float roll = rolls.get(pose);
+        return roll == null ? 0.0F : roll;
+    }
 
     public static ArmPose arms(CombatPose pose) {
         ArmPose loaded = armPoses.get(pose);
@@ -135,25 +136,29 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
     private static Vector3f deg(float x, float y, float z) { return new Vector3f(x, y, z); }
 
     static {
-        // Tuned against screenshots from DevPoseGallery; the JSON overrides these.
-        // Note: flat item sprites face the camera at an angle, so rolling them (Z) turns them
-        // edge-on; flat items should pitch (X) instead. The 3D trident can roll freely.
-        // Compromise until the spear gets a real long in-hand model on 1.21.1 (Phase 4): aiming the
-        // flat 16px icon fully at the crosshair turns it edge-on.
         DEFAULTS.put(CombatPose.SPEAR_LOWERED, new Pose(new Vector3f(-0.08F, -0.05F, 0.0F),
                 new Vector3f(0.0F, 0.0F, 25.0F), 4.0F, 3.0F, 0.0F, 0.0F));
-        DEFAULTS.put(CombatPose.TRIDENT_LOWERED, new Pose(new Vector3f(-0.22F, -0.05F, 0.0F),
+        DEFAULTS.put(CombatPose.TRIDENT_LOWERED, new Pose(new Vector3f(-0.22F, -0.05F, -0.25F),
                 new Vector3f(-65.0F, 0.0F, 0.0F), 4.0F, 3.0F, 0.0F, 0.0F));
-        // Drawn in and back with the tip tilted toward the crosshair; scaled by charge progress in the renderer.
         DEFAULTS.put(CombatPose.DAGGER_CHARGE, new Pose(new Vector3f(-0.12F, 0.08F, 0.18F),
                 new Vector3f(-25.0F, 0.0F, 25.0F), 5.0F, 2.0F, 0.02F, -0.10F));
         DEFAULTS.put(CombatPose.DAGGER_POUNCE, new Pose(new Vector3f(-0.20F, 0.06F, -0.40F),
                 new Vector3f(-45.0F, 0.0F, 0.0F), 2.0F, 3.0F, 0.0F, 0.0F));
-        // Classic 1.8 sword block: the blade turned flat across the screen, tip angled up and out.
         DEFAULTS.put(CombatPose.SWORD_BLOCK, new Pose(new Vector3f(-0.14142136F, 0.08F, 0.14142136F),
                 new Vector3f(-102.25F, 13.365F, 78.05F), 3.0F, 3.0F, 0.0F, 0.0F));
-        DEFAULTS.put(CombatPose.DAGGER_THROW, new Pose(new Vector3f(-0.05F, 0.35F, 0.10F),
-                new Vector3f(-45.0F, 25.0F, -8.0F), 4.0F, 2.0F, 0.0F, 0.0F));
+        DEFAULTS.put(CombatPose.DAGGER_THROW, new Pose(new Vector3f(), new Vector3f(), 3.0F, 2.0F, 0.004F, 0.0F, List.of(
+                new Key(1.0F, new Vector3f(0.0F, 0.02F, 0.06F), deg(-8.0F, 0.0F, 0.0F), "inout"))));
+        DEFAULTS.put(CombatPose.DAGGER_THROW_FLIP, new Pose(new Vector3f(), new Vector3f(), 7.0F, 0.0F, 0.0F, 0.0F, List.of(
+                new Key(0.07F, new Vector3f(0.06F, 0.13F, 0.06F), deg(28.0F, 0.0F, 0.0F), "out", deg(0.0F, -95.0F, 0.0F)),
+                new Key(0.15F, new Vector3f(0.03F, 0.205F, 0.0F), deg(10.0F, 0.0F, 0.0F), "out", deg(0.0F, -100.0F, 0.0F)),
+                new Key(0.25F, new Vector3f(0.0F, 0.3F, -0.02F), deg(-17.5F, 0.0F, 0.0F), "linear", deg(0.0F, -100.0F, 0.0F)),
+                new Key(0.35F, new Vector3f(-0.04F, 0.395F, -0.04F), deg(-45.0F, 0.0F, 0.0F), "linear", deg(0.0F, -100.0F, 0.0F)),
+                new Key(0.45F, new Vector3f(-0.07F, 0.45F, -0.05F), deg(-72.0F, 0.0F, 0.0F), "linear", deg(0.0F, -100.0F, 0.0F)),
+                new Key(0.55F, new Vector3f(-0.08F, 0.46F, -0.05F), deg(-100.0F, 0.0F, 0.0F), "linear", deg(0.0F, -97.0F, 0.0F)),
+                new Key(0.65F, new Vector3f(-0.07F, 0.44F, -0.03F), deg(-127.0F, 0.0F, 0.0F), "linear", deg(0.0F, -93.0F, 0.0F)),
+                new Key(0.75F, new Vector3f(-0.06F, 0.395F, -0.01F), deg(-155.0F, 0.0F, 0.0F), "linear", deg(0.0F, -88.0F, 0.0F)),
+                new Key(0.86F, new Vector3f(-0.05F, 0.32F, 0.02F), deg(-185.0F, 0.0F, 0.0F), "linear", deg(0.0F, -83.0F, 0.0F)),
+                new Key(1.0F, new Vector3f(-0.06F, 0.45F, 0.02F), deg(-200.0F, 0.0F, 8.0F), "out", deg(0.0F, -80.0F, 0.0F)))));
         DEFAULTS.put(CombatPose.RECOVERY_DIP, new Pose(new Vector3f(0.0F, -0.025F, 0.01F),
                 new Vector3f(0.0F, 0.0F, -4.0F), 0.0F, 0.0F, 0.0F, 0.0F));
         DEFAULTS.put(CombatPose.BLOCK_RECOIL, new Pose(new Vector3f(0.0F, -0.03F, 0.10F),
@@ -164,37 +169,29 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
                 new Key(0.2F, new Vector3f(-0.06F, 0.06F, 0.06F), deg(-75.0F, 20.0F, 0.0F), "out"),
                 new Key(0.4F, new Vector3f(-0.14F, 0.1F, -0.3F), deg(-80.0F, 22.0F, 0.0F), "out_cubic"),
                 new Key(0.62F, new Vector3f(-0.06F, 0.02F, 0.12F), deg(-45.0F, 10.0F, 0.0F), "inout"))));
-        DEFAULTS.put(CombatPose.JAB_SPEAR, new Pose(new Vector3f(-0.12F, 0.08F, -0.55F),
-                new Vector3f(-4.0F, 0.0F, 0.0F), 12.0F, 0.0F, 0.0F, 0.0F));
-        // Horizontal cut, right to left, like Better Combat's two-handed slash seen from the eyes: the blade turns round
-        // the grip like a clock hand (rotation = heading [pitch, yaw, roll]) while the hand (translation) moves a short way
-        // low across the view. The pose's rotation is the idle hold's heading and pivot the grip (see ItemInHandRendererMixin#arc).
+        DEFAULTS.put(CombatPose.JAB_SPEAR, new Pose(new Vector3f(-0.04F, 0.02F, -0.25F),
+                new Vector3f(0.0F, 0.0F, 0.0F), 12.0F, 0.0F, 0.0F, 0.0F));
         DEFAULTS.put(CombatPose.HEAVY_LONGSWORD, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
-                new Key(0.1F, new Vector3f(-0.05F, 0.24F, 0.04F), deg(14.0F, -72.0F, -15.0F), "out"),
-                new Key(0.2F, new Vector3f(-0.15F, 0.23F, -0.01F), deg(10.0F, -55.0F, -10.0F), "inout"),
-                new Key(0.32F, new Vector3f(-0.3F, 0.22F, -0.08F), deg(11.0F, -28.0F, -5.0F), "linear"),
-                new Key(0.45F, new Vector3f(-0.5F, 0.21F, -0.16F), deg(16.0F, 0.0F, 0.0F), "linear"),
-                new Key(0.58F, new Vector3f(-0.7F, 0.22F, -0.08F), deg(11.0F, 30.0F, 5.0F), "linear"),
-                new Key(0.68F, new Vector3f(-0.84F, 0.23F, 0.0F), deg(10.0F, 58.0F, 10.0F), "linear"),
-                new Key(0.76F, new Vector3f(-0.92F, 0.2F, 0.04F), deg(8.0F, 72.0F, 12.0F), "out"),
-                new Key(0.86F, new Vector3f(-0.7F, -0.6F, 0.02F), deg(-10.0F, 95.0F, 0.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
-        // The return cut, left to right (swings alternate; the duration is heavy_longsword's): the forehand mirrored.
+                new Key(0.1F, new Vector3f(0.12F, 0.5F, 0.0F), deg(14.0F, -88.0F, -15.0F), "out"),
+                new Key(0.2F, new Vector3f(0.05F, 0.56F, -0.05F), deg(16.0F, -66.0F, -10.0F), "inout"),
+                new Key(0.32F, new Vector3f(-0.21F, 0.6F, -0.11F), deg(19.0F, -34.0F, -5.0F), "linear"),
+                new Key(0.45F, new Vector3f(-0.58F, 0.63F, -0.16F), deg(22.0F, 0.0F, 0.0F), "linear"),
+                new Key(0.58F, new Vector3f(-1.01F, 0.6F, -0.11F), deg(19.0F, 36.0F, 5.0F), "linear"),
+                new Key(0.68F, new Vector3f(-1.29F, 0.56F, -0.05F), deg(16.0F, 66.0F, 10.0F), "linear"),
+                new Key(0.76F, new Vector3f(-1.45F, 0.48F, 0.0F), deg(13.0F, 88.0F, 12.0F), "out"),
+                new Key(0.86F, new Vector3f(-1.05F, -0.5F, 0.02F), deg(-10.0F, 105.0F, 0.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
         DEFAULTS.put(CombatPose.HEAVY_LONGSWORD_BACK, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
-                new Key(0.07F, new Vector3f(-0.5F, -0.7F, -0.15F), deg(-30.0F, 80.0F, 0.0F), "inout"),
-                new Key(0.15F, new Vector3f(-1.07F, 0.24F, 0.04F), deg(14.0F, 72.0F, 15.0F), "out"),
-                new Key(0.24F, new Vector3f(-0.97F, 0.23F, -0.01F), deg(10.0F, 55.0F, 10.0F), "inout"),
-                new Key(0.36F, new Vector3f(-0.82F, 0.22F, -0.08F), deg(11.0F, 28.0F, 5.0F), "linear"),
-                new Key(0.49F, new Vector3f(-0.62F, 0.21F, -0.16F), deg(16.0F, 0.0F, 0.0F), "linear"),
-                new Key(0.62F, new Vector3f(-0.42F, 0.22F, -0.08F), deg(11.0F, -30.0F, -5.0F), "linear"),
-                new Key(0.72F, new Vector3f(-0.28F, 0.23F, 0.0F), deg(10.0F, -58.0F, -10.0F), "linear"),
-                new Key(0.8F, new Vector3f(-0.2F, 0.2F, 0.04F), deg(8.0F, -72.0F, -12.0F), "out")), new Vector3f(0.07F, -0.19F, -0.1F)));
+                new Key(0.07F, new Vector3f(-0.9F, -0.55F, -0.1F), deg(-30.0F, 92.0F, 0.0F), "inout"),
+                new Key(0.15F, new Vector3f(-1.45F, 0.48F, 0.0F), deg(13.0F, 88.0F, 15.0F), "out"),
+                new Key(0.24F, new Vector3f(-1.29F, 0.56F, -0.05F), deg(16.0F, 66.0F, 10.0F), "inout"),
+                new Key(0.36F, new Vector3f(-1.01F, 0.6F, -0.11F), deg(19.0F, 36.0F, 5.0F), "linear"),
+                new Key(0.49F, new Vector3f(-0.58F, 0.63F, -0.16F), deg(22.0F, 0.0F, 0.0F), "linear"),
+                new Key(0.62F, new Vector3f(-0.21F, 0.6F, -0.11F), deg(19.0F, -34.0F, -5.0F), "linear"),
+                new Key(0.72F, new Vector3f(0.05F, 0.56F, -0.05F), deg(16.0F, -66.0F, -10.0F), "linear"),
+                new Key(0.8F, new Vector3f(0.12F, 0.5F, 0.0F), deg(14.0F, -88.0F, -12.0F), "out")), new Vector3f(0.07F, -0.19F, -0.1F)));
         DEFAULTS.put(CombatPose.LONGSWORD_SPIN_CHARGE, new Pose(new Vector3f(0.12F, -0.04F, 0.10F),
-                new Vector3f(-10.0F, -45.0F, 70.0F), 6.0F, 2.0F, 0.006F, 0.0F));
-        // The spin's sweep: the forehand cut's motion over the spin's length.
-        // The spin's sweep: the forehand cut's motion over the spin's length.
-        // The spin's sweep: the forehand cut's motion over the spin's length.
-        // The spin's sweep: the forehand cut's motion over the spin's length.
-        DEFAULTS.put(CombatPose.LONGSWORD_SPIN, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 10.0F, 0.0F, 0.0F, 0.0F, List.of(
+                new Vector3f(-10.0F, 45.0F, -70.0F), 8.0F, 2.0F, 0.006F, 0.0F));
+        DEFAULTS.put(CombatPose.LONGSWORD_SPIN, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 15.0F, 0.0F, 0.0F, 0.0F, List.of(
                 new Key(0.1F, new Vector3f(-0.05F, 0.24F, 0.04F), deg(14.0F, -72.0F, -15.0F), "out"),
                 new Key(0.2F, new Vector3f(-0.15F, 0.23F, -0.01F), deg(10.0F, -55.0F, -10.0F), "inout"),
                 new Key(0.32F, new Vector3f(-0.3F, 0.22F, -0.08F), deg(11.0F, -28.0F, -5.0F), "linear"),
@@ -205,13 +202,8 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
                 new Key(0.86F, new Vector3f(-0.7F, -0.6F, 0.02F), deg(-10.0F, 95.0F, 0.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
         poses = new EnumMap<>(DEFAULTS);
 
-        // Third-person starting values; tune through "third_person" in poses.json.
-        // follow_head: how much the arms tilt with the player's look pitch (vanilla's bow pose uses 1.0).
-        // walk_bob: how much of vanilla's walking arm swing survives (1.0 = full held-item swing).
-        // 1.8 style: the arm raised across the chest, the blade held flat across the body, tip angled out and up.
         ARM_DEFAULTS.put(CombatPose.SWORD_BLOCK, new ArmPose(deg(-60.0F, -30.0F, 0.0F), null, 0.3F, 0.3F, deg(-30.0F, 0.0F, 55.0F)));
         ARM_DEFAULTS.put(CombatPose.SPEAR_LOWERED, new ArmPose(deg(-20.0F, 5.0F, 0.0F), deg(-45.0F, 35.0F, 0.0F), 0.6F, 0.5F));
-        // Arm nearly hanging: the 3D trident points along the forearm, so this holds it level, not tipped up.
         ARM_DEFAULTS.put(CombatPose.TRIDENT_LOWERED, new ArmPose(deg(-5.0F, 5.0F, 0.0F), deg(-45.0F, 35.0F, 0.0F), 0.6F, 0.5F));
         ARM_DEFAULTS.put(CombatPose.DAGGER_CHARGE, new ArmPose(deg(55.0F, 25.0F, 20.0F), null, 0.3F, 0.3F));
         ARM_DEFAULTS.put(CombatPose.DAGGER_POUNCE, new ArmPose(deg(-90.0F, -5.0F, 0.0F), null, 0.9F, 0.0F));
@@ -219,26 +211,27 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
         ARM_DEFAULTS.put(CombatPose.SHIELD_BASH, new ArmPose(null, deg(-80.0F, 10.0F, 0.0F), 0.5F, 0.0F));
         ARM_DEFAULTS.put(CombatPose.JAB_DAGGER, new ArmPose(deg(-80.0F, -5.0F, 0.0F), null, 0.8F, 0.0F));
         ARM_DEFAULTS.put(CombatPose.JAB_SPEAR, new ArmPose(deg(-85.0F, 0.0F, 0.0F), deg(-60.0F, 30.0F, 0.0F), 0.8F, 0.0F));
-        ARM_DEFAULTS.put(CombatPose.LONGSWORD_GRIP, new ArmPose(deg(-40.0F, -18.0F, 0.0F), deg(-55.0F, 33.0F, 0.0F), 0.0F, 1.0F));
-        // Longsword swing, keyframed like Better Combat's two-handed horizontal slash: [t, main arm, off arm,
-        // upper-body twist (+ = toward the off hand), item turn (pitch, yaw, roll around the arm), ease].
+        ARM_DEFAULTS.put(CombatPose.LONGSWORD_GRIP, new ArmPose(deg(-62.0F, -50.0F, 0.0F), null, 0.0F, 0.0F, deg(2.0F, 0.0F, -8.0F)));
         ARM_DEFAULTS.put(CombatPose.HEAVY_LONGSWORD, new ArmPose(null, null, 0.5F, 0.0F, null, List.of(
-                new ArmKey(0.22F, deg(-88.0F, 55.0F, 0.0F), deg(-80.0F, 72.0F, 0.0F), -30.0F, deg(-65.0F, 0.0F, -90.0F), "out"),
-                new ArmKey(0.4F, deg(-93.0F, 0.0F, 0.0F), deg(-97.0F, 45.0F, 0.0F), 30.0F, deg(-85.0F, 0.0F, -90.0F), "in"),
-                new ArmKey(0.55F, deg(-92.0F, -35.0F, 0.0F), deg(-93.0F, 28.0F, 0.0F), 55.0F, deg(-80.0F, 0.0F, 90.0F), "out"),
-                new ArmKey(0.68F, deg(-88.0F, -50.0F, 0.0F), deg(-88.0F, 22.0F, 0.0F), 60.0F, deg(-70.0F, 0.0F, 90.0F), "out"))));
-        // Third-person return cut: the forehand mirrored.
+                new ArmKey(0.18F, deg(-112.0F, -41.0F, 0.0F), null, -50.0F, deg(36.0F, 0.0F, -4.0F), "out"),
+                new ArmKey(0.36F, deg(-92.0F, -26.0F, 0.0F), null, -25.0F, deg(31.0F, 0.0F, -71.0F), "in"),
+                new ArmKey(0.48F, deg(-83.0F, -31.0F, 0.0F), null, 15.0F, deg(-40.0F, 0.0F, -74.0F), "linear"),
+                new ArmKey(0.6F, deg(-80.0F, -52.0F, 0.0F), null, 45.0F, deg(-97.0F, 0.0F, -87.0F), "linear"),
+                new ArmKey(0.72F, deg(-67.0F, -66.0F, 0.0F), null, 60.0F, deg(-132.0F, 0.0F, -86.0F), "out"))));
         ARM_DEFAULTS.put(CombatPose.HEAVY_LONGSWORD_BACK, new ArmPose(null, null, 0.5F, 0.0F, null, List.of(
-                new ArmKey(0.22F, deg(-88.0F, -55.0F, 0.0F), deg(-80.0F, -72.0F, 0.0F), 30.0F, deg(-65.0F, 0.0F, 90.0F), "out"),
-                new ArmKey(0.4F, deg(-93.0F, 0.0F, 0.0F), deg(-97.0F, -45.0F, 0.0F), -30.0F, deg(-85.0F, 0.0F, 90.0F), "in"),
-                new ArmKey(0.55F, deg(-92.0F, 35.0F, 0.0F), deg(-93.0F, -28.0F, 0.0F), -55.0F, deg(-80.0F, 0.0F, -90.0F), "out"),
-                new ArmKey(0.68F, deg(-88.0F, 50.0F, 0.0F), deg(-88.0F, -22.0F, 0.0F), -60.0F, deg(-70.0F, 0.0F, -90.0F), "out"))));
-        ARM_DEFAULTS.put(CombatPose.LONGSWORD_SPIN_CHARGE, new ArmPose(deg(-25.0F, 55.0F, 0.0F), deg(-45.0F, 40.0F, 0.0F), 0.3F, 0.3F));
+                new ArmKey(0.18F, deg(-109.0F, -45.0F, 0.0F), null, 50.0F, deg(1.0F, 0.0F, 43.0F), "out"),
+                new ArmKey(0.36F, deg(-89.0F, -39.0F, 0.0F), null, 25.0F, deg(-31.0F, 0.0F, 71.0F), "in"),
+                new ArmKey(0.48F, deg(-86.0F, -16.0F, 0.0F), null, -15.0F, deg(-89.0F, 0.0F, 81.0F), "linear"),
+                new ArmKey(0.6F, deg(-79.0F, -18.0F, 0.0F), null, -45.0F, deg(-156.0F, 0.0F, 83.0F), "linear"),
+                new ArmKey(0.72F, deg(-67.0F, -45.0F, 0.0F), null, -60.0F, deg(-206.0F, 0.0F, 32.0F), "out"),
+                new ArmKey(0.86F, deg(-75.0F, -25.0F, 0.0F), null, -25.0F, deg(-119.0F, 0.0F, 90.0F), "inout"))));
+        ARM_DEFAULTS.put(CombatPose.LONGSWORD_SPIN_CHARGE, new ArmPose(deg(-112.0F, -41.0F, 0.0F), null, 0.3F, 0.3F, null, List.of(
+                new ArmKey(1.0F, deg(-112.0F, -41.0F, 0.0F), null, -50.0F, deg(36.0F, 0.0F, -4.0F), "inout"))));
         ARM_DEFAULTS.put(CombatPose.LONGSWORD_SPIN, new ArmPose(null, null, 0.2F, 0.0F, null, List.of(
-                new ArmKey(0.12F, deg(-85.0F, 40.0F, 0.0F), deg(-82.0F, 70.0F, 0.0F), -30.0F, deg(-50.0F, 0.0F, -90.0F), "out"),
-                new ArmKey(0.3F, deg(-95.0F, 10.0F, 0.0F), deg(-95.0F, 45.0F, 0.0F), 0.0F, deg(-80.0F, 0.0F, -90.0F), "in"),
-                new ArmKey(0.75F, deg(-95.0F, 0.0F, 0.0F), deg(-95.0F, 45.0F, 0.0F), 15.0F, deg(-85.0F, 0.0F, -90.0F), "linear"),
-                new ArmKey(0.85F, deg(-85.0F, -30.0F, 0.0F), deg(-90.0F, 30.0F, 0.0F), 30.0F, deg(-70.0F, 0.0F, 90.0F), "out"))));
+                new ArmKey(0.12F, deg(-112.0F, -41.0F, 0.0F), null, -50.0F, deg(36.0F, 0.0F, -4.0F), "out"),
+                new ArmKey(0.3F, deg(-81.0F, -30.0F, 0.0F), null, 0.0F, deg(-28.0F, 0.0F, -60.0F), "in"),
+                new ArmKey(0.75F, deg(-85.0F, -39.0F, 0.0F), null, 25.0F, deg(-69.0F, 0.0F, -57.0F), "linear"),
+                new ArmKey(0.85F, deg(-71.0F, -60.0F, 0.0F), null, 55.0F, deg(-117.0F, 0.0F, -80.0F), "out"))));
         armPoses = new EnumMap<>(ARM_DEFAULTS);
     }
 
@@ -251,6 +244,7 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
     public void onResourceManagerReload(ResourceManager manager) {
         Map<CombatPose, Pose> loaded = new EnumMap<>(DEFAULTS);
         Map<CombatPose, ArmPose> loadedArms = new EnumMap<>(ARM_DEFAULTS);
+        Map<CombatPose, Float> loadedRolls = new EnumMap<>(ROLL_DEFAULTS);
         Optional<Resource> resource = manager.getResource(FILE);
         if (resource.isPresent()) {
             try (Reader reader = resource.get().openAsReader()) {
@@ -261,6 +255,9 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
                     JsonElement element = root.get(pose.jsonKey());
                     if (element != null && element.isJsonObject() && DEFAULTS.containsKey(pose)) {
                         loaded.put(pose, parse(element.getAsJsonObject(), DEFAULTS.get(pose)));
+                        if (element.getAsJsonObject().has("model_roll")) {
+                            loadedRolls.put(pose, element.getAsJsonObject().get("model_roll").getAsFloat());
+                        }
                     }
                     JsonElement arms = thirdPerson.get(pose.jsonKey());
                     if (arms != null && arms.isJsonObject()) {
@@ -282,6 +279,7 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
         }
         poses = loaded;
         armPoses = loadedArms;
+        rolls = loadedRolls;
     }
 
     private static Pose parse(JsonObject json, Pose fallback) {

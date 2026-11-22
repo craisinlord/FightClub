@@ -9,18 +9,45 @@ base {
     archivesName = "${mod_id}-neoforge-1.21.1"
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs project(':common-1.21.1').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDir project(':common-1.21.1').sourceSets.main.resources.srcDirs
+        }
+    }
+    dev {
+        java {
+            srcDirs project(':common-1.21.1').file('src/dev/java')
+        }
+        resources {
+            srcDirs project(':common-1.21.1').file('src/dev/resources')
+        }
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
 neoForge {
     version = neoforge_version_1_21_1
     mods {
         create(mod_id) {
             sourceSet sourceSets.main
+            sourceSet sourceSets.dev
         }
     }
     runs {
-        client { client() }
+        client {
+            client()
+            sourceSet = sourceSets.dev
+        }
         server { server() }
     }
 }
+
+neoForge.addModdingDependenciesTo(sourceSets.dev)
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
@@ -28,27 +55,13 @@ java {
 }
 
 dependencies {
-    // Backs common's homegrown config framework (ConfigBase) - same library NeoForge's ModConfigSpec uses internally,
-    // pinned explicitly rather than relying on it being exposed transitively.
     implementation "com.electronwill.night-config:toml:3.8.3"
 
-    compileOnly ":alexsmobs-1.22.9"
-    compileOnly ":alexscaves-2.0.2"
-    compileOnly ":iceandfire-2.1-beta.3"
-    compileOnly ":cataclysm-551586-8364209"
-    compileOnly ":sable-neoforge-1.21.1-2.0.3"
-    compileOnly "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.4"
-
-    // Better Combat is an optional integration: compile-only for the compat layer, and present in
-    // dev runs so it can be tested. The publication lists explicit artifacts, so these never ship.
     compileOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-neoforge"
-    // Dev runs include Better Combat unless started with -Pdev_better_combat=false
-    // (useful for checking the mod's own attack animations, which BC replaces).
     if ((findProperty('dev_better_combat') ?: 'true').toString().toBoolean()) {
         runtimeOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-neoforge"
         runtimeOnly "maven.modrinth:playeranimator:${player_animator_version_1_21_1}-forge"
         runtimeOnly "maven.modrinth:cloth-config:${cloth_config_version_1_21_1}+neoforge"
-        // Nested inside the Better Combat jar; listed explicitly so dev runs always have it.
         runtimeOnly "maven.modrinth:tiny-config:${tiny_config_version_1_21_1}-neoforge"
     }
 
@@ -80,18 +93,6 @@ tasks.withType(Jar).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-// Add common source sets directly
-sourceSets {
-    main {
-        java {
-            srcDirs project(':common-1.21.1').sourceSets.main.java.srcDirs
-        }
-        resources {
-            srcDir project(':common-1.21.1').sourceSets.main.resources.srcDirs
-        }
-    }
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -99,7 +100,6 @@ publishing {
             artifactId = project.base.archivesName.get()
             version = project.version
 
-            // NeoForge 1.21.x uses Mojang mappings natively; no deobfuscation step required by consumers.
             artifact jar
             artifact sourcesJar
 
@@ -113,14 +113,6 @@ publishing {
         maven {
             name = 'LocalMaven'
             url = findProperty('mavenRepoPath') ? uri(findProperty('mavenRepoPath')) : uri(new File(rootProject.layout.buildDirectory.get().asFile, 'maven-repo'))
-        }
-        maven {
-            name = 'Forgejo'
-            url = uri('https://maven.example.invalid/replace-me')
-            credentials {
-                username = findProperty('forgejoActor') ?: System.getenv('FORGEJO_ACTOR')
-                password = findProperty('forgejoToken') ?: System.getenv('FORGEJO_TOKEN')
-            }
         }
     }
 }

@@ -23,7 +23,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(TridentItem.class)
 public abstract class TridentItemMixin {
-    // Right click keeps vanilla behavior (durability and Riptide checks); only recovery blocks it.
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
     private void fightClub$use(Level level, Player player, InteractionHand hand,
                                     CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
@@ -32,7 +31,6 @@ public abstract class TridentItemMixin {
         }
     }
 
-    /** Normal trident thrusts pierce the mobs lined up behind the target, like the spear. */
     @Inject(method = "hurtEnemy", at = @At("HEAD"))
     private void fightClub$pierce(ItemStack stack, LivingEntity target, LivingEntity attacker,
                                        CallbackInfoReturnable<Boolean> cir) {
@@ -43,10 +41,6 @@ public abstract class TridentItemMixin {
         }
     }
 
-    /**
-     * Right-click releases go to vanilla, which spawns a real ThrownTrident so Loyalty,
-     * Channeling, Impaling and Riptide keep working. Only recovery blocks the throw.
-     */
     @Inject(method = "releaseUsing", at = @At("HEAD"), cancellable = true)
     private void fightClub$releaseUsing(ItemStack stack, Level level, LivingEntity user, int timeLeft,
                                               CallbackInfo ci) {

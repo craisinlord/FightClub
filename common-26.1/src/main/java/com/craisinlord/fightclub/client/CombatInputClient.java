@@ -5,7 +5,7 @@ import com.craisinlord.fightclub.combat.CombatActionPayload;
 import com.craisinlord.fightclub.combat.CombatChargeState;
 import com.craisinlord.fightclub.combat.CombatSounds;
 import com.craisinlord.fightclub.combat.CombatVanillaRules;
-import com.craisinlord.fightclub.combat.CombatWeaponItem;
+import com.craisinlord.fightclub.combat.CombatWeapons;
 import com.craisinlord.fightclub.combat.WeaponSpec;
 import com.craisinlord.fightclub.combat.WeaponSpecs;
 import net.minecraft.client.Minecraft;
@@ -18,19 +18,7 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.function.Consumer;
 
-/**
- * Hold-left-click charge input (ported from 1.21.1). Spear and trident: the click is claimed
- * before vanilla sees it; letting go before {@link #HOLD_THRESHOLD_TICKS} jabs (on release, buffered
- * until the weapon is ready), holding past it charges with no jab first. Dagger: a tap attacks
- * immediately through vanilla, holding past the threshold charges. Letting go releases a charge.
- * While charging, the Minecraft mixin stops vanilla from mining, re-attacking, starting a
- * right-click use or releasing the spear's item use.
- *
- * <p>Vanilla spears charge through vanilla item use (their kinetic lance charge), so for them the
- * charge also starts and stops item use locally; the server does the same.
- */
 public final class CombatInputClient {
-    /** About a quarter second; short enough to feel responsive, long enough that taps stay taps. */
     public static final int HOLD_THRESHOLD_TICKS = 5;
 
     private static Consumer<CustomPacketPayload> sender = payload -> {};
@@ -40,55 +28,41 @@ public final class CombatInputClient {
     private static long chargeStartTick;
     private static boolean wasDown;
     private static boolean readyPlayed;
-    /** While charging a dagger: the mob a release would strike right now, or null. */
     private static LivingEntity lockTarget;
-    /** After the server ends a charge, wait for the key to be let go. */
     private static boolean waitForRelease;
     private static long bashReadyTick;
-    /** Length of the current bash lock (whiff delay, or the hit cooldown once the server reports a hit). */
     private static int bashLockTicks;
 
     private CombatInputClient() {}
 
-    /** The server ended our charge: end ours without re-sending a release. */
     static void serverEndedCharge() {
         if (!charging) return;
         endLocalCharge();
         waitForRelease = true;
     }
 
-    /** Spear/trident press claimed, not yet a tap (released) or a charge (held long enough). */
     private static boolean pendingTap;
     private static Item pendingItem;
 
-    /** Spear or trident with charged attacks on: these use the claimed tap-or-hold input. */
     private static boolean thrustCharge(ItemStack stack) {
         return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem())
                 && !CombatChargeState.isDagger(stack.getItem());
     }
 
-    /**
-     * Head of {@code Minecraft.handleKeybinds}, before vanilla's startAttack/continueAttack run.
-     * Claims spear/trident attack clicks: letting go before {@link #HOLD_THRESHOLD_TICKS} is a tap
-     * (one jab, on release), holding past it charges, with no jab first. One press, one action.
-     */
     public static void beforeKeybinds(Minecraft client) {
         LocalPlayer player = client.player;
         if (player == null || !thrustCharge(player.getMainHandItem())) return;
         var attackKey = client.options.keyAttack;
         if (charging || pendingTap || waitForRelease) {
-            // Mid-hold: extra clicks mean nothing, and must not reach vanilla.
             while (attackKey.consumeClick()) {}
             return;
         }
         if (player.isUsingItem() || player.isSpectator() || PounceClient.active()) return;
-        // Clicking a block mines as usual (tridents; vanilla spears jab even at blocks, so always claim them).
         if (client.hitResult != null && client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
                 && !player.getMainHandItem().has(net.minecraft.core.component.DataComponents.PIERCING_WEAPON)) return;
         boolean clicked = false;
         while (attackKey.consumeClick()) clicked = true;
         if (!clicked) return;
-        // A fresh press replaces a tap still waiting in the buffer: it makes its own tap or charge.
         clearTapBuffer();
         pendingTap = true;
         pendingItem = player.getMainHandItem().getItem();
@@ -101,17 +75,11 @@ public final class CombatInputClient {
         holdTicks = 0;
     }
 
-    /**
-     * How long a tap that comes in before the weapon is ready waits to go through. Vanilla spears
-     * need a full attack bar to jab and drop an early click without a sound or swing, which reads
-     * as a missed input; within this window it lands the moment the weapon is ready instead.
-     */
     public static final int TAP_BUFFER_TICKS = 6;
     private static int tapBufferTicks;
     private static Item tapItem;
     private static boolean attackWentThrough;
 
-    /** MinecraftInputMixin: vanilla's startAttack got as far as swinging. */
     public static void markAttackWentThrough() { attackWentThrough = true; }
 
     private static void clearTapBuffer() {
@@ -119,7 +87,6 @@ public final class CombatInputClient {
         tapItem = null;
     }
 
-    /** A spear/trident tap was released: attack now, or as soon as the weapon allows. */
     private static void queueTap(Minecraft client, LocalPlayer player) {
         tapItem = player.getMainHandItem().getItem();
         tapBufferTicks = TAP_BUFFER_TICKS;
@@ -135,27 +102,27 @@ public final class CombatInputClient {
         }
     }
 
-    /**
-     * Fires the tap through vanilla's startAttack. True when it went through (vanilla swung).
-     * Vanilla drops it with no side effects when the weapon isn't ready, so retrying is safe.
-     */
     private static boolean tryTap(Minecraft client) {
         attackWentThrough = false;
         ((com.craisinlord.fightclub.mixin.MinecraftAccessor) client).fightClub$startAttack();
         return attackWentThrough;
     }
 
+    private static WeaponSpec shieldSpec() {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return CombatWeapons.shieldSpec(player == null ? ItemStack.EMPTY : player.getUseItem());
+    }
+
     private static int bashCooldownTicks() {
-        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "shield");
+        WeaponSpec spec = shieldSpec();
         return spec == null || spec.recoveryTicks() <= 0 ? 25 : spec.recoveryTicks();
     }
 
     private static int bashHitCooldownTicks() {
-        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "shield");
+        WeaponSpec spec = shieldSpec();
         return spec == null ? WeaponSpec.DEFAULT_BASH_HIT_COOLDOWN : spec.bashHitCooldownTicks();
     }
 
-    /** The server reports our last bash hit something: bashing stays locked for the longer hit cooldown. */
     public static void bashLanded() {
         int extra = bashHitCooldownTicks() - bashLockTicks;
         if (extra > 0) {
@@ -164,7 +131,6 @@ public final class CombatInputClient {
         }
     }
 
-    /** How far the bash lock has run (0..1) while a shield is raised; 1 when a bash is ready or no shield is up. */
     public static float bashReadiness(Minecraft client) {
         LocalPlayer player = client.player;
         if (player == null || client.level == null || bashLockTicks <= 0 || !player.isUsingItem()
@@ -173,17 +139,25 @@ public final class CombatInputClient {
         return left <= 0 ? 1.0F : 1.0F - (float) left / bashLockTicks;
     }
 
-    /** A swing that hit nothing (see MinecraftInputMixin): longsword air sweep / mace streak miss. */
+    private static boolean entityHit;
+
+    public static void resetEntityHit() { entityHit = false; }
+
+    public static void markEntityHit() { entityHit = true; }
+
+    public static void onAttackSwing(LocalPlayer player) {
+        if (!entityHit) LongswordSpinClient.onLongswordSwing(sender, player);
+        entityHit = false;
+    }
+
     public static void onMissSwing(LocalPlayer player) {
         LongswordSpinClient.onMissSwing(sender, player);
     }
 
-    /** Each loader supplies its client-to-server send function at client init. */
     public static void setSender(Consumer<CustomPacketPayload> packetSender) {
         sender = packetSender;
     }
 
-    /** Called once per client tick (end of tick) by each loader. */
     public static void tick(Minecraft client) {
         LocalPlayer player = client.player;
         if (player == null || client.level == null) {
@@ -196,17 +170,14 @@ public final class CombatInputClient {
         boolean pressed = down && !wasDown;
         wasDown = down;
 
-        // Shield bash: vanilla swallows attack clicks while an item is in use, so watch for the press here.
         if (pressed && CombatConfig.enabled(CombatConfig.SHIELD_BASH) && player.isUsingItem() && CombatVanillaRules.isShield(player.getUseItem())
                 && client.level.getGameTime() >= bashReadyTick) {
-            // Assume a whiff; the server's BASH_HIT reply extends this to the hit cooldown.
             bashLockTicks = bashCooldownTicks();
             bashReadyTick = client.level.getGameTime() + bashLockTicks;
             sender.accept(new CombatActionPayload(CombatChargeState.BASH));
             CombatClientPoses.playBash(player);
         }
 
-        // A spear/trident tap released before the weapon was ready: retry until it goes through.
         if (!charging && !pendingTap) tickTapBuffer(client, player);
 
         if (charging) {
@@ -214,7 +185,6 @@ public final class CombatInputClient {
             boolean dagger = CombatChargeState.isDagger(stack.getItem());
             boolean itemCharge = CombatChargeState.usesItemForCharge(chargeItem);
             lockTarget = dagger && stack.getItem() == chargeItem ? pounceTarget(player, stack) : null;
-            // Daggers only sound "ready" while something is in reach: the cue means a release will strike.
             boolean ready = full && (!dagger || lockTarget != null);
             if (ready && !readyPlayed) {
                 readyPlayed = true;
@@ -222,15 +192,12 @@ public final class CombatInputClient {
             } else if (!ready && dagger) {
                 readyPlayed = false;
             }
-            // Item charges (spears) end if the use got interrupted; the others if any use starts.
             boolean useBroken = itemCharge ? !player.isUsingItem() : player.isUsingItem();
             if (!down || stack.getItem() != chargeItem || useBroken || player.isSpectator()) {
                 boolean released = !down && stack.getItem() == chargeItem && full;
-                // Dagger pounce: dash at the locked mob. No lock, no pounce.
                 LivingEntity pounce = released && dagger ? lockTarget : null;
                 stopCharging(pounce == null ? -1 : pounce.getId());
                 if (pounce != null) PounceClient.start(player, pounce);
-                // A full charge released on purpose strikes: show the jab locally (others see the server's swing).
                 if (released && !itemCharge && !dagger) player.swing(InteractionHand.MAIN_HAND);
                 lockTarget = null;
             }
@@ -238,15 +205,12 @@ public final class CombatInputClient {
             if (!down) waitForRelease = false;
             holdTicks = 0;
         } else if (pendingTap) {
-            // Spear/trident press claimed in beforeKeybinds: decide tap or charge.
             if (client.screen != null || stack.getItem() != pendingItem || player.isUsingItem() || player.isSpectator()) {
                 endPending();
             } else if (!down) {
-                // A tap: jab now (or as soon as the weapon is ready), through vanilla.
                 endPending();
                 queueTap(client, player);
             } else if (++holdTicks >= HOLD_THRESHOLD_TICKS && !player.getCooldowns().isOnCooldown(stack)) {
-                // Held: charge. (During recovery the hold just waits, and charges once recovery ends.)
                 endPending();
                 startCharging(client, player, stack);
             }
@@ -263,17 +227,15 @@ public final class CombatInputClient {
 
     private static LivingEntity pounceTarget(LocalPlayer player, ItemStack stack) {
         if (player.isPassenger() || player.isFallFlying() || player.getCooldowns().isOnCooldown(stack)
-                || !(stack.getItem() instanceof CombatWeaponItem weapon)) return null;
-        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(weapon.combatMaterial(), "dagger");
+                || !CombatWeapons.is(stack.getItem(), "dagger")) return null;
+        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(stack.getItem()), "dagger");
         return spec == null ? null : com.craisinlord.fightclub.combat.PounceTargeting.find(player, spec);
     }
 
-    /** A full dagger charge with a mob in reach: releasing now strikes it. */
     public static boolean pounceReady(Minecraft client) {
         return charging && lockTarget != null && chargeProgress(client, 0.0F) >= 1.0F;
     }
 
-    /** Charging, deciding tap-or-hold, or mid-pounce: a click must not start a separate attack or mine. */
     public static boolean blocksAttack() { return isCharging() || pendingTap || waitForRelease || PounceClient.active(); }
 
     private static void startCharging(Minecraft client, LocalPlayer player, ItemStack stack) {
@@ -288,7 +250,6 @@ public final class CombatInputClient {
         CombatClientPoses.play(player, CombatSounds.CHARGE_START);
     }
 
-    /** The mob to outline: the dagger's current lock while charging, or the pounce target mid-dash. */
     public static net.minecraft.world.entity.Entity outlinedTarget() {
         if (PounceClient.active()) return PounceClient.target();
         return charging ? lockTarget : null;
@@ -328,13 +289,11 @@ public final class CombatInputClient {
 
     public static boolean isCharging() { return charging; }
 
-    /** Ticks the current charge has been held (with partial tick), or -1 when not charging. */
     public static float chargeHeldTicks(Minecraft client, float partialTick) {
         if (!charging || client.level == null) return -1.0F;
         return (client.level.getGameTime() - chargeStartTick) + partialTick;
     }
 
-    /** 0..1 progress toward a full charge, including the partial tick for smooth rendering. */
     public static float chargeProgress(Minecraft client, float partialTick) {
         if (!charging || client.level == null || client.player == null) return 0.0F;
         float held = (client.level.getGameTime() - chargeStartTick) + partialTick;

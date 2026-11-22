@@ -23,6 +23,15 @@ public final class FightClubFabricEvents {
         PayloadTypeRegistry.serverboundPlay().register(CombatActionPayload.TYPE, CombatActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(com.craisinlord.fightclub.combat.CombatPosePayload.TYPE,
                 com.craisinlord.fightclub.combat.CombatPosePayload.STREAM_CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(com.craisinlord.fightclub.combat.WeaponItemsPayload.TYPE,
+                com.craisinlord.fightclub.combat.WeaponItemsPayload.STREAM_CODEC);
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                com.craisinlord.fightclub.combat.CombatPlatform.sendToPlayer(handler.player,
+                        com.craisinlord.fightclub.combat.WeaponItemsPayload.current()));
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+            var payload = com.craisinlord.fightclub.combat.WeaponItemsPayload.current();
+            for (var player : server.getPlayerList().getPlayers()) com.craisinlord.fightclub.combat.CombatPlatform.sendToPlayer(player, payload);
+        });
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             CombatChargeState.clear(handler.player);
             com.craisinlord.fightclub.combat.CombatRecovery.clear(handler.player);
@@ -30,7 +39,6 @@ public final class FightClubFabricEvents {
         ServerPlayNetworking.registerGlobalReceiver(CombatActionPayload.TYPE,
                 (payload, context) -> context.server().execute(() ->
                         CombatChargeState.handle(context.player(), payload.action(), payload.target())));
-        // Dagger pounces strike when the dashing player arrives.
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) CombatChargeState.tick(player);
         });
@@ -38,7 +46,7 @@ public final class FightClubFabricEvents {
             ItemStack stack = player.getItemInHand(hand);
             if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && stack.getItem() instanceof CombatWeaponItem weapon
                     && weapon.combatWeapon().equals("sword")
-                    && player.getOffhandItem().is(Items.SHIELD)) return InteractionResult.PASS;
+                    && com.craisinlord.fightclub.combat.CombatWeapons.isShield(player.getOffhandItem())) return InteractionResult.PASS;
             if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && stack.getItem() instanceof CombatWeaponItem weapon
                     && weapon.combatWeapon().equals("sword")) {
                 player.startUsingItem(hand);

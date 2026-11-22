@@ -1,0 +1,7 @@
+{
+  "values": [
+    {"id": "fight_club:oreganized/electrum/longsword", "required": false},
+    {"id": "fight_club:oreganized/electrum/spear", "required": false},
+    {"id": "fight_club:oreganized/electrum/dagger", "required": false}
+  ]
+}

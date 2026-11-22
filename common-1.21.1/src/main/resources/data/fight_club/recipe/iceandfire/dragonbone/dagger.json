@@ -24,7 +24,7 @@
       "item": "iceandfire:dragonbone"
     },
     "S": {
-      "item": "iceandfire:witherbone"
+      "tag": "c:bones/wither"
     }
   },
   "result": {

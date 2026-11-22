@@ -11,19 +11,9 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
-/**
- * Third-person arm poses on the player model, run after vanilla has posed the arms. Uses the same
- * per-player state as first person, so other players see your sword block, charges, mace wind-up
- * and bashes. With Better Combat installed, attack swings and the longsword grip are left to it.
- * Ported from 1.21.1; on 26.x the model is posed from a render state, so the player is looked up
- * by the state's entity id (render and tick both run on the client thread).
- *
- * <p>Poses keep some life: arms tilt with the player's look pitch ({@code follow_head}) and keep
- * part of vanilla's walking swing ({@code walk_bob}), so held poses don't freeze while moving.
- * The vanilla spear's charge pose is vanilla's own (see AvatarRendererArmPoseMixin).
- */
 public final class CombatThirdPerson {
     private CombatThirdPerson() {}
 
@@ -36,10 +26,8 @@ public final class CombatThirdPerson {
         boolean rightHanded = state.mainArm == HumanoidArm.RIGHT;
         ModelPart main = rightHanded ? model.rightArm : model.leftArm;
         ModelPart off = rightHanded ? model.leftArm : model.rightArm;
-        // Config values are written for a right-handed player; mirror Y/Z for left-handers.
         float mirror = rightHanded ? 1.0F : -1.0F;
         float headPitch = model.head.xRot;
-        // Vanilla's held-item walking swing for the main arm; two-handed poses move both arms together.
         float bob = Mth.cos(state.walkAnimationPos * 0.6662F + (rightHanded ? Mth.PI : 0.0F)) * state.walkAnimationSpeed * 0.5F;
 
         CombatClientPoses.View view = CombatClientPoses.view(player, partialTick);
@@ -48,25 +36,19 @@ public final class CombatThirdPerson {
         boolean offhandEmpty = player.getOffhandItem().isEmpty();
         boolean betterCombat = BetterCombatCompat.isLoaded();
         float attack = state.swingAnimation;
+        float longswordSwing = !betterCombat && kind == WeaponKind.LONGSWORD ? CombatClientPoses.thirdPersonSwing(player, partialTick) : 0.0F;
 
-        // Two-handed longsword grip: the main arm holds the pose between swings, and the off hand
-        // stays on the hilt by following the main arm's pitch, including during swings.
-        if (!betterCombat && kind == WeaponKind.LONGSWORD && offhandEmpty && !player.isUsingItem() && held <= 0.0F) {
+        boolean twoHanded = grip(kind, offhandEmpty, player, held, betterCombat);
+        if (twoHanded) {
             CombatPoseConfig.ArmPose grip = CombatPoseConfig.arms(CombatPose.LONGSWORD_GRIP);
             if (grip != null && grip.main() != null) {
-                float hold = attack > 0.0F ? 1.0F - Mth.sin(attack * Mth.PI) : 1.0F;
-                lerp(main, grip.main(), mirror, hold);
-                main.xRot += (headPitch * grip.followHead() + bob * grip.walkBob()) * hold;
-                if (grip.off() != null) {
-                    off.xRot = main.xRot + Mth.DEG_TO_RAD * (grip.off().x() - grip.main().x());
-                    off.yRot = mirror * Mth.DEG_TO_RAD * grip.off().y();
-                    off.zRot = mirror * Mth.DEG_TO_RAD * grip.off().z();
-                }
+                float lean = state.isCrouching ? 0.4F : 0.0F;
+                lerp(main, grip.main(), mirror, 1.0F);
+                main.yRot += model.body.yRot;
+                pitchAboutShoulders(main, model.body.yRot, headPitch * grip.followHead() + lean);
             }
         }
 
-        // Forward thrust instead of the sideways chop for daggers and tridents (vanilla spears stab already).
-        // (Tridents poke with vanilla's spear STAB instead, see AvatarRendererSpinMixin.)
         if (!betterCombat && attack > 0.0F && held <= 0.0F && kind == WeaponKind.DAGGER) {
             CombatPoseConfig.ArmPose jab = CombatPoseConfig.arms(CombatPose.JAB_DAGGER);
             float punch = CombatClientPoses.punch(attack);
@@ -76,27 +58,37 @@ public final class CombatThirdPerson {
             }
         }
 
-        // Longsword swing (without Better Combat): one wide horizontal cut, the sword arm sweeping
-        // from out on its side across the body; the off hand rides along on the hilt.
-        if (!betterCombat && attack > 0.0F && held <= 0.0F && kind == WeaponKind.LONGSWORD) {
+        if (longswordSwing > 0.0F && held <= 0.0F) {
             CombatPoseConfig.ArmPose arc = CombatPoseConfig.arms(
                     CombatClientPoses.backhand(player) ? CombatPose.HEAVY_LONGSWORD_BACK : CombatPose.HEAVY_LONGSWORD);
-            if (arc != null) keyedArms(model, main, off, arc, mirror, attack, offhandEmpty, headPitch);
+            if (arc != null) keyedArms(model, main, off, arc, mirror, longswordSwing, offhandEmpty, headPitch, twoHanded);
         }
 
-        if (view == null) return;
+        boolean hiltPoses = kind == WeaponKind.LONGSWORD && offhandEmpty;
+        float onHilt = twoHanded ? 1.0F : 0.0F;
 
-        // Longsword spin: arms out with the blade while the whole body turns (LongswordSpinClient.bodySpin).
+        if (view == null) {
+            if (onHilt > 0.0F) holdHilt(main, off, player, null, partialTick, betterCombat, mirror, rightHanded, onHilt);
+            return;
+        }
+
         if (view.spin() > 0.0F && kind == WeaponKind.LONGSWORD) {
             CombatPoseConfig.ArmPose spin = CombatPoseConfig.arms(CombatPose.LONGSWORD_SPIN);
-            if (spin != null) keyedArms(model, main, off, spin, mirror, view.spin(), offhandEmpty, headPitch);
+            if (spin != null) {
+                float weight = keyedArms(model, main, off, spin, mirror, view.spin(), offhandEmpty, headPitch, hiltPoses);
+                if (hiltPoses) onHilt = Math.max(onHilt, weight);
+            }
         }
 
         if (held > 0.0F && view.pose() != CombatPose.NONE) {
             CombatPoseConfig.ArmPose arms = CombatPoseConfig.arms(view.pose());
-            if (arms != null) pose(main, off, arms, mirror, held, offhandEmpty, headPitch, bob);
+            if (arms != null && hiltPoses && view.pose() == CombatPose.LONGSWORD_SPIN_CHARGE && !arms.keys().isEmpty()) {
+                holdKey(model, main, arms.keys().get(0), mirror, held, (headPitch * arms.followHead() + bob * arms.walkBob()) * held);
+                onHilt = Math.max(onHilt, held);
+            } else if (arms != null) {
+                pose(main, off, arms, mirror, held, offhandEmpty, headPitch, bob);
+            }
             if (view.pose() == CombatPose.DAGGER_CHARGE) {
-                // Dagger ready cue: a quick shake of the drawn-back arm the moment the charge fills.
                 float flash = CombatClientPoses.readyFlash(player, partialTick) * held;
                 float jitter = Mth.sin((player.tickCount + partialTick) * 2.7F);
                 main.xRot += flash * 0.15F * jitter;
@@ -106,87 +98,167 @@ public final class CombatThirdPerson {
 
         if (view.bash() > 0.0F) {
             CombatPoseConfig.ArmPose bash = CombatPoseConfig.arms(CombatPose.SHIELD_BASH);
-            ModelPart shieldArm = player.getOffhandItem().is(Items.SHIELD) ? off
-                    : player.getMainHandItem().is(Items.SHIELD) ? main : null;
+            ModelPart shieldArm = com.craisinlord.fightclub.combat.CombatWeapons.isShield(player.getOffhandItem()) ? off
+                    : com.craisinlord.fightclub.combat.CombatWeapons.isShield(player.getMainHandItem()) ? main : null;
             if (bash != null && bash.off() != null && shieldArm != null) {
-                // shield_bash values are written for the left arm.
                 lerp(shieldArm, bash.off(), shieldArm == model.leftArm ? 1.0F : -1.0F, view.bash());
                 shieldArm.xRot += headPitch * bash.followHead() * view.bash();
             }
         }
+
+        if (onHilt > 0.0F) holdHilt(main, off, player, view, partialTick, betterCombat, mirror, rightHanded, onHilt);
     }
 
-    /**
-     * Extra rotation for the item in this hand, in degrees [pitch, yaw, roll] (roll twists it around
-     * the arm's length), mirrored for the left arm; null when there is none. Covers the held pose's
-     * item turn (sword_block's flat, outward blade) and the longsword swing / spin keyframes. Called by
-     * ItemInHandLayerMixin just before the item draws.
-     */
-    public static Vector3f itemRotation(net.minecraft.client.renderer.entity.state.ArmedEntityRenderState state, HumanoidArm arm) {
+    private static void holdHilt(ModelPart main, ModelPart off, Player player, CombatClientPoses.View view, float partialTick,
+                                 boolean betterCombat, float mirror, boolean rightHanded, float amount) {
+        Quaternionf turn = longswordTurn(player, view, partialTick, betterCombat);
+        if (turn != null) offHandOnHilt(main, off, mirrorTurn(turn, mirror), rightHanded, amount);
+    }
+
+    public record ItemTurn(Quaternionf rotation, boolean atFist) {}
+
+    public static final float FIST_PIVOT = -2.0F / 16.0F;
+
+    public static ItemTurn itemTurn(net.minecraft.client.renderer.entity.state.ArmedEntityRenderState state, HumanoidArm arm) {
         if (!CombatConfig.enabled(CombatConfig.ANIMATIONS) || !(state instanceof AvatarRenderState avatar) || arm != avatar.mainArm) return null;
         Minecraft client = Minecraft.getInstance();
         if (client.level == null || !(client.level.getEntity(avatar.id) instanceof Player player)) return null;
         float mirror = arm == HumanoidArm.RIGHT ? 1.0F : -1.0F;
-        CombatClientPoses.View view = CombatClientPoses.view(player, Mth.clamp(avatar.ageInTicks - player.tickCount, 0.0F, 1.0F));
+        float partialTick = Mth.clamp(avatar.ageInTicks - player.tickCount, 0.0F, 1.0F);
+        CombatClientPoses.View view = CombatClientPoses.view(player, partialTick);
         float held = view == null ? 0.0F : view.amount();
-        boolean longsword = WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD;
-        Vector3f item = null;
-        if (longsword && view != null && view.spin() > 0.0F) {
-            CombatPoseConfig.ArmPose spin = CombatPoseConfig.arms(CombatPose.LONGSWORD_SPIN);
-            if (spin != null) item = keyedItem(spin, view.spin());
-        } else if (longsword && held <= 0.0F && !BetterCombatCompat.isLoaded()) {
-            float attack = avatar.swingAnimation;
-            CombatPoseConfig.ArmPose arc = CombatPoseConfig.arms(
-                    CombatClientPoses.backhand(player) ? CombatPose.HEAVY_LONGSWORD_BACK : CombatPose.HEAVY_LONGSWORD);
-            if (attack > 0.0F && arc != null) item = keyedItem(arc, attack);
-        } else if (held > 0.0F && view.pose() != CombatPose.NONE) {
-            CombatPoseConfig.ArmPose arms = CombatPoseConfig.arms(view.pose());
-            if (arms != null && arms.item() != null) item = new Vector3f(arms.item()).mul(held);
+        if (WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD) {
+            Quaternionf turn = longswordTurn(player, view, partialTick, BetterCombatCompat.isLoaded());
+            if (turn != null) return turn.equals(new Quaternionf(), 1.0E-6F) ? null : new ItemTurn(mirrorTurn(turn, mirror), true);
         }
-        if (item == null || item.lengthSquared() == 0.0F) return null;
-        return new Vector3f(item.x(), mirror * item.y(), mirror * item.z());
+        if (held <= 0.0F || view.pose() == CombatPose.NONE) return null;
+        CombatPoseConfig.ArmPose arms = CombatPoseConfig.arms(view.pose());
+        if (arms == null || arms.item() == null || arms.item().lengthSquared() == 0.0F) return null;
+        Vector3f item = new Vector3f(arms.item()).mul(held);
+        return new ItemTurn(turn(new Vector3f(item.x(), mirror * item.y(), mirror * item.z())), false);
     }
 
-    private static Vector3f keyedItem(CombatPoseConfig.ArmPose pose, float t) {
-        if (pose.keys().isEmpty() || t <= 0.0F || t >= 1.0F) return null;
+    private static Quaternionf longswordTurn(Player player, CombatClientPoses.View view, float partialTick, boolean betterCombat) {
+        float held = view == null ? 0.0F : view.amount();
+        float spin = view == null ? 0.0F : view.spin();
+        CombatPoseConfig.ArmPose charge = held > 0.0F && view.pose() == CombatPose.LONGSWORD_SPIN_CHARGE
+                ? CombatPoseConfig.arms(CombatPose.LONGSWORD_SPIN_CHARGE) : null;
+        Vector3f chargeItem = charge != null && !charge.keys().isEmpty() ? charge.keys().get(0).item() : null;
+        if (spin <= 0.0F && chargeItem == null && (held > 0.0F || betterCombat)) return null;
+        CombatPoseConfig.ArmPose gripPose = !betterCombat && player.getOffhandItem().isEmpty()
+                ? CombatPoseConfig.arms(CombatPose.LONGSWORD_GRIP) : null;
+        Quaternionf rest = turn(gripPose != null && gripPose.item() != null ? gripPose.item() : new Vector3f());
+        Quaternionf q;
+        if (spin > 0.0F) {
+            q = keyedTurn(CombatPoseConfig.arms(CombatPose.LONGSWORD_SPIN), spin, rest);
+        } else if (held <= 0.0F) {
+            q = keyedTurn(CombatPoseConfig.arms(CombatClientPoses.backhand(player) ? CombatPose.HEAVY_LONGSWORD_BACK : CombatPose.HEAVY_LONGSWORD),
+                    CombatClientPoses.thirdPersonSwing(player, partialTick), rest);
+        } else {
+            q = rest;
+        }
+        if (chargeItem != null) q.slerp(turn(chargeItem), held);
+        return q;
+    }
+
+    private static Quaternionf keyedTurn(CombatPoseConfig.ArmPose pose, float t, Quaternionf rest) {
+        if (pose == null || pose.keys().isEmpty() || t <= 0.0F || t >= 1.0F) return new Quaternionf(rest);
         CombatPoseConfig.Segment seg = CombatPoseConfig.segment(pose.keys(), t);
-        Vector3f from = seg.from() < 0 ? new Vector3f() : pose.keys().get(seg.from()).item();
-        Vector3f to = seg.to() < 0 ? new Vector3f() : pose.keys().get(seg.to()).item();
-        return new Vector3f(from).lerp(to, seg.s());
+        Vector3f from = seg.from() < 0 ? null : pose.keys().get(seg.from()).item();
+        Vector3f to = seg.to() < 0 ? null : pose.keys().get(seg.to()).item();
+        Quaternionf q = from == null ? new Quaternionf(rest) : turn(from);
+        return q.slerp(to == null ? rest : turn(to), seg.s());
     }
 
-    /**
-     * Keyframed two-arm motion over progress t (longsword swing and spin), in the style of Better
-     * Combat's keyframed animations: each key gives absolute arm angles and an upper-body twist,
-     * eased from the previous key; before the first key and after the last it blends with whatever
-     * pose the arms already had (vanilla or the longsword grip). The off arm follows only with an
-     * empty offhand.
-     */
-    private static void keyedArms(HumanoidModel<?> model, ModelPart main, ModelPart off, CombatPoseConfig.ArmPose pose,
-                                  float mirror, float t, boolean offhandEmpty, float headPitch) {
+    private static Quaternionf turn(Vector3f degrees) {
+        return new Quaternionf().rotationZ(Mth.DEG_TO_RAD * degrees.z())
+                .rotateX(Mth.DEG_TO_RAD * degrees.x()).rotateY(Mth.DEG_TO_RAD * degrees.y());
+    }
+
+    private static Quaternionf mirrorTurn(Quaternionf turn, float mirror) {
+        return new Quaternionf(turn.x(), mirror * turn.y(), mirror * turn.z(), turn.w());
+    }
+
+    private static final Vector3f HILT_GRIP = new Vector3f(0.0F, 0.2206F, 0.9285F);
+    private static final Vector3f HILT_POMMEL = new Vector3f(0.0F, -0.9729F, 0.2312F);
+    private static final float HILT_GAP = 3.0F, HILT_GAP_MIN = 2.0F, HILT_GAP_MAX = 4.0F;
+    private static final float OFF_GRIP_Y = 9.5F;
+
+    private static void offHandOnHilt(ModelPart main, ModelPart off, Quaternionf turn, boolean rightHanded, float amount) {
+        float side = rightHanded ? 1.0F : -1.0F;
+        Vector3f grip = turn.transform(new Vector3f(HILT_GRIP)).add(0.0F, FIST_PIVOT * 16.0F, 0.0F);
+        Vector3f pommel = turn.transform(new Vector3f(HILT_POMMEL));
+        Vector3f g = new Vector3f(-grip.x() - side, 10.0F - grip.z(), -grip.y() - 2.0F);
+        Vector3f p = new Vector3f(-pommel.x(), -pommel.z(), -pommel.y());
+        Quaternionf mainRot = new Quaternionf().rotationZYX(main.zRot, main.yRot, main.xRot);
+        mainRot.transform(g).add(main.x, main.y, main.z);
+        mainRot.transform(p);
+        Vector3f w = g.sub(off.x, off.y, off.z);
+        float hx = side;
+        float reach = (float) Math.sqrt(hx * hx + OFF_GRIP_Y * OFF_GRIP_Y);
+        float b = p.dot(w);
+        float disc = b * b - (w.lengthSquared() - reach * reach);
+        float gap;
+        if (disc >= 0.0F) {
+            float root = (float) Math.sqrt(disc);
+            float near = -b - root, far = -b + root;
+            gap = Math.abs(near - HILT_GAP) < Math.abs(far - HILT_GAP) ? near : far;
+        } else {
+            gap = -b;
+        }
+        gap = Mth.clamp(gap, HILT_GAP_MIN, HILT_GAP_MAX);
+        Vector3f d = w.fma(gap, p);
+        float length = d.length();
+        if (length < 1.0E-4F) return;
+        d.mul(reach / length);
+        float pitch = -(float) Math.acos(Mth.clamp(d.y() / OFF_GRIP_Y, -1.0F, 1.0F));
+        float yaw = (float) (Mth.atan2(d.x(), d.z()) - Mth.atan2(hx, OFF_GRIP_Y * Mth.sin(pitch)));
+        off.xRot = Mth.lerp(amount, off.xRot, pitch);
+        off.yRot += Mth.wrapDegrees((yaw - off.yRot) * Mth.RAD_TO_DEG) * Mth.DEG_TO_RAD * amount;
+        off.zRot = Mth.lerp(amount, off.zRot, 0.0F);
+    }
+
+    private static void pitchAboutShoulders(ModelPart arm, float bodyYaw, float angle) {
+        if (angle == 0.0F) return;
+        Quaternionf q = new Quaternionf().rotationAxis(angle, Mth.cos(bodyYaw), 0.0F, -Mth.sin(bodyYaw))
+                .mul(new Quaternionf().rotationZYX(arm.zRot, arm.yRot, arm.xRot));
+        Vector3f euler = q.getEulerAnglesZYX(new Vector3f());
+        arm.xRot = euler.x();
+        arm.yRot = euler.y();
+        arm.zRot = euler.z();
+    }
+
+    private static boolean grip(WeaponKind kind, boolean offhandEmpty, Player player, float held, boolean betterCombat) {
+        return !betterCombat && kind == WeaponKind.LONGSWORD && offhandEmpty && !player.isUsingItem() && held <= 0.0F;
+    }
+
+    private static float keyedArms(HumanoidModel<?> model, ModelPart main, ModelPart off, CombatPoseConfig.ArmPose pose,
+                                  float mirror, float t, boolean offhandEmpty, float headPitch, boolean offOnHilt) {
         java.util.List<CombatPoseConfig.ArmKey> keys = pose.keys();
-        if (keys.isEmpty() || t <= 0.0F || t >= 1.0F) return;
+        if (keys.isEmpty() || t <= 0.0F || t >= 1.0F) return 0.0F;
         CombatPoseConfig.Segment seg = CombatPoseConfig.segment(keys, t);
         CombatPoseConfig.ArmKey from = seg.from() < 0 ? null : keys.get(seg.from());
         CombatPoseConfig.ArmKey to = seg.to() < 0 ? null : keys.get(seg.to());
         float s = seg.s();
-        // How much of the keyed motion shows (fades in from / out to the existing pose at the ends).
         float weight = from == null ? s : to == null ? 1.0F - s : 1.0F;
         float follow = headPitch * pose.followHead() * weight;
-        // Key angles are relative to the torso: take vanilla's own attack twist out of the arms first.
         model.rightArm.yRot -= model.body.yRot;
         model.leftArm.yRot -= model.body.yRot;
         keyedPart(main, from == null ? null : from.main(), to == null ? null : to.main(), s, mirror);
-        main.xRot += follow;
+        if (!offOnHilt) main.xRot += follow;
         Vector3f offFrom = from == null ? null : from.off(), offTo = to == null ? null : to.off();
-        if (offhandEmpty && (offFrom != null || offTo != null)) {
+        if (!offOnHilt && offhandEmpty && (offFrom != null || offTo != null)) {
             keyedPart(off, offFrom, offTo, s, mirror);
             off.xRot += follow;
         }
-        // Upper-body twist: turn the torso and carry both shoulders (and arm yaw) around with it, the
-        // way vanilla's own attack twist does.
         float twist = (from == null ? 0.0F : from.body()) * (1.0F - s) + (to == null ? 0.0F : to.body()) * s;
         float bodyYaw = -mirror * Mth.DEG_TO_RAD * twist;
+        twistBody(model, bodyYaw);
+        if (offOnHilt) pitchAboutShoulders(main, bodyYaw, follow);
+        return weight;
+    }
+
+    private static void twistBody(HumanoidModel<?> model, float bodyYaw) {
         model.body.yRot = bodyYaw;
         model.rightArm.z = Mth.sin(bodyYaw) * 5.0F;
         model.rightArm.x = -Mth.cos(bodyYaw) * 5.0F;
@@ -196,7 +268,16 @@ public final class CombatThirdPerson {
         model.leftArm.yRot += bodyYaw;
     }
 
-    /** Sets a part between two keyed angles (null = the part's current angles, i.e. rest). */
+    private static void holdKey(HumanoidModel<?> model, ModelPart main, CombatPoseConfig.ArmKey key, float mirror,
+                                float amount, float pitch) {
+        model.rightArm.yRot -= model.body.yRot;
+        model.leftArm.yRot -= model.body.yRot;
+        float bodyYaw = Mth.lerp(amount, model.body.yRot, -mirror * Mth.DEG_TO_RAD * key.body());
+        if (key.main() != null) lerp(main, key.main(), mirror, amount);
+        twistBody(model, bodyYaw);
+        pitchAboutShoulders(main, bodyYaw, pitch);
+    }
+
     private static void keyedPart(ModelPart part, Vector3f from, Vector3f to, float s, float mirror) {
         if (from != null && to != null) {
             lerp(part, new Vector3f(from).lerp(to, s), mirror, 1.0F);
@@ -207,7 +288,6 @@ public final class CombatThirdPerson {
         }
     }
 
-    /** Applies a two-arm pose with head follow and walk bob, scaled by amount. */
     private static void pose(ModelPart main, ModelPart off, CombatPoseConfig.ArmPose arms, float mirror, float amount,
                              boolean offhandEmpty, float headPitch, float bob) {
         float extra = (headPitch * arms.followHead() + bob * arms.walkBob()) * amount;

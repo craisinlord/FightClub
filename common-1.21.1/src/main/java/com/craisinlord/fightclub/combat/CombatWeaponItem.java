@@ -22,16 +22,10 @@ public final class CombatWeaponItem extends SwordItem {
     private final String material;
     private final String weapon;
 
-    /**
-     * The tier supplies durability, enchantability and repair material. Damage, speed and reach
-     * are not baked in here: CombatWeaponStats supplies them live from the weapon spec, so they
-     * follow datapack edits and match the spec exactly (no tier bonus added on top).
-     */
     public CombatWeaponItem(String material, String weapon, Tier tier) {
         this(material, weapon, tier, new Item.Properties());
     }
 
-    /** Weapons are always unstackable; anything else in the properties (fire resistance, rarity...) is kept. */
     public CombatWeaponItem(String material, String weapon, Tier tier, Item.Properties properties) {
         super(tier, properties.stacksTo(1));
         this.material = material;
@@ -40,6 +34,16 @@ public final class CombatWeaponItem extends SwordItem {
 
     public String combatMaterial() { return material; }
     public String combatWeapon() { return weapon; }
+
+    public boolean isPrimaryItemFor(ItemStack stack, net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> enchantment) {
+        return enchantment.value().isPrimaryItem(stack);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public net.minecraft.world.item.component.ItemAttributeModifiers getDefaultAttributeModifiers() {
+        return CombatWeaponStats.defaultModifiers(this);
+    }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
@@ -57,7 +61,7 @@ public final class CombatWeaponItem extends SwordItem {
         if (CombatRecovery.active(player)) {
             return InteractionResultHolder.fail(player.getItemInHand(hand));
         }
-        if (hand == InteractionHand.MAIN_HAND && player.getOffhandItem().is(Items.SHIELD)) {
+        if (hand == InteractionHand.MAIN_HAND && CombatWeapons.isShield(player.getOffhandItem())) {
             return InteractionResultHolder.pass(player.getItemInHand(hand));
         }
         if (canThrow(material, weapon)) {
@@ -66,7 +70,6 @@ public final class CombatWeaponItem extends SwordItem {
             player.startUsingItem(hand);
             return InteractionResultHolder.consume(stack);
         }
-        // Longsword: hold to charge a spin (released in releaseUsing).
         if (weapon.equals("longsword") && hand == InteractionHand.MAIN_HAND && LongswordSpin.hasSpin(player.getItemInHand(hand))
                 && !LongswordSpin.onSpinCooldown(player)) {
             player.startUsingItem(hand);
@@ -123,6 +126,7 @@ public final class CombatWeaponItem extends SwordItem {
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
         if (attacker instanceof Player player && CombatRecovery.active(player)) return false;
         boolean result = super.hurtEnemy(stack, target, attacker);
+        com.craisinlord.fightclub.compat.CompatAbilities.onHit(stack, target, attacker, com.craisinlord.fightclub.compat.CompatAbilities.Hit.SWING);
         afterHit(material, weapon, target, attacker);
         return result;
     }
@@ -132,8 +136,9 @@ public final class CombatWeaponItem extends SwordItem {
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
         if (spec == null) return;
         if (spec.attackStyle() == WeaponSpec.AttackStyle.THRUST) CombatAttacks.pierce(player, target, spec);
-        if (spec.attackStyle() == WeaponSpec.AttackStyle.SWEEP) CombatAttacks.sweep(player, target, spec);
-        // A normal hit's short recovery must not replace the longer spin cooldown on the hotbar.
+        if (spec.attackStyle() == WeaponSpec.AttackStyle.SWEEP && !(weapon.equals("longsword") && LongswordSpin.sweepsArc(player))) {
+            CombatAttacks.sweep(player, target, spec);
+        }
         if (weapon.equals("longsword") && !LongswordSpin.onSpinCooldown(player)) CombatRecovery.start(player, spec.recoveryTicks());
     }
 }
