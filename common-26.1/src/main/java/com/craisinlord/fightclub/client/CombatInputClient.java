@@ -198,7 +198,6 @@ public final class CombatInputClient {
                 LivingEntity pounce = released && dagger ? lockTarget : null;
                 stopCharging(pounce == null ? -1 : pounce.getId());
                 if (pounce != null) PounceClient.start(player, pounce);
-                if (released && !itemCharge && !dagger) player.swing(InteractionHand.MAIN_HAND);
                 lockTarget = null;
             }
         } else if (waitForRelease) {

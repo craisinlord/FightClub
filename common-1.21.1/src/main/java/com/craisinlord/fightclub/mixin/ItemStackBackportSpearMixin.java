@@ -88,6 +88,12 @@ public abstract class ItemStackBackportSpearMixin {
     @Inject(method = "hurtEnemy", at = @At("HEAD"), cancellable = true)
     private void fightClub$backportSpearRecovery(LivingEntity target, Player attacker, CallbackInfoReturnable<Boolean> cir) {
         ItemStack stack = (ItemStack) (Object) this;
+        if (CombatWeapons.isTrident(stack.getItem()) && !attacker.level().isClientSide && !CombatRecovery.active(attacker)) {
+            com.craisinlord.fightclub.combat.WeaponSpec spec = com.craisinlord.fightclub.combat.WeaponSpecs.getOrLoadBuiltin("base", "trident");
+            if (spec != null && spec.attackStyle() == com.craisinlord.fightclub.combat.WeaponSpec.AttackStyle.THRUST) {
+                com.craisinlord.fightclub.combat.CombatAttacks.pierce(attacker, target, spec);
+            }
+        }
         if ((CombatWeapons.backportSpearMaterial(stack.getItem()) != null || CombatWeapons.external(stack.getItem()) != null)
                 && CombatRecovery.active(attacker)) {
             cir.setReturnValue(false);

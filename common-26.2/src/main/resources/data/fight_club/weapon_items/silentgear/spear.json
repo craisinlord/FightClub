@@ -1,0 +1,6 @@
+{
+  "weapon": "spear",
+  "material": "iron",
+  "items": ["silentgear:spear"],
+  "replaces": "all"
+}

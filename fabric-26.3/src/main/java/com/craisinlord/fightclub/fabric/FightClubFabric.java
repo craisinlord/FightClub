@@ -47,7 +47,7 @@ public final class FightClubFabric implements ModInitializer {
             combatItems.add(item);
         }
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT)
-                .register(output -> combatItems.forEach(output::prepend));
+                .register(output -> combatItems.stream().filter(item -> !com.craisinlord.fightclub.combat.ExternalWeapons.isReplaced(item)).forEach(output::prepend));
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new FabricWeaponSpecReloadListener());
         FightClubFabricEvents.register();
         FightClub.LOGGER.info("Fight Club 26.3 Fabric initialized");

@@ -28,3 +28,31 @@ type = "required"
 versionRange = "[26.3,26.4)"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "silentgear"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "simplyswords"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "spartanweaponry"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "spartan_weaponry_unofficial"
+type = "optional"
+versionRange = "*"
+ordering = "AFTER"
+side = "BOTH"

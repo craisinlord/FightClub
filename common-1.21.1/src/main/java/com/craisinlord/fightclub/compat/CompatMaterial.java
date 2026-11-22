@@ -77,7 +77,7 @@ public enum CompatMaterial implements Tier {
         return folder + "/" + material + "/" + weapon;
     }
 
-    @Override public int getUses() { return uses; }
+    @Override public int getUses() { return IceAndFireStats.isDragonsteel(material) ? IceAndFireStats.dragonsteelDurability(uses) : uses; }
     @Override public float getSpeed() { return 8.0f; }
     @Override public float getAttackDamageBonus() { return attackDamageBonus; }
     @Override public int getEnchantmentValue() { return enchantability; }

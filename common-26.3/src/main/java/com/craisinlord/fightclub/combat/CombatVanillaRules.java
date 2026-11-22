@@ -36,7 +36,7 @@ public final class CombatVanillaRules {
         ExternalWeapons.Entry external = CombatWeapons.external(player.getMainHandItem().getItem());
         return external != null && !external.weapon().equals("sword");
     }
-    public static boolean isMace(ItemStack stack) { return stack.is(Items.MACE); }
+    public static boolean isMace(ItemStack stack) { return CombatWeapons.isMace(stack.getItem()); }
 
     public static boolean suppressesCrits(Player player) {
         return chargeOnlyCrits(player.getMainHandItem());

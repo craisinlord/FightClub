@@ -75,7 +75,8 @@ public final class WeaponSpecs {
             }
             WeaponSpec spec = WeaponSpec.fromJson(
                     ResourceLocation.fromNamespaceAndPath("fight_club", "weapons/" + key + ".json"),
-                    JsonParser.parseReader(new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject());
+                    com.craisinlord.fightclub.compat.IceAndFireStats.scaleSpec(material,
+                            JsonParser.parseReader(new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject()));
             VALUES.updateAndGet(current -> {
                 Map<String, WeaponSpec> merged = new java.util.HashMap<>(current);
                 merged.put(key, spec);

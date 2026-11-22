@@ -20,7 +20,7 @@
   "blocking_angle_degrees": 0,
   "blocking_damage_multiplier": 1,
   "throwing": true,
-  "throw_velocity": 1.8,
+  "throw_velocity": 2.8,
   "throw_range": 8,
   "throw_damage": 7.2
 }

@@ -161,11 +161,7 @@ public final class CombatChargeState {
 
     private static void pounceHit(Player player, LivingEntity target, WeaponSpec spec) {
         player.swing(InteractionHand.MAIN_HAND, false);
-        player.attack(target);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec));
-        if (bonus > 0.0f && player.level() instanceof net.minecraft.server.level.ServerLevel level) {
-            target.hurtServer(level, player.damageSources().playerAttack(player), bonus);
-        }
+        attackWithBonus(player, target, Math.max(0.0f, CombatWeapons.chargeDamage(player.getMainHandItem(), spec) - hitDamage(player, spec)));
         playHit(player, target, CombatSounds.DAGGER_CHARGED_STAB);
         if (player.level() instanceof net.minecraft.server.level.ServerLevel level) {
             level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, target.getX(), target.getY(0.6), target.getZ(),
@@ -181,10 +177,7 @@ public final class CombatChargeState {
 
     private static void chargedAttack(Player player, LivingEntity target, WeaponSpec spec) {
         player.swing(InteractionHand.MAIN_HAND, false);
-        player.attack(target);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec));
-        if (bonus > 0.0f) target.hurtServer((net.minecraft.server.level.ServerLevel) player.level(),
-                player.damageSources().playerAttack(player), bonus);
+        attackWithBonus(player, target, Math.max(0.0f, CombatWeapons.chargeDamage(player.getMainHandItem(), spec) - hitDamage(player, spec)));
         playHit(player, target, CombatSounds.CHARGE_HIT);
         CombatVanillaRules.chargeCritEffects(player, target);
         if (spec.chargeKnockback() > 0.0f) CombatPlatform.knockback(target, spec.chargeKnockback(),
@@ -197,21 +190,31 @@ public final class CombatChargeState {
                 net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 0.95f + player.getRandom().nextFloat() * 0.1f);
     }
 
+    private static final net.minecraft.resources.Identifier CHARGE_BONUS =
+            net.minecraft.resources.Identifier.fromNamespaceAndPath(com.craisinlord.fightclub.FightClub.MOD_ID, "charge_bonus");
+
+    private static void attackWithBonus(Player player, LivingEntity target, float bonus) {
+        net.minecraft.world.entity.ai.attributes.AttributeInstance damage =
+                player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE);
+        boolean applied = damage != null && bonus > 0.0f;
+        if (applied) {
+            damage.removeModifier(CHARGE_BONUS);
+            damage.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(CHARGE_BONUS, bonus,
+                    net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
+        }
+        try {
+            player.attack(target);
+        } finally {
+            if (applied) damage.removeModifier(CHARGE_BONUS);
+        }
+    }
+
     static float hitDamage(Player player, WeaponSpec spec) {
-        ItemStack stack = player.getMainHandItem();
-        if (CombatWeapons.external(stack.getItem()) == null || CombatWeapons.usesSpecStats(stack.getItem())) return spec.attackDamage();
-        double[] damage = {1.0};
-        stack.forEachModifier(net.minecraft.world.entity.EquipmentSlot.MAINHAND, (attribute, modifier) -> {
-            if (attribute.is(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
-                    && modifier.operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE) {
-                damage[0] += modifier.amount();
-            }
-        });
-        return (float) damage[0];
+        return CombatWeapons.hitDamage(player.getMainHandItem(), spec);
     }
 
     private static WeaponSpec thrustSpec(Item item) {
-        if (item == Items.TRIDENT) return WeaponSpecs.getOrLoadBuiltin("base", "trident");
+        if (CombatWeapons.isTrident(item)) return WeaponSpecs.getOrLoadBuiltin("base", "trident");
         if (CombatWeapons.is(item, "spear")) return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "spear");
         if (isSpear(item)) return WeaponSpecs.getOrLoadBuiltin(spearMaterial(item), "spear");
         return null;
@@ -219,7 +222,7 @@ public final class CombatChargeState {
 
     public static boolean isChargeWeapon(Item item) {
         return CombatWeapons.is(item, "dagger") || CombatWeapons.is(item, "spear")
-                || isSpear(item) || item == Items.TRIDENT;
+                || isSpear(item) || CombatWeapons.isTrident(item);
     }
 
     public static boolean usesItemForCharge(Item item) {

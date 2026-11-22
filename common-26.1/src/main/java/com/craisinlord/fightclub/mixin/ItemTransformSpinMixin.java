@@ -16,6 +16,8 @@ public abstract class ItemTransformSpinMixin {
             @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack$Pose;translate(FFF)Lorg/joml/Matrix4f;", ordinal = 2)
     })
     private void fightClub$modelSpin(boolean applyLeftHandFix, PoseStack.Pose pose, CallbackInfo ci) {
+        float extra = CombatModels.transformRoll((ItemTransform) (Object) this);
+        if (extra != 0.0F) pose.rotate(Axis.ZP.rotationDegrees(applyLeftHandFix ? -extra : extra));
         float roll = CombatModels.modelRoll();
         if (roll != 0.0F) {
             float px = CombatModels.rollPivotX(), pz = CombatModels.rollPivotZ();

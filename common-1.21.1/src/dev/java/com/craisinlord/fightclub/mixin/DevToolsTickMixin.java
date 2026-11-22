@@ -15,5 +15,8 @@ public abstract class DevToolsTickMixin {
     private static void fightClub$devTools(Minecraft client, CallbackInfo ci) {
         DevPoseGallery.tick(client);
         DevShowcase.tick(client);
+        com.craisinlord.fightclub.client.DevSilentGearTest.tick(client);
+        com.craisinlord.fightclub.client.DevCompatTest.tick(client);
+        com.craisinlord.fightclub.client.DevBackportTest.tick(client);
     }
 }

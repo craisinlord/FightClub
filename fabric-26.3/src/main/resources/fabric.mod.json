@@ -15,6 +15,9 @@
     ],
     "client": [
       "com.craisinlord.fightclub.fabric.FightClubFabricClient"
+    ],
+    "jei_mod_plugin": [
+      "com.craisinlord.fightclub.compat.JeiCompat"
     ]
   },
 

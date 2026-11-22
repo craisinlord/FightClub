@@ -18,7 +18,7 @@ public abstract class AvatarRendererSpinMixin {
     private void fightClub$spin(Avatar entity, AvatarRenderState state, float partialTicks, CallbackInfo ci) {
         float spin = LongswordSpinClient.bodySpin(state);
         if (spin != 0.0F) state.bodyRot += spin;
-        if (state.attackArm == state.mainArm && entity instanceof Player player && LongswordSpinClient.tridentStab(player)) {
+        if (state.attackArm == state.mainArm && entity instanceof Player player && LongswordSpinClient.thrustStab(player)) {
             state.swingAnimationType = SwingAnimationType.STAB;
         }
     }

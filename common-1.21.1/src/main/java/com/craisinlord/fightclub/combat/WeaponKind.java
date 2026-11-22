@@ -1,7 +1,6 @@
 package com.craisinlord.fightclub.combat;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SwordItem;
 
 public enum WeaponKind {
@@ -18,8 +17,8 @@ public enum WeaponKind {
                 default -> NONE;
             };
         }
-        if (stack.is(Items.TRIDENT)) return TRIDENT;
-        if (stack.is(Items.MACE)) return MACE;
+        if (CombatWeapons.isTrident(stack.getItem())) return TRIDENT;
+        if (CombatWeapons.isMace(stack.getItem())) return MACE;
         if (CombatWeapons.isShield(stack)) return SHIELD;
         if (stack.getItem() instanceof SwordItem) return SWORD;
         return NONE;

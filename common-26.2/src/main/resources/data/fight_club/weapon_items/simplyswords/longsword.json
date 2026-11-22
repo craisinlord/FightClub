@@ -1,0 +1,36 @@
+{
+  "weapon": "longsword",
+  "material": "iron",
+  "items": [
+    "simplyswords:iron_longsword",
+    "simplyswords:gold_longsword",
+    "simplyswords:diamond_longsword",
+    "simplyswords:netherite_longsword",
+    "simplyswords:iron_claymore",
+    "simplyswords:gold_claymore",
+    "simplyswords:diamond_claymore",
+    "simplyswords:netherite_claymore",
+    "simplyswords:iron_twinblade",
+    "simplyswords:gold_twinblade",
+    "simplyswords:diamond_twinblade",
+    "simplyswords:netherite_twinblade",
+    "simplyswords:iron_katana",
+    "simplyswords:gold_katana",
+    "simplyswords:diamond_katana",
+    "simplyswords:netherite_katana",
+    "simplyswords:iron_glaive",
+    "simplyswords:gold_glaive",
+    "simplyswords:diamond_glaive",
+    "simplyswords:netherite_glaive",
+    "simplyswords:iron_halberd",
+    "simplyswords:gold_halberd",
+    "simplyswords:diamond_halberd",
+    "simplyswords:netherite_halberd"
+  ],
+  "replaces": [
+    "iron",
+    "gold",
+    "diamond",
+    "netherite"
+  ]
+}

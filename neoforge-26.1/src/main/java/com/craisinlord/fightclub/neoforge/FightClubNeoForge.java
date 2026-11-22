@@ -56,7 +56,7 @@ public final class FightClubNeoForge {
             for (String material : MATERIALS) for (String weapon : WEAPONS) {
                 ITEMS.getEntries().stream()
                         .filter(entry -> entry.getId().getPath().equals(material + "_" + weapon))
-                        .findFirst().ifPresent(entry -> event.accept(entry.get()));
+                        .findFirst().filter(entry -> !com.craisinlord.fightclub.combat.ExternalWeapons.isReplaced(entry.get())).ifPresent(entry -> event.accept(entry.get()));
             }
         });
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.AddServerReloadListenersEvent event) ->

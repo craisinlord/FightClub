@@ -2,7 +2,7 @@
   "weapon": "dagger",
   "material": "dragonsteel_ice",
   "attack_style": "thrust",
-  "attack_damage": 4.8,
+  "attack_damage": 11.2,
   "attack_speed": 2.2,
   "reach": 2.5,
   "sweep_radius": 0,
@@ -13,14 +13,14 @@
   "offhand_speed_multiplier": 1,
   "charge_ticks": 16,
   "throw_charge_ticks": 7,
-  "charge_damage": 19.2,
+  "charge_damage": 44.8,
   "charge_knockback": 2,
   "recovery_ticks": 30,
   "blocking": false,
   "blocking_angle_degrees": 0,
   "blocking_damage_multiplier": 1,
   "throwing": true,
-  "throw_velocity": 1.8,
+  "throw_velocity": 2.8,
   "throw_range": 8,
-  "throw_damage": 9.6
+  "throw_damage": 22.4
 }

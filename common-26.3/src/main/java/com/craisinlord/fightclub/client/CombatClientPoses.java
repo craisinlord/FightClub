@@ -111,10 +111,14 @@ public final class CombatClientPoses {
     private static void tickSwingSide(Player player, long now) {
         SwingSide side = SWING_SIDES.computeIfAbsent(player.getId(), id -> new SwingSide());
         boolean swinging = player.getCurrentSwing() != null && player.getCurrentSwing().hand() == InteractionHand.MAIN_HAND;
-        if (swinging && !side.wasSwinging && WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD) {
-            side.backhand = now - side.lastStart <= BACKHAND_WINDOW_TICKS && !side.backhand;
+        WeaponKind kind = WeaponKind.of(player.getMainHandItem());
+        if (swinging && !side.wasSwinging && (kind == WeaponKind.LONGSWORD || kind == WeaponKind.MACE)) {
+            side.backhand = kind == WeaponKind.LONGSWORD && now - side.lastStart <= BACKHAND_WINDOW_TICKS && !side.backhand;
             side.lastStart = now;
             side.duration = Math.max(1, player.getCurrentSwing().durationTicks());
+            if (com.craisinlord.fightclub.combat.LongswordSpin.sweepsArc(player)) {
+                LongswordSweepParticle.cut(player, side.duration, side.backhand);
+            }
         }
         side.wasSwinging = swinging;
     }
@@ -232,16 +236,24 @@ public final class CombatClientPoses {
 
         void sounds(Player player) {
             boolean swinging = player.getCurrentSwing() != null && player.getCurrentSwing().hand() == InteractionHand.MAIN_HAND;
-            if (swinging && !wasSwinging && !BetterCombatCompat.isLoaded() && CombatConfig.enabled(CombatConfig.SWING_SOUNDS)) {
-                SoundEvent whoosh = switch (WeaponKind.of(player.getMainHandItem())) {
+            if (swinging && !wasSwinging && !BetterCombatCompat.isLoaded() && !mining(player) && CombatConfig.enabled(CombatConfig.SWING_SOUNDS)) {
+                ItemStack main = player.getMainHandItem();
+                SoundEvent whoosh = switch (WeaponKind.of(main)) {
                     case DAGGER -> CombatSounds.DAGGER_SWING;
                     case SPEAR, TRIDENT -> CombatSounds.SPEAR_THRUST;
                     case LONGSWORD -> CombatSounds.LONGSWORD_SWING;
-                    default -> null;
+                    case SWORD -> CombatSounds.SWORD_SWING;
+                    case MACE -> CombatSounds.MACE_SWING;
+                    default -> main.is(net.minecraft.tags.ItemTags.AXES) ? CombatSounds.AXE_SWING : null;
                 };
                 if (whoosh != null) play(player, whoosh);
             }
             wasSwinging = swinging;
+        }
+
+        private static boolean mining(Player player) {
+            Minecraft client = Minecraft.getInstance();
+            return player == client.player && client.gameMode != null && client.gameMode.isDestroying();
         }
 
         void tick(CombatPose target, Player player) {

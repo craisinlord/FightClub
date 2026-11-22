@@ -140,7 +140,6 @@ public final class CombatWeaponItem extends Item {
             level.addFreshEntity(projectile);
             level.playSound(null, player, SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
             if (!player.getAbilities().instabuild) stack.shrink(1);
-            CombatRecovery.start(player, spec.recoveryTicks());
             return true;
         }
         if (heldTicks < spec.chargeTicks()) return false;

@@ -58,6 +58,12 @@ public final class CombatThirdPerson {
             }
         }
 
+        float maceSwing = !betterCombat && kind == WeaponKind.MACE ? CombatClientPoses.thirdPersonSwing(player, partialTick) : 0.0F;
+        if (maceSwing > 0.0F && held <= 0.0F) {
+            CombatPoseConfig.ArmPose slam = CombatPoseConfig.arms(CombatPose.HEAVY_MACE);
+            if (slam != null) keyedArms(model, main, off, slam, mirror, maceSwing, offhandEmpty, headPitch, false);
+        }
+
         if (longswordSwing > 0.0F && held <= 0.0F) {
             CombatPoseConfig.ArmPose arc = CombatPoseConfig.arms(
                     CombatClientPoses.backhand(player) ? CombatPose.HEAVY_LONGSWORD_BACK : CombatPose.HEAVY_LONGSWORD);
@@ -130,6 +136,13 @@ public final class CombatThirdPerson {
         if (WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD) {
             Quaternionf turn = longswordTurn(player, view, partialTick, BetterCombatCompat.isLoaded());
             if (turn != null) return turn.equals(new Quaternionf(), 1.0E-6F) ? null : new ItemTurn(mirrorTurn(turn, mirror), true);
+        }
+        if (WeaponKind.of(player.getMainHandItem()) == WeaponKind.MACE && !BetterCombatCompat.isLoaded() && held <= 0.0F) {
+            float swing = CombatClientPoses.thirdPersonSwing(player, partialTick);
+            if (swing > 0.0F) {
+                Quaternionf turn = keyedTurn(CombatPoseConfig.arms(CombatPose.HEAVY_MACE), swing, new Quaternionf());
+                return new ItemTurn(mirrorTurn(turn, mirror), true);
+            }
         }
         if (held <= 0.0F || view.pose() == CombatPose.NONE) return null;
         CombatPoseConfig.ArmPose arms = CombatPoseConfig.arms(view.pose());
@@ -222,10 +235,10 @@ public final class CombatThirdPerson {
         if (angle == 0.0F) return;
         Quaternionf q = new Quaternionf().rotationAxis(angle, Mth.cos(bodyYaw), 0.0F, -Mth.sin(bodyYaw))
                 .mul(new Quaternionf().rotationZYX(arm.zRot, arm.yRot, arm.xRot));
-        Vector3f euler = q.getEulerAnglesZYX(new Vector3f());
-        arm.xRot = euler.x();
-        arm.yRot = euler.y();
-        arm.zRot = euler.z();
+        org.joml.Matrix3f m = new org.joml.Matrix3f().set(q);
+        arm.xRot = (float) Math.atan2(m.m12, m.m22);
+        arm.yRot = (float) Math.asin(Mth.clamp(-m.m02, -1.0F, 1.0F));
+        arm.zRot = (float) Math.atan2(m.m01, m.m00);
     }
 
     private static boolean grip(WeaponKind kind, boolean offhandEmpty, Player player, float held, boolean betterCombat) {

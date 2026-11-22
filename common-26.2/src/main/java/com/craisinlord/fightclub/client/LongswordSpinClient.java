@@ -49,7 +49,7 @@ public final class LongswordSpinClient {
     }
 
     public static void onMissSwing(Consumer<CustomPacketPayload> sender, LocalPlayer player) {
-        boolean mace = player.getMainHandItem().is(Items.MACE) && CombatConfig.enabled(CombatConfig.MACE_HIT_STREAK);
+        boolean mace = com.craisinlord.fightclub.combat.CombatWeapons.isMace(player.getMainHandItem().getItem()) && CombatConfig.enabled(CombatConfig.MACE_HIT_STREAK);
         if (mace) sender.accept(new CombatActionPayload(CombatChargeState.MISS_SWING));
     }
 
@@ -60,16 +60,35 @@ public final class LongswordSpinClient {
         }
     }
 
-    public static boolean attackNotReady(Minecraft client) {
-        LocalPlayer player = client.player;
-        if (player == null || BetterCombatCompat.isLoaded() || !LongswordSpin.isLongsword(player.getMainHandItem())) return false;
-        if (client.hitResult instanceof net.minecraft.world.phys.BlockHitResult block && client.level != null
-                && !client.level.getBlockState(block.getBlockPos()).isAir()) return false;
-        return player.getAttackStrengthScale(0.0F) < 1.0F;
+    private static boolean holdBlocked;
+
+    private static boolean gated(LocalPlayer player) {
+        return player != null && !BetterCombatCompat.isLoaded() && LongswordSpin.isLongsword(player.getMainHandItem());
     }
 
-    public static boolean tridentStab(Player player) {
-        return !BetterCombatCompat.isLoaded() && CombatConfig.enabled(CombatConfig.ANIMATIONS) && player.getMainHandItem().is(Items.TRIDENT);
+    public static boolean attackNotReady(Minecraft client) {
+        LocalPlayer player = client.player;
+        if (!gated(player) || player.getAttackStrengthScale(0.0F) >= 1.0F) return false;
+        holdBlocked = true;
+        return true;
+    }
+
+    public static boolean blocksMining(Minecraft client, boolean leftClick) {
+        if (!leftClick) holdBlocked = false;
+        return holdBlocked && gated(client.player);
+    }
+
+    public static void onBlockSwing(Minecraft client) {
+        LocalPlayer player = client.player;
+        if (gated(player) && client.hitResult != null
+                && client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+            player.resetAttackStrengthTicker();
+        }
+    }
+
+    public static boolean thrustStab(Player player) {
+        return !BetterCombatCompat.isLoaded() && CombatConfig.enabled(CombatConfig.ANIMATIONS)
+                && com.craisinlord.fightclub.combat.WeaponKind.of(player.getMainHandItem()).thrusts();
     }
 
     private static final float SPIN_TURN_START = 0.12F, SPIN_TURN_END = 0.85F;

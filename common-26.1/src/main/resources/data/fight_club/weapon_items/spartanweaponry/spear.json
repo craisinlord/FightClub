@@ -1,0 +1,11 @@
+{
+  "weapon": "spear",
+  "material": "iron",
+  "items": [
+    "#spartanweaponry:spears",
+    "spartanweaponry:iron_spear",
+    "#spartanweaponry:pikes",
+    "spartanweaponry:iron_pike"
+  ],
+  "replaces": "all"
+}

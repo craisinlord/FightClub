@@ -15,6 +15,7 @@ public final class KnifeThrowGoal extends Goal {
     private static final double MIN_RANGE_SQR = 16.0D;
     private static final double MAX_RANGE_SQR = 196.0D;
     private static final int WINDUP_TICKS = 12;
+    private static final float MAX_MOB_VELOCITY = 2.2F;
     private final PathfinderMob mob;
     private DaggerProjectile thrown;
     private int windup;
@@ -71,7 +72,7 @@ public final class KnifeThrowGoal extends Goal {
     private void throwAt(LivingEntity target) {
         ItemStack stack = mob.getMainHandItem();
         WeaponSpec spec = CombatWeapons.is(stack.getItem(), "dagger") ? WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(stack.getItem()), "dagger") : null;
-        float velocity = spec == null ? 1.5F : spec.throwVelocity();
+        float velocity = Math.min(MAX_MOB_VELOCITY, spec == null ? 1.5F : spec.throwVelocity());
         DaggerProjectile projectile = new DaggerProjectile(mob.level(), mob, stack.copy());
         double dx = target.getX() - mob.getX();
         double dy = target.getY(0.5D) - projectile.getY();
@@ -82,7 +83,8 @@ public final class KnifeThrowGoal extends Goal {
             case NORMAL -> 6.0F;
             default -> 10.0F;
         };
-        projectile.shoot(dx, dy + horizontal * 0.05D, dz, velocity, inaccuracy);
+        double flightTicks = horizontal / velocity;
+        projectile.shoot(dx, dy + 0.5D * DaggerProjectile.GRAVITY * flightTicks * flightTicks, dz, velocity, inaccuracy);
         mob.level().addFreshEntity(projectile);
         mob.level().playSound(null, mob, CombatSounds.DAGGER_THROW, SoundSource.HOSTILE, 1.0F, 0.95F + mob.getRandom().nextFloat() * 0.1F);
         mob.swing(InteractionHand.MAIN_HAND);

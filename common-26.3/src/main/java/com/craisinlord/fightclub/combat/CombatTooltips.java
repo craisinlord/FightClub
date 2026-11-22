@@ -32,8 +32,8 @@ public final class CombatTooltips {
     public static String kindOf(ItemStack stack) {
         Item item = stack.getItem();
         if (CombatWeapons.isCombatWeapon(item)) return CombatWeapons.weapon(item);
-        if (item == Items.MACE) return "mace";
-        if (item == Items.TRIDENT) return "trident";
+        if (CombatWeapons.isMace(item)) return "mace";
+        if (CombatWeapons.isTrident(item)) return "trident";
         if (CombatWeapons.isShield(stack)) return "shield";
         if (material(item, SPEARS) != null) return "spear";
         if (material(item, AXES) != null) return "axe";
@@ -49,7 +49,7 @@ public final class CombatTooltips {
         if (controls != null) tooltip.accept(controls);
         WeaponSpec spec = specFor(stack, kind);
         if (spec == null) return;
-        List<Component> details = details(spec, kind);
+        List<Component> details = details(stack, spec, kind);
         if (details.isEmpty()) return;
         if (shiftDown.getAsBoolean()) {
             details.forEach(tooltip);
@@ -94,7 +94,7 @@ public final class CombatTooltips {
         return line.withStyle(ChatFormatting.GRAY);
     }
 
-    private static List<Component> details(WeaponSpec spec, String kind) {
+    private static List<Component> details(ItemStack stack, WeaponSpec spec, String kind) {
         List<Component> lines = new ArrayList<>();
         boolean shield = "shield".equals(kind);
         if (spec.attackStyle() == WeaponSpec.AttackStyle.THRUST && spec.penetrationCount() > 0
@@ -103,7 +103,7 @@ public final class CombatTooltips {
             lines.add(stat("block", Math.round((1.0F - spec.blockingDamageMultiplier()) * 100.0F)));
         }
         if (spec.chargeTicks() > 0 && spec.chargeDamage() > 0.0F && on(CombatConfig.CHARGED_ATTACKS)) {
-            lines.add(stat("charge", number(spec.chargeDamage()), seconds(spec.chargeTicks())));
+            lines.add(stat("charge", number(CombatWeapons.chargeDamage(stack, spec)), seconds(spec.chargeTicks())));
         }
         if (spec.recoveryTicks() > 0) {
             if (shield && on(CombatConfig.SHIELD_BASH)) lines.add(stat("bash_cooldown", seconds(spec.bashHitCooldownTicks()), seconds(spec.recoveryTicks())));

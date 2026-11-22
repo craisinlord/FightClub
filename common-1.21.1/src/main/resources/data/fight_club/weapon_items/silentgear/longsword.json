@@ -1,0 +1,6 @@
+{
+  "weapon": "longsword",
+  "material": "iron",
+  "items": ["silentgear:katana"],
+  "replaces": "all"
+}

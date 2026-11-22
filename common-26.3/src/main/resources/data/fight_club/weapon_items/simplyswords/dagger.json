@@ -1,0 +1,16 @@
+{
+  "weapon": "dagger",
+  "material": "iron",
+  "items": [
+    "simplyswords:iron_sai",
+    "simplyswords:gold_sai",
+    "simplyswords:diamond_sai",
+    "simplyswords:netherite_sai"
+  ],
+  "replaces": [
+    "iron",
+    "gold",
+    "diamond",
+    "netherite"
+  ]
+}

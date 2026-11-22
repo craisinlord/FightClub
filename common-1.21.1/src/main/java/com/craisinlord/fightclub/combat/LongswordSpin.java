@@ -70,7 +70,7 @@ public final class LongswordSpin {
         boolean hit = false;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(radius, 1.0, radius))) {
             if (!validTarget(player, target) || horizontalGap(player, target) > radius) continue;
-            if (spec.chargeDamage() > 0.0f && target.hurt(source, spec.chargeDamage())) {
+            if (spec.chargeDamage() > 0.0f && target.hurt(source, CombatWeapons.chargeDamage(stack, spec))) {
                 EnchantmentHelper.doPostAttackEffects(level, target, source);
                 CompatAbilities.onHit(stack, target, player, CompatAbilities.Hit.SPIN);
             }
@@ -136,8 +136,6 @@ public final class LongswordSpin {
                 hit = true;
             }
         }
-        double dx = -Mth.sin(yaw), dz = Mth.cos(yaw);
-        sendSmear(level, player.getX() + dx * 1.4, smearY(player), player.getZ() + dz * 1.4, dx, dz, 1.0);
         if (!hit && directTarget == null) return;
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP,
                 player.getSoundSource(), 1.0f, 1.0f);

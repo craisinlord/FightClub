@@ -25,6 +25,7 @@ public final class ExternalWeapons {
     private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger("fight_club/weapon_items");
     public static final String DIRECTORY = "weapon_items";
     private static final Set<String> WEAPONS = Set.of("dagger", "longsword", "spear", "sword", "shield");
+    private static final List<String> TIER_MATERIALS = List.of("wood", "stone", "copper", "iron", "gold", "diamond", "netherite");
 
     public record Entry(String weapon, String material, boolean rightClick, boolean specStats) {}
 
@@ -34,6 +35,8 @@ public final class ExternalWeapons {
 
     private static final AtomicReference<Mappings> VALUES = new AtomicReference<>(Mappings.EMPTY);
     private static final AtomicReference<Map<String, String>> RAW_JSON = new AtomicReference<>(Map.of());
+    private static final AtomicReference<Set<Item>> REPLACED = new AtomicReference<>(Set.of());
+    private static volatile Runnable replacedListener = () -> {};
 
     private ExternalWeapons() {}
 
@@ -54,7 +57,49 @@ public final class ExternalWeapons {
         return RAW_JSON.get();
     }
 
-    public static void load(ResourceManager manager) {
+    public static boolean isReplaced(Item item) {
+        return com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.HIDE_REPLACED)
+                && REPLACED.get().contains(item);
+    }
+
+    public static Set<Item> replacedItems() {
+        return com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.HIDE_REPLACED)
+                ? REPLACED.get() : Set.of();
+    }
+
+    public static void setReplacedListener(Runnable listener) {
+        replacedListener = listener;
+    }
+
+    public static Set<Item> replacedIn(Map<String, String> raw) {
+        Set<Item> replaced = new java.util.HashSet<>();
+        for (String file : raw.keySet()) {
+            try {
+                JsonObject json = JsonParser.parseString(raw.get(file)).getAsJsonObject();
+                if (!json.has("replaces")) continue;
+                String weapon = json.get("weapon").getAsString();
+                boolean installed = false;
+                for (JsonElement element : json.getAsJsonArray("items")) {
+                    String id = element.getAsString();
+                    if (!id.startsWith("#") && BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(id))) installed = true;
+                }
+                if (!installed) continue;
+                List<String> materials = new ArrayList<>();
+                JsonElement replaces = json.get("replaces");
+                if (replaces.isJsonPrimitive() && replaces.getAsString().equals("all")) materials.addAll(TIER_MATERIALS);
+                else for (JsonElement element : replaces.getAsJsonArray()) materials.add(element.getAsString());
+                for (String material : materials) {
+                    BuiltInRegistries.ITEM.getOptional(ResourceLocation.fromNamespaceAndPath("fight_club", material + "_" + weapon))
+                            .filter(item -> item instanceof CombatWeaponItem).ifPresent(replaced::add);
+                }
+            } catch (RuntimeException exception) {
+                LOGGER.error("Ignoring invalid \"replaces\" in weapon item file {}: {}", file, exception.getMessage());
+            }
+        }
+        return Set.copyOf(replaced);
+    }
+
+    public static Map<String, String> readRaw(ResourceManager manager) {
         Map<String, String> raw = new HashMap<>();
         for (Map.Entry<ResourceLocation, Resource> file
                 : manager.listResources(DIRECTORY, path -> path.getPath().endsWith(".json")).entrySet()) {
@@ -64,7 +109,11 @@ public final class ExternalWeapons {
                 LOGGER.error("Ignoring unreadable weapon item file {}: {}", file.getKey(), exception.getMessage());
             }
         }
-        apply(raw);
+        return raw;
+    }
+
+    public static void load(ResourceManager manager) {
+        apply(readRaw(manager));
     }
 
     public static void apply(Map<String, String> raw) {
@@ -116,6 +165,9 @@ public final class ExternalWeapons {
         WeaponSpecs.replaceMapped(mapped);
         VALUES.set(new Mappings(Map.copyOf(items), List.copyOf(tags)));
         RAW_JSON.set(Map.copyOf(valid));
+        REPLACED.set(replacedIn(valid));
+        replacedListener.run();
+        if (!REPLACED.get().isEmpty()) LOGGER.info("{} Fight Club weapons are replaced by other mods' items", REPLACED.get().size());
         if (!valid.isEmpty()) LOGGER.info("Loaded {} Fight Club weapon item mappings ({} items, {} tags)", valid.size(), items.size(), tags.size());
     }
 }

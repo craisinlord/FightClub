@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import org.joml.Vector3f;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -40,6 +41,15 @@ public abstract class ItemInHandRendererMixin {
     @Shadow
     public abstract void renderItem(LivingEntity entity, ItemStack stack, ItemDisplayContext context,
                                     boolean leftHand, PoseStack poseStack, MultiBufferSource buffer, int light);
+
+    @ModifyExpressionValue(method = "tick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/player/LocalPlayer;getAttackStrengthScale(F)F"))
+    private float fightClub$steadyThrust(float strength) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || BetterCombatCompat.isLoaded()
+                || !com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.ANIMATIONS)) return strength;
+        return WeaponKind.of(client.player.getMainHandItem()).thrusts() ? 1.0F : strength;
+    }
 
     @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
     private void fightClub$render(AbstractClientPlayer player, float partialTick, float pitch,
@@ -120,6 +130,7 @@ public abstract class ItemInHandRendererMixin {
             if (kind == WeaponKind.DAGGER) swingStyle = CombatPose.JAB_DAGGER;
             else if (kind.thrusts()) swingStyle = CombatPose.JAB_SPEAR;
             else if (kind == WeaponKind.LONGSWORD) swingStyle = CombatPose.HEAVY_LONGSWORD;
+            else if (kind == WeaponKind.MACE) swingStyle = CombatPose.HEAVY_MACE;
         }
         boolean customSwing = swingStyle != CombatPose.NONE && swingProgress > 0.0F;
 
@@ -128,7 +139,7 @@ public abstract class ItemInHandRendererMixin {
 
         poseStack.pushPose();
         float keep = 1.0F - held;
-        boolean jab = swingStyle == CombatPose.JAB_DAGGER || swingStyle == CombatPose.JAB_SPEAR;
+        boolean jab = swingStyle == CombatPose.JAB_DAGGER || swingStyle == CombatPose.JAB_SPEAR || swingStyle == CombatPose.HEAVY_MACE;
         boolean sweep = swingStyle == CombatPose.HEAVY_LONGSWORD;
         if (!usingThisHand && !jab && !sweep) {
             float root = Mth.sqrt(swingProgress);
@@ -144,11 +155,10 @@ public abstract class ItemInHandRendererMixin {
         }
         if (!usingThisHand && keep > 0.0F) {
             if (swingStyle == CombatPose.JAB_SPEAR) {
-                if (kind == WeaponKind.TRIDENT) {
-                    float out = com.craisinlord.fightclub.client.StabAnimation.extension(swingProgress);
-                    tridentRoll = CombatPoseConfig.modelRoll(CombatPose.JAB_SPEAR) * out;
-                    fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.JAB_SPEAR), out, 0.0F, 0.0F);
-                }
+                float out = com.craisinlord.fightclub.client.StabAnimation.extension(swingProgress);
+                CombatPose thrust = kind == WeaponKind.TRIDENT ? CombatPose.JAB_TRIDENT : CombatPose.JAB_SPEAR;
+                tridentRoll = CombatPoseConfig.modelRoll(thrust) * out;
+                fightClub$apply(poseStack, side, CombatPoseConfig.get(thrust), out, 0.0F, 0.0F);
                 com.craisinlord.fightclub.client.StabAnimation.firstPerson(poseStack, swingProgress, side);
             } else if (jab) {
                 CombatPoseConfig.Pose jabPose = CombatPoseConfig.get(swingStyle);
@@ -179,7 +189,12 @@ public abstract class ItemInHandRendererMixin {
                 amount *= 0.4F + 0.6F * fightClub$smooth(progress);
                 if (!CombatInputClient.pounceReady(Minecraft.getInstance())) pop = 0.0F;
             }
-            fightClub$apply(poseStack, side, config, amount, shake, pop);
+            if (pose == CombatPose.LONGSWORD_SPIN_CHARGE && !config.keys().isEmpty()) {
+                poseStack.translate(side * shake, shake * 0.6F, 0.0F);
+                fightClub$arc(poseStack, side, config, config.keys().get(0).t(), amount);
+            } else {
+                fightClub$apply(poseStack, side, config, amount, shake, pop);
+            }
         }
         if (dip > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.RECOVERY_DIP), dip, 0.0F, 0.0F);
         if (bash > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.SHIELD_BASH), bash, 0.0F, 0.0F);

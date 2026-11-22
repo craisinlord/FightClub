@@ -100,6 +100,7 @@ public final class FightClubNeoForge {
                 if (holder.get() instanceof CombatWeaponItem item && item.combatWeapon().equals(weapon)) items.add(item);
             }
         }
+        items.removeIf(com.craisinlord.fightclub.combat.ExternalWeapons::isReplaced);
         return items;
     }
 

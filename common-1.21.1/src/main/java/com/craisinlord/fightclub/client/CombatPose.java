@@ -14,8 +14,10 @@ public enum CombatPose {
     SHIELD_BASH("shield_bash"),
     JAB_DAGGER("jab_dagger"),
     JAB_SPEAR("jab_spear"),
+    JAB_TRIDENT("jab_trident"),
     HEAVY_LONGSWORD("heavy_longsword"),
     HEAVY_LONGSWORD_BACK("heavy_longsword_back"),
+    HEAVY_MACE("heavy_mace"),
     LONGSWORD_SPIN_CHARGE("longsword_spin_charge"),
     LONGSWORD_SPIN("longsword_spin"),
     LONGSWORD_GRIP("longsword_grip");

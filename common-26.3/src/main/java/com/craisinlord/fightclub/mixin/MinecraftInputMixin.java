@@ -31,6 +31,7 @@ public abstract class MinecraftInputMixin {
             @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;swing(Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/item/component/SwingAnimation;Z)Z")})
     private void fightClub$attackWentThrough(CallbackInfoReturnable<Boolean> cir) {
         CombatInputClient.markAttackWentThrough();
+        com.craisinlord.fightclub.client.LongswordSpinClient.onBlockSwing((Minecraft) (Object) this);
     }
 
     @Inject(method = "startAttack", at = @At(value = "INVOKE",
@@ -42,7 +43,8 @@ public abstract class MinecraftInputMixin {
 
     @Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true)
     private void fightClub$noMiningWhileCharging(boolean leftClick, CallbackInfo ci) {
-        if (leftClick && CombatInputClient.blocksAttack()) ci.cancel();
+        if (com.craisinlord.fightclub.client.LongswordSpinClient.blocksMining((Minecraft) (Object) this, leftClick)
+                || (leftClick && CombatInputClient.blocksAttack())) ci.cancel();
     }
 
     @Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)

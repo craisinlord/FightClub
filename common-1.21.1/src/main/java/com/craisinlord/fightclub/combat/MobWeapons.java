@@ -80,7 +80,10 @@ public final class MobWeapons {
         int roll = random.nextInt(total);
         for (int i = 0; i < materials.length; i++) {
             roll -= weights[i];
-            if (roll < 0) return BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, materials[i] + "_" + weapon));
+            if (roll < 0) {
+                Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, materials[i] + "_" + weapon));
+                return ExternalWeapons.isReplaced(item) ? Items.AIR : item;
+            }
         }
         return Items.AIR;
     }

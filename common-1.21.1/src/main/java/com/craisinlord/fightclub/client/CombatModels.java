@@ -25,6 +25,7 @@ public final class CombatModels {
         for (String material : MATERIALS) for (String weapon : WEAPONS) {
             ids.add(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "item/" + material + "_" + weapon + "_in_hand"));
         }
+        ids.add(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "item/iron_dagger"));
         if (CombatWeapons.backportSpears()) for (String material : CombatWeapons.BACKPORT_SPEAR_MATERIALS) {
             ids.add(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "item/" + material + "_spear"));
         }
@@ -78,6 +79,19 @@ public final class CombatModels {
         String weapon = CombatWeapons.weapon(stack.getItem());
         if (weapon == null || weapon.equals("dagger")) return null;
         return model(modelPath(stack, "_in_hand"));
+    }
+
+    public static BakedModel inHandReference(ItemStack stack, ItemDisplayContext context) {
+        if (usesIcon(context) || stack.getItem() instanceof com.craisinlord.fightclub.combat.CombatWeaponItem
+                || CombatWeapons.backportSpearMaterial(stack.getItem()) != null || inHand(stack) != null) return null;
+        String weapon = CombatWeapons.weapon(stack.getItem());
+        if ("dagger".equals(weapon)) return model(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "item/iron_dagger"));
+        if (!"spear".equals(weapon) && !"longsword".equals(weapon)) return null;
+        return model(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "item/iron_" + weapon + "_in_hand"));
+    }
+
+    public static float inHandReferenceRoll(ItemStack stack) {
+        return "spear".equals(CombatWeapons.weapon(stack.getItem())) ? 90.0F : 0.0F;
     }
 
     public static BakedModel icon(ItemStack stack) {

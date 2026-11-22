@@ -1,0 +1,9 @@
+{
+  "weapon": "dagger",
+  "material": "iron",
+  "items": [
+    "#spartanweaponry:daggers",
+    "spartanweaponry:iron_dagger"
+  ],
+  "replaces": "all"
+}

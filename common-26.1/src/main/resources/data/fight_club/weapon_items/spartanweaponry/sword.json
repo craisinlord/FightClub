@@ -1,0 +1,10 @@
+{
+  "weapon": "sword",
+  "material": "iron",
+  "items": [
+    "#spartanweaponry:sabers",
+    "spartanweaponry:iron_saber",
+    "#spartanweaponry:rapiers",
+    "spartanweaponry:iron_rapier"
+  ]
+}

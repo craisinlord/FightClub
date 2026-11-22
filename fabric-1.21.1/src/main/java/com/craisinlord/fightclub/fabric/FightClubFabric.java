@@ -60,12 +60,12 @@ public final class FightClubFabric implements ModInitializer {
         }
         combatItems.sort(java.util.Comparator.comparingInt(item -> CompatMaterial.WEAPONS.indexOf(((CombatWeaponItem) item).combatWeapon())));
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT)
-                .register(entries -> combatItems.forEach(entries::accept));
+                .register(entries -> combatItems.stream().filter(item -> !com.craisinlord.fightclub.combat.ExternalWeapons.isReplaced(item)).forEach(entries::accept));
         Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "combat"),
                 net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder()
                         .title(Component.translatable("itemGroup.fight_club.combat"))
                         .icon(() -> new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, "diamond_dagger"))))
-                        .displayItems((parameters, output) -> combatItems.forEach(output::accept))
+                        .displayItems((parameters, output) -> combatItems.stream().filter(item -> !com.craisinlord.fightclub.combat.ExternalWeapons.isReplaced(item)).forEach(output::accept))
                         .build());
         net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents.MODIFY.register(context -> {
             int size = com.craisinlord.fightclub.combat.CombatDefaults.potionStackSize();

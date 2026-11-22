@@ -19,8 +19,8 @@ public enum WeaponKind {
             };
         }
         if (stack.is(ItemTags.SPEARS)) return SPEAR;
-        if (stack.is(Items.TRIDENT)) return TRIDENT;
-        if (stack.is(Items.MACE)) return MACE;
+        if (CombatWeapons.isTrident(stack.getItem())) return TRIDENT;
+        if (CombatWeapons.isMace(stack.getItem())) return MACE;
         if (CombatWeapons.isShield(stack)) return SHIELD;
         if (stack.is(ItemTags.SWORDS)) return SWORD;
         return NONE;

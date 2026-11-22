@@ -22,6 +22,7 @@ public abstract class LivingEntitySwingMixin {
         CombatPose style = switch (WeaponKind.of(player.getMainHandItem())) {
             case DAGGER -> CombatPose.JAB_DAGGER;
             case TRIDENT -> CombatPose.JAB_SPEAR;
+            case MACE -> CombatPose.HEAVY_MACE;
             case LONGSWORD -> CombatPose.HEAVY_LONGSWORD;
             default -> null;
         };

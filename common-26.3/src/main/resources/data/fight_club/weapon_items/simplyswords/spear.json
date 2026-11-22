@@ -1,0 +1,16 @@
+{
+  "weapon": "spear",
+  "material": "iron",
+  "items": [
+    "simplyswords:iron_spear",
+    "simplyswords:gold_spear",
+    "simplyswords:diamond_spear",
+    "simplyswords:netherite_spear"
+  ],
+  "replaces": [
+    "iron",
+    "gold",
+    "diamond",
+    "netherite"
+  ]
+}

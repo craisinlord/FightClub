@@ -205,7 +205,10 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         }
         if (!isEmbedded() || player.distanceToSqr(this) > 4.0D) return;
         if (creativeThrow) {
-            if (player.getAbilities().instabuild) discard();
+            if (player.getAbilities().instabuild) {
+                sendPickup(player);
+                discard();
+            }
             return;
         }
         ItemStack pickup = getItem().copy();

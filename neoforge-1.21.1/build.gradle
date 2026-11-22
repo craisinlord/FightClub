@@ -58,11 +58,32 @@ dependencies {
     implementation "com.electronwill.night-config:toml:3.8.3"
 
     compileOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-neoforge"
+    compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version_1_21_1}"
+    if ((findProperty('dev_jei') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "mezz.jei:jei-1.21.1-neoforge:${jei_version_1_21_1}"
+    }
     if ((findProperty('dev_better_combat') ?: 'true').toString().toBoolean()) {
         runtimeOnly "maven.modrinth:better-combat:${better_combat_version_1_21_1}-neoforge"
         runtimeOnly "maven.modrinth:playeranimator:${player_animator_version_1_21_1}-forge"
         runtimeOnly "maven.modrinth:cloth-config:${cloth_config_version_1_21_1}+neoforge"
         runtimeOnly "maven.modrinth:tiny-config:${tiny_config_version_1_21_1}-neoforge"
+    }
+    if ((findProperty('dev_silent_gear') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:silent-gear:${silent_gear_version_1_21_1}"
+        runtimeOnly "maven.modrinth:silent-lib:${silent_lib_version_1_21_1}"
+    }
+    if ((findProperty('dev_simply_swords') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:simply-swords:${simply_swords_version_1_21_1}"
+        runtimeOnly "maven.modrinth:architectury-api:${architectury_version_1_21_1}"
+        runtimeOnly "maven.modrinth:fzzy-config:${fzzy_config_version_1_21_1}"
+        runtimeOnly "maven.modrinth:simply-tooltips:${simply_tooltips_version_1_21_1}"
+        runtimeOnly "maven.modrinth:kotlin-for-forge:${kotlin_for_forge_version_1_21_1}"
+    }
+    if ((findProperty('dev_spartan') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:spartan-weaponry-reborn:${spartan_reborn_version_1_21_1}"
+    }
+    if ((findProperty('dev_spartan_unofficial') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:spartan-weaponry-unofficial:${spartan_unofficial_version_1_21_1}"
     }
 
 }

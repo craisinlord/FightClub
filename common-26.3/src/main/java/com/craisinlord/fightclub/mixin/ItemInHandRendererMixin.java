@@ -115,17 +115,18 @@ public abstract class ItemInHandRendererMixin {
         if (mainHand && !BetterCombatCompat.isLoaded()) {
             if (kind == WeaponKind.DAGGER) swingStyle = CombatPose.JAB_DAGGER;
             else if (kind == WeaponKind.LONGSWORD) swingStyle = CombatPose.HEAVY_LONGSWORD;
+            else if (kind == WeaponKind.MACE) swingStyle = CombatPose.HEAVY_MACE;
         }
-        boolean tridentStab = kind == WeaponKind.TRIDENT && mainHand && !BetterCombatCompat.isLoaded();
-        boolean customSwing = (swingStyle != CombatPose.NONE || tridentStab) && swingProgress > 0.0F;
+        boolean thrustStab = kind.thrusts() && mainHand && !BetterCombatCompat.isLoaded();
+        boolean customSwing = (swingStyle != CombatPose.NONE || thrustStab) && swingProgress > 0.0F;
 
         if (held <= 0.0F && recoil <= 0.0F && bash <= 0.0F && dip <= 0.0F && spin <= 0.0F && !customSwing) return;
         if (usingThisHand && pose == CombatPose.NONE && bash <= 0.0F) return;
-        boolean vanillaStab = (kind == WeaponKind.SPEAR || tridentStab) && held <= 0.0F;
+        boolean vanillaStab = (kind == WeaponKind.SPEAR || thrustStab) && held <= 0.0F;
 
         poseStack.pushPose();
         float keep = 1.0F - held;
-        boolean jab = swingStyle == CombatPose.JAB_DAGGER || swingStyle == CombatPose.JAB_SPEAR;
+        boolean jab = swingStyle == CombatPose.JAB_DAGGER || swingStyle == CombatPose.JAB_SPEAR || swingStyle == CombatPose.HEAVY_MACE;
         boolean sweep = swingStyle == CombatPose.HEAVY_LONGSWORD;
         if (!usingThisHand && !jab && !sweep && !vanillaStab) {
             float root = Mth.sqrt(swingProgress);
@@ -141,10 +142,11 @@ public abstract class ItemInHandRendererMixin {
         }
         if (!usingThisHand && keep > 0.0F) {
             if (vanillaStab) {
-                if (tridentStab) {
+                if (thrustStab) {
                     float out = fightClub$stabExtension(swingProgress);
-                    tridentRoll = CombatPoseConfig.modelRoll(CombatPose.JAB_SPEAR) * out;
-                    fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.JAB_SPEAR), out, 0.0F, 0.0F);
+                    CombatPose thrust = kind == WeaponKind.TRIDENT ? CombatPose.JAB_TRIDENT : CombatPose.JAB_SPEAR;
+                    tridentRoll = CombatPoseConfig.modelRoll(thrust) * out;
+                    fightClub$apply(poseStack, side, CombatPoseConfig.get(thrust), out, 0.0F, 0.0F);
                 }
                 net.minecraft.client.model.effects.SpearAnimations.firstPersonAttack(swingProgress, poseStack, (int) side, arm);
             } else if (jab) {
@@ -176,7 +178,12 @@ public abstract class ItemInHandRendererMixin {
                 amount *= 0.4F + 0.6F * fightClub$smooth(progress);
                 if (!CombatInputClient.pounceReady(Minecraft.getInstance())) pop = 0.0F;
             }
-            fightClub$apply(poseStack, side, config, amount, shake, pop);
+            if (pose == CombatPose.LONGSWORD_SPIN_CHARGE && !config.keys().isEmpty()) {
+                poseStack.translate(side * shake, shake * 0.6F, 0.0F);
+                fightClub$arc(poseStack, side, config, config.keys().get(0).t(), amount);
+            } else {
+                fightClub$apply(poseStack, side, config, amount, shake, pop);
+            }
         }
         if (dip > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.RECOVERY_DIP), dip, 0.0F, 0.0F);
         if (bash > 0.0F) fightClub$apply(poseStack, side, CombatPoseConfig.get(CombatPose.SHIELD_BASH), bash, 0.0F, 0.0F);

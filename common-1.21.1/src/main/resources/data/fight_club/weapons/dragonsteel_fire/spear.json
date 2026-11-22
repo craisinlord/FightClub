@@ -2,7 +2,7 @@
   "weapon": "spear",
   "material": "dragonsteel_fire",
   "attack_style": "thrust",
-  "attack_damage": 9.6,
+  "attack_damage": 22.4,
   "attack_speed": 1.4,
   "reach": 4.5,
   "sweep_radius": 0,

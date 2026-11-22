@@ -13,6 +13,9 @@ public final class CombatSounds {
     public static final SoundEvent DAGGER_SWING = create("weapon.dagger.swing");
     public static final SoundEvent SPEAR_THRUST = create("weapon.spear.thrust");
     public static final SoundEvent LONGSWORD_SWING = create("weapon.longsword.swing");
+    public static final SoundEvent SWORD_SWING = create("weapon.sword.swing");
+    public static final SoundEvent AXE_SWING = create("weapon.axe.swing");
+    public static final SoundEvent MACE_SWING = create("weapon.mace.swing");
     public static final SoundEvent LONGSWORD_SPIN = create("weapon.longsword.spin");
     public static final SoundEvent CHARGE_START = create("weapon.charge.start");
     public static final SoundEvent CHARGE_READY = create("weapon.charge.ready");

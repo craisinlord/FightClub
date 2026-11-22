@@ -23,7 +23,7 @@ public abstract class AvatarRendererSpinMixin {
         if (spin != 0.0F) state.bodyRot += spin;
         LivingEntity.SwingDescription swing = state.currentSwing;
         if (swing != null && swing.hand() == InteractionHand.MAIN_HAND && swing.animation().type() != SwingAnimationType.STAB
-                && entity instanceof Player player && LongswordSpinClient.tridentStab(player)) {
+                && entity instanceof Player player && LongswordSpinClient.thrustStab(player)) {
             state.currentSwing = new LivingEntity.SwingDescription(swing.hand(),
                     new SwingAnimation(SwingAnimationType.STAB, swing.animation().duration()), swing.durationTicks());
         }

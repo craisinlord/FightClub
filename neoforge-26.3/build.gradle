@@ -29,6 +29,10 @@ java {
 
 dependencies {
     implementation "com.electronwill.night-config:toml:3.8.3"
+    compileOnly "mezz.jei:jei-26.3-common-api:${jei_version_26_3}"
+    if ((findProperty('dev_jei') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "mezz.jei:jei-26.3-neoforge:${jei_version_26_3}"
+    }
 }
 
 tasks.withType(ProcessResources).configureEach {

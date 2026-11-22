@@ -59,4 +59,44 @@ public final class CombatWeapons {
         String weapon = weapon(item);
         return weapon == null ? null : WeaponSpecs.getOrLoadBuiltin(material(item), weapon);
     }
+
+    public static boolean isTrident(Item item) {
+        return item instanceof net.minecraft.world.item.TridentItem;
+    }
+
+    public static boolean isMace(Item item) {
+        return item instanceof net.minecraft.world.item.MaceItem;
+    }
+
+    public static boolean ownStats(Item item) {
+        return item == Items.TRIDENT || item == Items.MACE || usesSpecStats(item);
+    }
+
+    public static float stackAttackDamage(ItemStack stack) {
+        double[] damage = {1.0};
+        stack.forEachModifier(net.minecraft.world.entity.EquipmentSlot.MAINHAND, (attribute, modifier) -> {
+            if (attribute.is(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
+                    && modifier.operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE) {
+                damage[0] += modifier.amount();
+            }
+        });
+        return (float) damage[0];
+    }
+
+    public static float hitDamage(ItemStack stack, WeaponSpec spec) {
+        return stack.isEmpty() || ownStats(stack.getItem()) ? spec.attackDamage() : stackAttackDamage(stack);
+    }
+
+    public static float damageScale(ItemStack stack, WeaponSpec spec) {
+        if (stack.isEmpty() || spec == null || spec.attackDamage() <= 0.0f || ownStats(stack.getItem())) return 1.0f;
+        return net.minecraft.util.Mth.clamp(stackAttackDamage(stack) / spec.attackDamage(), 0.25f, 4.0f);
+    }
+
+    public static float chargeDamage(ItemStack stack, WeaponSpec spec) {
+        return spec.chargeDamage() * damageScale(stack, spec);
+    }
+
+    public static float throwDamage(ItemStack stack, WeaponSpec spec) {
+        return spec.throwDamage() * damageScale(stack, spec);
+    }
 }

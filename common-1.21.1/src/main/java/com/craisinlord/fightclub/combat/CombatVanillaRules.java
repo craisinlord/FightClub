@@ -32,7 +32,7 @@ public final class CombatVanillaRules {
         return null;
     }
     public static boolean isShield(ItemStack stack) { return CombatWeapons.isShield(stack); }
-    public static boolean isMace(ItemStack stack) { return stack.is(Items.MACE); }
+    public static boolean isMace(ItemStack stack) { return CombatWeapons.isMace(stack.getItem()); }
 
     public static void clearPlayerState(Player player) {
         CombatRecovery.clear(player);

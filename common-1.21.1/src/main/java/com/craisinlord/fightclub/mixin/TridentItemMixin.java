@@ -1,10 +1,6 @@
 package com.craisinlord.fightclub.mixin;
 
 import com.craisinlord.fightclub.combat.CombatRecovery;
-import com.craisinlord.fightclub.combat.CombatChargeState;
-import com.craisinlord.fightclub.combat.SpearProjectile;
-import com.craisinlord.fightclub.combat.WeaponSpec;
-import com.craisinlord.fightclub.combat.WeaponSpecs;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
@@ -28,16 +24,6 @@ public abstract class TridentItemMixin {
                                     CallbackInfoReturnable<InteractionResultHolder<ItemStack>> cir) {
         if (CombatRecovery.active(player)) {
             cir.setReturnValue(InteractionResultHolder.fail(player.getItemInHand(hand)));
-        }
-    }
-
-    @Inject(method = "hurtEnemy", at = @At("HEAD"))
-    private void fightClub$pierce(ItemStack stack, LivingEntity target, LivingEntity attacker,
-                                       CallbackInfoReturnable<Boolean> cir) {
-        if (attacker.level().isClientSide || !(attacker instanceof Player player) || CombatRecovery.active(player)) return;
-        WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "trident");
-        if (spec != null && spec.attackStyle() == WeaponSpec.AttackStyle.THRUST) {
-            com.craisinlord.fightclub.combat.CombatAttacks.pierce(player, target, spec);
         }
     }
 

@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.joml.Matrix4f;
 
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererModelMixin {
@@ -33,6 +34,15 @@ public abstract class ItemRendererModelMixin {
             target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(FFF)V", ordinal = 0))
     private void fightClub$modelSpin(ItemStack stack, ItemDisplayContext context, boolean leftHand, PoseStack poseStack,
                                      MultiBufferSource buffer, int light, int overlay, BakedModel model, CallbackInfo ci) {
+        BakedModel reference = CombatModels.inHandReference(stack, context);
+        if (reference != null) {
+            Matrix4f own = fightClub$transform(model, context, leftHand);
+            if (Math.abs(own.determinant()) > 1.0E-6F) {
+                poseStack.mulPose(own.invert().mul(fightClub$transform(reference, context, leftHand)));
+                float referenceRoll = CombatModels.inHandReferenceRoll(stack);
+                if (referenceRoll != 0.0F) poseStack.mulPose(Axis.ZP.rotationDegrees(referenceRoll));
+            }
+        }
         float roll = CombatModels.modelRoll();
         if (roll != 0.0F) {
             float px = CombatModels.rollPivotX(), pz = CombatModels.rollPivotZ();
@@ -42,5 +52,11 @@ public abstract class ItemRendererModelMixin {
         }
         float spin = CombatModels.modelSpin();
         if (spin != 0.0F) poseStack.mulPose(Axis.ZP.rotationDegrees(spin));
+    }
+
+    private static Matrix4f fightClub$transform(BakedModel model, ItemDisplayContext context, boolean leftHand) {
+        PoseStack stack = new PoseStack();
+        model.getTransforms().getTransform(context).apply(leftHand, stack);
+        return new Matrix4f(stack.last().pose());
     }
 }

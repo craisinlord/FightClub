@@ -117,9 +117,7 @@ public final class CombatWeaponItem extends SwordItem {
         level.addFreshEntity(projectile);
         level.playSound(null, player, weapon.equals("spear") ? CombatSounds.SPEAR_THROW : CombatSounds.DAGGER_THROW,
                 SoundSource.PLAYERS, 1.0f, 0.95f + level.random.nextFloat() * 0.1f);
-        Item item = stack.getItem();
         if (!player.getAbilities().instabuild) stack.shrink(1);
-        CombatRecovery.start(player, spec.recoveryTicks(), item);
     }
 
     @Override

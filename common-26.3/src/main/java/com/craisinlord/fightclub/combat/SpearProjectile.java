@@ -21,7 +21,7 @@ public final class SpearProjectile extends CombatProjectile {
     @Override protected float projectileDamage() {
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "trident");
         if (CombatWeapons.is(getItem().getItem(), "spear")) spec = WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(getItem().getItem()), "spear");
-        return spec == null ? 4.0F : spec.attackDamage();
+        return spec == null ? 4.0F : spec.attackDamage() * CombatWeapons.damageScale(getItem(), spec);
     }
 
     @Override public void tick() {

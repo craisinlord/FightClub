@@ -22,8 +22,8 @@ public final class CombatTooltips {
     public static String kindOf(ItemStack stack) {
         Item item = stack.getItem();
         if (CombatWeapons.isCombatWeapon(item)) return CombatWeapons.weapon(item);
-        if (item == Items.MACE) return "mace";
-        if (item == Items.TRIDENT) return "trident";
+        if (CombatWeapons.isMace(item)) return "mace";
+        if (CombatWeapons.isTrident(item)) return "trident";
         if (CombatWeapons.isShield(stack)) return "shield";
         if (axeMaterial(item) != null) return "axe";
         if (CombatVanillaRules.swordSpec(stack) != null) return "sword";
@@ -39,7 +39,7 @@ public final class CombatTooltips {
         com.craisinlord.fightclub.compat.CompatAbilities.appendTooltip(stack, tooltip);
         WeaponSpec spec = specFor(stack, kind);
         if (spec == null) return;
-        java.util.List<Component> details = details(spec, kind);
+        java.util.List<Component> details = details(stack, spec, kind);
         if (details.isEmpty()) return;
         if (shiftDown.getAsBoolean()) {
             details.forEach(tooltip);
@@ -84,7 +84,7 @@ public final class CombatTooltips {
         return line.withStyle(ChatFormatting.GRAY);
     }
 
-    private static java.util.List<Component> details(WeaponSpec spec, String kind) {
+    private static java.util.List<Component> details(ItemStack stack, WeaponSpec spec, String kind) {
         java.util.List<Component> lines = new java.util.ArrayList<>();
         boolean shield = "shield".equals(kind);
         if (spec.attackStyle() == WeaponSpec.AttackStyle.THRUST && spec.penetrationCount() > 0
@@ -93,7 +93,7 @@ public final class CombatTooltips {
             lines.add(stat("block", Math.round((1.0F - spec.blockingDamageMultiplier()) * 100.0F)));
         }
         if (spec.chargeTicks() > 0 && spec.chargeDamage() > 0.0F && on(com.craisinlord.fightclub.CombatConfig.CHARGED_ATTACKS)) {
-            lines.add(stat("charge", number(spec.chargeDamage()), seconds(spec.chargeTicks())));
+            lines.add(stat("charge", number(CombatWeapons.chargeDamage(stack, spec)), seconds(spec.chargeTicks())));
         }
         if (spec.recoveryTicks() > 0) {
             if (shield && on(com.craisinlord.fightclub.CombatConfig.SHIELD_BASH)) lines.add(stat("bash_cooldown", seconds(spec.bashHitCooldownTicks()), seconds(spec.recoveryTicks())));

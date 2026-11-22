@@ -192,7 +192,6 @@ public final class CombatInputClient {
                     if (target != null) PounceClient.start(player, target);
                 } else {
                     stopCharging(-1);
-                    if (released) player.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
                 }
             }
         } else if (waitForRelease) {

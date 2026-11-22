@@ -2,9 +2,9 @@
 
 Fight Club is a combat overhaul for Minecraft 1.21.1 on Fabric and NeoForge. It adds longswords, spears and daggers in every vanilla material, and gives swords, shields, tridents and maces new moves: sword blocking, shield bashes, spear charges, dagger pounces, thrown weapons, a longsword spin and a mace hit streak. Every weapon number is data driven, and everything is very configurable.
 
-This README is for players, modpack developers and mod developers. Pack developers mostly need [Configuration](#configuration) and [Weapon specs](#weapon-specs). Mod developers adding weapons should read [Java API](#java-api).
+This README is for players, modpack developers and mod developers. Pack developers mostly need [Configuration](#configuration), [Weapon specs](#weapon-specs) and, if the pack has other weapon mods, [Weapon mods](#weapon-mods). Mod developers adding weapons should read [Java API](#java-api).
 
-**Version parity.** The development workspace also contains forward-port targets for Minecraft 26.1 and 26.2 on Fabric and NeoForge. Those ports are still in progress and not ready for release. They don't have the weapon items, the [built-in mod compatibility](#built-in-mod-compatibility) materials or the [Java API](#java-api) yet; everything below describes the 1.21.1 builds.
+**Version parity.** The development workspace also contains forward-port targets for Minecraft 26.1, 26.2 and 26.3 on Fabric and NeoForge. Those ports are still in progress and not ready for release. They use vanilla's spears instead of Fight Club's, and don't have the [built-in mod compatibility](#built-in-mod-compatibility) materials or the [Java API](#java-api) yet. [Weapon mods](#weapon-mods) support is in them; see [On 26.x](#on-26x). Everything else below describes the 1.21.1 builds.
 
 ## Contents
 
@@ -14,6 +14,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 - [Weapon specs](#weapon-specs): file locations, fields, overriding a weapon
 - [Other mods' items](#other-mods-items): giving another mod's dagger, longsword, spear or shield Fight Club's moves by datapack
 - [Built-in mod compatibility](#built-in-mod-compatibility): extra materials and their perks, Better Combat, Vanilla Backport
+- [Weapon mods](#weapon-mods): Silent Gear, Simply Swords and Spartan Weaponry, for players and modpack developers
 - [Java API](#java-api): adding weapons from another mod, specs in code, models, queries
 - [Troubleshooting](#troubleshooting)
 
@@ -25,6 +26,10 @@ This README is for players, modpack developers and mod developers. Pack develope
 | Fabric API | Required on Fabric |
 | Better Combat | Optional; see [Better Combat](#better-combat) |
 | Vanilla Backport | Optional; see [Vanilla Backport](#vanilla-backport) |
+| Silent Gear | Optional (NeoForge); see [Silent Gear](#silent-gear) |
+| Simply Swords | Optional; see [Simply Swords](#simply-swords) |
+| Spartan Weaponry Reborn or Spartan Weaponry Unofficial | Optional (NeoForge); see [Spartan Weaponry](#spartan-weaponry) |
+| JEI | Optional; hidden Fight Club weapons stay out of its item list, see [Weapon mods](#weapon-mods) |
 | Ice and Fire, Antarchy, The Aether, Twilight Forest, Mekanism, Deeper and Darker, The Undergarden, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) (1.21.1 only) |
 
 Fight Club is needed on both the server and the client.
@@ -68,10 +73,11 @@ On a server, the server's `[gameplay]` and `[vanilla]` values are sent to every 
 | `gameplay` | `longsword_spin` | `true` | Hold right-click with a longsword to charge a spin attack that hits everything around you. |
 | `gameplay` | `mace_hit_streak` | `true` | Consecutive mace hits stack an attack speed bonus; a miss or a pause ends the streak. |
 | `gameplay` | `recovery` | `true` | Special attacks have a short recovery before the weapon can be used again. |
+| `gameplay` | `hide_replaced_weapons` | `true` | Hide Fight Club weapons (no recipe, creative tab, JEI entry or mob spawns) when another mod's weapon takes over that weapon and material, such as Silent Gear's daggers. Existing items keep working. |
 | `vanilla` | `remove_anvil_limit` | `true` | Removes "Too Expensive!". XP costs still rise as in vanilla. |
 | `vanilla` | `potion_stack_size` | `16` | Stack size for potions, splash potions and lingering potions, 1 to 64 (1 = vanilla). Needs a restart. |
 | `client` | `animations` | `true` | Fight Club's weapon poses and attack animations. |
-| `client` | `swing_sounds` | `true` | Swing whooshes for daggers, spears, tridents and longswords. Always off with Better Combat, which has its own. |
+| `client` | `swing_sounds` | `true` | Swing whooshes for swords, daggers, longswords, axes, maces, spears and tridents. Always off with Better Combat, which has its own. |
 | `client` | `charge_indicator` | `true` | Show charge progress on the attack indicator. |
 | `client` | `pounce_outline` | `true` | Outline the mob a charged dagger will pounce on. |
 | `client` | `pounce_fov` | `true` | Narrow the view when a pounce is ready and widen it during the dash (scaled by FOV Effects). |
@@ -159,6 +165,7 @@ A datapack can give another mod's item a Fight Club weapon's moves, with no code
 | `right_click` | `true` | Right click throws daggers and spears and charges the longsword spin. Set it to `false` for items that already do something on right click; they keep that and still get the left-click moves |
 | `spec_stats` | `false` | Replace the item's own attack damage and speed with the spec's. By default the item keeps its own, and the spec supplies everything else (reach, sweeps, charges, throws, recovery) |
 | `spec` | none | Spec fields that differ from the material's spec, such as `charge_damage` or `throw_damage`. The items get their own copy of the spec with these fields replaced, so each weapon's ability damage can be tuned on its own |
+| `replaces` | none | Fight Club items these items take the place of: a list of materials such as `["iron", "gold"]`, or `"all"` for wood through netherite. When one of the listed item ids is installed, Fight Club's `<material>_<weapon>` items lose their recipes and leave the creative tab, JEI and mob spawns. Existing ones keep working. The `hide_replaced_weapons` config option turns this off |
 
 For example, a dagger that keeps its own hit damage but pounces for 18 and throws for 9:
 
@@ -171,7 +178,7 @@ For example, a dagger that keeps its own hit damage but pounces for 18 and throw
 }
 ```
 
-`charge_damage` is the whole charged hit (dagger pounce, spear charge) and the longsword spin's damage; `throw_damage` is the thrown weapon's hit. For items that keep their own damage, the charge bonus is measured against the item's real attack damage, so `charge_damage` still means the total.
+`charge_damage` is the whole charged hit (dagger pounce, spear charge) and the longsword spin's damage; `throw_damage` is the thrown weapon's hit. For items that keep their own damage, `charge_damage` and `throw_damage` scale with how hard the item hits compared to the spec's `attack_damage`: an item that hits twice as hard as the iron dagger spec also pounces and throws twice as hard. This keeps one file right for weapons whose damage depends on what they're made of, like Silent Gear's.
 
 Mapped items get the full move set of their weapon: dagger pounce and throw, longsword arc sweep and spin, spear charge, thrust and throw, and for shields the bash, the narrower block angle and the bash pose. Fight Club's own items always use their own spec, and an id listed in a file wins over a tag. Changes apply on `/reload`, and the server sends the mappings to every player with the specs.
 
@@ -189,7 +196,7 @@ When one of these mods is installed, Fight Club registers a longsword, spear and
 | Dark metal | Born in Chaos | `born_in_chaos/dark_metal` | 1100 | 12.6 / 7.2 / 3.6 | Dark metal ingots and a bone handle | Dark metal ingot |
 | Dragonbone | Ice and Fire | `iceandfire/dragonbone` | 1660 | 13.3 / 7.6 / 3.8 | Dragonbone and witherbone | Dragonbone |
 | Flamed, iced and electrified dragonbone | Ice and Fire | `iceandfire/dragonbone_fire`, `_ice`, `_lightning` | 2000 | 14.7 / 8.4 / 4.2 | Dragonbone weapon + fire, ice or lightning dragon blood | Dragonbone |
-| Fire, ice and lightning dragonsteel | Ice and Fire | `iceandfire/dragonsteel_fire`, `_ice`, `_lightning` | 8000 | 16.8 / 9.6 / 4.8 | Dragonsteel ingots and witherbone | Dragonsteel ingot |
+| Fire, ice and lightning dragonsteel | Ice and Fire | `iceandfire/dragonsteel_fire`, `_ice`, `_lightning` | 8000 | 39.2 / 22.4 / 11.2 | Dragonsteel ingots and witherbone | Dragonsteel ingot |
 | Ultimate | Antarchy | `antarchy/ultimate` | 3072 | 47.6 / 27.2 / 13.6 | Uranium ingot and titanium ingot on a netherite Fight Club weapon | Titanium ingot |
 | Zanite | The Aether | `aether/zanite` | 250 | 9.8 / 5.6 / 2.8 | Zanite gemstones and a skyroot stick | Zanite gemstone |
 | Gravitite | The Aether | `aether/gravitite` | 1561 | 11.9 / 6.8 / 3.4 | Enchanted gravitite and a skyroot stick | Enchanted gravitite |
@@ -210,7 +217,7 @@ When one of these mods is installed, Fight Club registers a longsword, spear and
 | Utherium | The Undergarden | `undergarden/utherium` | 1279 | 12.6 / 7.2 / 3.6 | Utherium crystals and sticks | Utherium crystal |
 | Forgotten | The Undergarden | `undergarden/forgotten` | 1876 | 11.9 / 6.8 / 3.4 | Smithing: cloggrum weapon + forgotten template + forgotten ingot | Forgotten ingot |
 
-The damage column is the bundled spec; pack developers can change it like any other [weapon spec](#weapon-specs). The flamed, iced and electrified dragonbone and the three dragonsteels share one row each because their stats match. The Ultimate weapons are new Fight Club items alongside Antarchy's own ultimate sword and basilisk dagger; they don't replace them.
+The damage column is the bundled spec; pack developers can change it like any other [weapon spec](#weapon-specs). The flamed, iced and electrified dragonbone and the three dragonsteels share one row each because their stats match. Dragonsteel follows Ice and Fire's `dragonSteelBaseDamage` and `dragonSteelBaseDurability` settings: the damage numbers are for the default of 25 and scale with it, so a modpack that buffs or nerfs Ice and Fire's dragonsteel sword moves Fight Club's dragonsteel weapons the same way. The Ultimate weapons are new Fight Club items alongside Antarchy's own ultimate sword and basilisk dagger; they don't replace them.
 
 The Mekanism materials are enabled by Mekanism itself, which provides the ingots; Mekanism Tools isn't needed.
 
@@ -249,6 +256,89 @@ Fight Club works with Better Combat installed, and ships Better Combat weapon at
 ### Vanilla Backport
 
 When Vanilla Backport (`vanillabackport`) is installed, its wood through netherite spears become Fight Club spears for players: they charge, throw and pierce like Fight Club's, and use Fight Club's held models. Fight Club doesn't register its own spears in those materials, so there's only one of each. Mobs holding backport spears keep the backport's own spear behavior.
+
+## Weapon mods
+
+Fight Club works alongside other weapon mods instead of competing with them. When Silent Gear, Simply Swords or Spartan Weaponry is installed, their weapons get Fight Club's moves for what they are: their daggers pounce and throw, their longswords, claymores and katanas sweep and spin, and their spears charge and throw. Fight Club's own versions of those weapons then step aside, so a pack doesn't end up with two iron daggers. There's nothing to set up: install the mods together, on the server and every client.
+
+### For players
+
+- **Their weapons, our moves.** A mapped weapon keeps its own look, damage, attack speed, durability, enchantments and the other mod's passive traits. Fight Club adds the moves of its weapon type, listed for each mod below, and the matching tooltip lines.
+- **Ability damage follows the weapon.** Pounce, charge, spin and throw damage scale with the weapon's own hit damage, so a stronger weapon pounces and throws harder. A netherite Silent Gear dagger hits harder than a flint one, and a Simply Swords claymore spins harder than its longsword.
+- **Right-click.** On mapped daggers and spears, right-click is Fight Club's throw; on mapped longswords it's the spin. This replaces the other mod's own throw on those items, such as Simply Swords' instant spear throw or Spartan's dagger throw. Weapons that aren't mapped keep everything they had.
+- **Held and thrown.** The weapon keeps its own model in hand, in flight and stuck in a wall, held in Fight Club's poses.
+- **Fight Club's duplicates are hidden.** When another mod covers a weapon and material, Fight Club's version has no recipe, isn't in the creative tabs or JEI, and mobs stop spawning with it. It's still in the game: ones you already have keep working, and `/give` still works. With Simply Swords, Fight Club's wood, stone and copper weapons stay, because Simply Swords starts at iron.
+- **Reach doesn't stack.** A weapon gets its own reach or Fight Club's, whichever is longer, never both.
+- **Better Combat.** Simply Swords and Spartan keep their own Better Combat animations, which are made for their weapons. Silent Gear weapons use Fight Club's.
+
+### For modpack developers
+
+Every mapping is an ordinary [weapon item file](#other-mods-items) inside Fight Club's jar, at `data/fight_club/weapon_items/<mod>/<weapon>.json`. A datapack file at the same path replaces it, and changes apply on `/reload`.
+
+| To | Do this |
+| --- | --- |
+| Keep Fight Club's own weapons available as well | Set `hide_replaced_weapons = false` in `config/fight_club.toml`. Nothing is hidden and every recipe stays. |
+| Hide only some materials | Override the file and list the materials in `replaces`, such as `["diamond", "netherite"]`. Leave `replaces` out to hide nothing for that weapon. |
+| Turn a mapping off | Override the file with an empty list, such as `{"weapon": "longsword", "items": []}`. Those items go back to how their own mod made them, and Fight Club's matching weapons come back. |
+| Move a weapon to another type | Take its ids out of one file and add them to another. For example, to make Simply Swords' halberd a spear, remove the halberd ids from `simplyswords/longsword.json` and add them to `simplyswords/spear.json`. Keep each item in only one file. |
+| Change a weapon's ability damage | Add a `spec` block, such as `"spec": {"charge_damage": 18, "throw_damage": 9}`. See [Other mods' items](#other-mods-items) for how it scales. |
+| Keep an item's own right-click | Add `"right_click": false`. It keeps its right-click and still gets the left-click moves. |
+| Map another weapon mod | Write the same kind of file with that mod's item ids or tags. Ids of mods that aren't installed are skipped, so one datapack can cover mods a pack might not have. |
+
+Things worth knowing:
+
+- **Several weapon mods together.** Each mod's files work on their own. A Fight Club weapon is hidden if any installed mod replaces it.
+- **Better Combat files.** Fight Club only ships Better Combat attributes for Silent Gear's weapons, in `data/silentgear/weapon_attributes/`. A datapack can override them or add files for the other mods.
+- **Mobs.** A mob that would have spawned with a hidden Fight Club weapon spawns with nothing in that hand.
+- **The log.** On world load and `/reload`, Fight Club logs `Loaded N Fight Club weapon item mappings`, `N Fight Club weapons are replaced by other mods' items` and `disabled N recipes for weapons replaced by other mods`.
+
+### On 26.x
+
+The 26.x builds include the same weapon mod support: the same mapping files, hiding, recipe removal, damage scaling and held poses, and the JEI plugin. The differences:
+
+- 26.x has vanilla spears instead of Fight Club's, so another mod's spear gets Fight Club's spear moves but doesn't hide anything, and vanilla's spears stay craftable.
+- Mod availability decides what works where. Silent Gear has NeoForge builds for 26.1 and 26.2, and Spartan Weaponry Unofficial has one for 26.1. Simply Swords and Spartan Weaponry Reborn have no 26.x release yet; their mapping files are included and take effect if they get one with the same item ids.
+
+### Silent Gear
+
+When Silent Gear is installed, its weapons get Fight Club's moves for what they are, while keeping Silent Gear's materials, traits and damage:
+
+| Silent Gear | Fight Club weapon |
+| --- | --- |
+| Dagger, knife | Dagger: pounce and throw |
+| Katana | Longsword: arc sweep and spin |
+| Spear | Spear: charge, thrust and throw |
+| Sword, machete | Sword: block |
+| Shield | Shield: bash and narrower block |
+| Trident, mace | Trident and mace reworks |
+
+Pounce, charge, spin and throw damage scale with each weapon's own damage, so a netherite dagger pounces harder than a flint one. Fight Club's own daggers, longswords and spears (wood through netherite) are hidden, since Silent Gear's take their place. Fight Club's Better Combat attributes for these weapons replace Silent Gear's, so a katana swings like a Fight Club longsword. The mappings are under `data/fight_club/weapon_items/silentgear/`.
+
+### Simply Swords
+
+When Simply Swords is installed, its iron, gold, diamond and netherite weapons get Fight Club's moves for what they are, while keeping their own damage, speed and look:
+
+| Simply Swords | Fight Club weapon |
+| --- | --- |
+| Sai | Dagger: pounce and throw |
+| Longsword, claymore, twinblade, katana, glaive, halberd | Longsword: arc sweep and spin |
+| Spear | Spear: charge, thrust and throw (replaces Simply Swords' instant throw) |
+| Cutlass, rapier | Sword: block |
+
+Fight Club's iron, gold, diamond and netherite daggers, longswords and spears are hidden; wood, stone and copper stay, since Simply Swords has none. Runic and unique weapons, scythes, warglaives, chakrams, greataxes and greathammers are left to Simply Swords, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/simplyswords/`.
+
+### Spartan Weaponry
+
+Spartan Weaponry has no official 1.21.1 release, so Fight Club supports both ports: Spartan Weaponry Reborn (and other ports that keep the `spartanweaponry` namespace) and Spartan Weaponry Unofficial (`spartan_weaponry_unofficial`). Weapons are matched by Spartan's own weapon-type tags, so every material, including tin, bronze, steel, silver and add-on materials, is covered:
+
+| Spartan Weaponry | Fight Club weapon |
+| --- | --- |
+| Dagger | Dagger: pounce and throw (replaces Spartan's throw) |
+| Longsword, greatsword, katana, glaive, halberd, quarterstaff | Longsword: arc sweep and spin |
+| Spear, pike | Spear: charge, thrust and throw |
+| Saber, rapier | Sword: block |
+
+Spartan's passive traits (two-handed, armor piercing, backstab and the rest) still apply. Reach doesn't add up: a weapon whose reach trait already gives it more reach than Fight Club would keeps its own, so a pike reaches further than a Fight Club spear. Fight Club's wood through netherite daggers, longswords and spears are hidden. Parrying daggers, lances, scythes, blunt weapons, axes, throwing weapons and ranged weapons are left to Spartan, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/spartanweaponry/` and `data/fight_club/weapon_items/spartan_weaponry_unofficial/`.
 
 ## Java API
 
@@ -351,3 +441,5 @@ final class ExampleFightClubCompat {
 - **The log says `Loaded N Fight Club weapon specifications`.** That's the number of spec files the server loaded on world start or `/reload`.
 - **A compat material's weapons are missing.** They only register when the mod that provides the material is installed. The log says `Fight Club: enabled <material> weapons` for each one.
 - **Spear charges feel wrong with Better Combat.** Make sure both mods are on the server and every client.
+- **Fight Club's daggers, longswords or spears are missing from the creative tab, JEI or crafting.** Another installed weapon mod covers them; see [Weapon mods](#weapon-mods). Set `hide_replaced_weapons = false` to bring them back.
+- **Another mod's weapon doesn't get Fight Club's moves.** Only the types listed under [Weapon mods](#weapon-mods) are mapped. If you wrote your own mapping, check the log for `Ignoring invalid weapon item file`.

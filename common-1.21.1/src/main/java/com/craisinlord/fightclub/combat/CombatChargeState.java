@@ -5,7 +5,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
@@ -99,7 +98,7 @@ public final class CombatChargeState {
 
         float momentum = (float) Math.min(1.0, (speed - MIN_CHARGE_SPEED) / MIN_CHARGE_SPEED);
         float base = hitDamage(player, spec);
-        float bonus = Math.max(0.0f, spec.chargeDamage() - base) + base * 0.5f * momentum;
+        float bonus = Math.max(0.0f, CombatWeapons.chargeDamage(player.getMainHandItem(), spec) - base) + base * 0.5f * momentum;
         for (LivingEntity target : targets) {
             state.hits().add(target.getId());
             ((com.craisinlord.fightclub.mixin.LivingEntityAccessor) player).fightClub$setAttackStrengthTicker(1000);
@@ -112,7 +111,7 @@ public final class CombatChargeState {
     }
 
     private static WeaponSpec thrustSpec(Item item) {
-        if (item == Items.TRIDENT) return WeaponSpecs.getOrLoadBuiltin("base", "trident");
+        if (CombatWeapons.isTrident(item)) return WeaponSpecs.getOrLoadBuiltin("base", "trident");
         if (CombatWeapons.is(item, "spear")) {
             return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "spear");
         }
@@ -208,21 +207,12 @@ public final class CombatChargeState {
     }
 
     private static float hitDamage(Player player, WeaponSpec spec) {
-        ItemStack stack = player.getMainHandItem();
-        if (CombatWeapons.external(stack.getItem()) == null || CombatWeapons.usesSpecStats(stack.getItem())) return spec.attackDamage();
-        double[] damage = {1.0};
-        stack.forEachModifier(net.minecraft.world.entity.EquipmentSlot.MAINHAND, (attribute, modifier) -> {
-            if (attribute.is(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE)
-                    && modifier.operation() == net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE) {
-                damage[0] += modifier.amount();
-            }
-        });
-        return (float) damage[0];
+        return CombatWeapons.hitDamage(player.getMainHandItem(), spec);
     }
 
     private static void pounceHit(Player player, LivingEntity target, WeaponSpec spec) {
         player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, false);
-        CombatAttacks.attackWithBonus(player, target, Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec)));
+        CombatAttacks.attackWithBonus(player, target, Math.max(0.0f, CombatWeapons.chargeDamage(player.getMainHandItem(), spec) - hitDamage(player, spec)));
         hitEffects(player, target, CombatSounds.DAGGER_CHARGED_STAB, 12);
         Vec3 away = player.position().subtract(target.position());
         Vec3 escape = new Vec3(away.x, 0.0, away.z);
@@ -241,7 +231,7 @@ public final class CombatChargeState {
     }
 
     private static void chargedAttack(Player player, LivingEntity target, WeaponSpec spec) {
-        CombatAttacks.attackWithBonus(player, target, Math.max(0.0f, spec.chargeDamage() - hitDamage(player, spec)));
+        CombatAttacks.attackWithBonus(player, target, Math.max(0.0f, CombatWeapons.chargeDamage(player.getMainHandItem(), spec) - hitDamage(player, spec)));
         hitEffects(player, target, CombatSounds.CHARGE_HIT, 10);
         CombatVanillaRules.chargeCritEffects(player, target);
         if (spec.chargeKnockback() > 0.0f) CombatPlatform.knockback(target, spec.chargeKnockback(),
@@ -250,7 +240,7 @@ public final class CombatChargeState {
     }
 
     public static boolean isChargeWeapon(Item item) {
-        return CombatWeapons.is(item, "dagger") || CombatWeapons.is(item, "spear") || item == Items.TRIDENT;
+        return CombatWeapons.is(item, "dagger") || CombatWeapons.is(item, "spear") || CombatWeapons.isTrident(item);
     }
 
     public static boolean isSpearWeapon(Item item) {

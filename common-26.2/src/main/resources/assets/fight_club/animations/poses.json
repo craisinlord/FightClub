@@ -7,11 +7,11 @@
     "blend_in_ticks": 4,
     "blend_out_ticks": 3
   },
-  "_model_roll": "model_roll (trident_lowered, jab_spear): degrees the trident turns around its own pole while the pose plays, blended in with it. 90 fans the prongs flat across the view; use -90 for the other face, 0 to turn it off.",
+  "_model_roll": "model_roll (trident_lowered, jab_spear): degrees the trident turns around its own pole while the pose plays, blended in with it. 0 (default) keeps the trident as vanilla holds it; 90 fans the prongs flat across the view, -90 the other face. Non-zero rolls spin the trident as the pose blends in, so keep blend_in_ticks long if you use one.",
   "trident_lowered": {
     "translation": [-0.22, -0.05, -0.25],
     "rotation": [-65.0, 0.0, 0.0],
-    "model_roll": 90.0,
+    "model_roll": 0.0,
     "blend_in_ticks": 4,
     "blend_out_ticks": 3
   },
@@ -85,12 +85,17 @@
       {"t": 0.62, "translation": [-0.06, 0.02, 0.12], "rotation": [-45, 10, 0], "ease": "inout"}
     ]
   },
-  "_jab_spear": "Tridents poke with vanilla's spear STAB. duration_ticks is the swing length; translation/rotation are an extra offset (screen space, applied before the STAB) held while the trident is out, following the STAB's own thrust curve; model_roll rolls it around its pole the same way.",
+  "_jab_spear": "Spears and tridents poke with vanilla's spear STAB. jab_spear's duration_ticks is the swing length; translation/rotation lift and aim the thrust toward the crosshair (screen space, applied before the STAB and following its thrust curve): jab_spear for spears, jab_trident for tridents, since the trident is held lower. model_roll rolls the trident around its pole the same way.",
   "jab_spear": {
-    "translation": [-0.04, 0.02, -0.25],
-    "rotation": [0.0, 0.0, 0.0],
-    "model_roll": 90.0,
-    "duration_ticks": 12
+    "translation": [-0.2, 0.14, 0.0],
+    "rotation": [6.0, 16.0, 0.0],
+    "duration_ticks": 16
+  },
+  "jab_trident": {
+    "translation": [-0.26, 0.24, 0.0],
+    "rotation": [10.0, 20.0, 0.0],
+    "model_roll": 0.0,
+    "duration_ticks": 16
   },
   "_heavy_longsword": "Longsword swing (without Better Combat): a horizontal cut, right to left, then the left-to-right return cut on the next swing (heavy_longsword_back; it uses heavy_longsword's duration). The blade turns round the grip like a clock hand while the hand sweeps across the view at crosshair height: in from off-screen right, through the middle of the screen (the t 0.45 key puts the grip just below the crosshair with the blade pitched up through it), out off-screen left. Translation y +0.63 lifts the grip from about 0.71 below eye level to about 0.08 below. In third person the swing plays 1.5x as long as here (CombatClientPoses.THIRD_PERSON_SWING_STRETCH). rotation (on the entry) is the idle hold's blade heading and pivot the grip, both relative to vanilla's first-person hand: leave them unless the in-hand model changes. keys: at swing progress t (0..1), translation moves the hand from the idle hold (x right, y up, z toward the camera) and rotation is the blade's heading [pitch, yaw, roll] in degrees (yaw 0 = straight ahead, +90 = left; pitch raises the tip; roll twists the flat, 0 = flat facing up). Each key is eased in from the previous one (ease: linear, in, out, inout, in_cubic, out_cubic); the motion starts from and settles back to the idle hold. longsword_spin uses the same format (it plays with Better Combat too).",
   "heavy_longsword": {
@@ -122,6 +127,15 @@
       {"t": 0.8, "translation": [0.12, 0.5, 0.0], "rotation": [14, -88, -12], "ease": "out"}
     ]
   },
+  "_heavy_mace": "Mace swing (without Better Combat): a one-handed overhead slam. keys work like jab_dagger's: at swing progress t, translation moves the hand from the idle hold (x right, y up, z toward the camera) and rotation turns the mace about the grip [pitch, yaw, roll] (positive pitch tips the head back toward you). Wound up high over the shoulder, slammed down through the crosshair, a short hold on impact, then back to the idle hold. duration_ticks sets the swing length (third person plays it 1.5x as long).",
+  "heavy_mace": {
+    "duration_ticks": 10,
+    "keys": [
+      {"t": 0.28, "translation": [0.0, 0.42, 0.12], "rotation": [30, 0, -8], "ease": "out"},
+      {"t": 0.46, "translation": [-0.3, -0.12, -0.06], "rotation": [-60, 0, 6], "ease": "in_cubic"},
+      {"t": 0.6, "translation": [-0.29, -0.15, -0.05], "rotation": [-64, 0, 6], "ease": "out"}
+    ]
+  },
   "longsword_spin": {
     "duration_ticks": 15,
     "rotation": [68.57, -180, -90],
@@ -137,19 +151,23 @@
       {"t": 0.86, "translation": [-0.7, -0.6, 0.02], "rotation": [-10, 95, 0], "ease": "inout"}
     ]
   },
+  "_longsword_spin_charge": "Right-click spin wind-up hold (first person), in heavy_longsword's format: rotation and pivot are the idle hold's heading and grip, and the one key (its t only picks the frame) is the drawn-back hold, blended in over blend_in_ticks: the hands pulled back to the right with the blade trailing level toward the back, ready to swing round into longsword_spin's first key. tremble shakes it as the charge fills.",
   "longsword_spin_charge": {
-    "translation": [0.12, -0.04, 0.10],
-    "rotation": [-10.0, 45.0, -70.0],
+    "rotation": [68.57, -180, -90],
+    "pivot": [0.07, -0.19, -0.1],
     "blend_in_ticks": 8,
     "blend_out_ticks": 2,
-    "tremble": 0.006
+    "tremble": 0.006,
+    "keys": [
+      {"t": 0.5, "translation": [-0.1, 0.5, 0.1], "rotation": [35, -105, -50]}
+    ]
   },
 
   "third_person": {
     "_comment": "Arm angles in degrees on the player model (X pitch: negative raises the arm forward/up; Y yaw: negative turns the right arm inward). Written for a right-handed player: main_arm is the right arm, off_arm the left (positive Y turns it inward). Mirrored for left-handers. off_arm only applies with an empty offhand, except shield_bash, where it is the arm holding the shield. item turns the held item: [pitch, yaw, roll] in degrees, roll twisting it around the arm's length. Blending uses the timings above.",
     "sword_block": {
-      "main_arm": [-60.0, -30.0, 0.0],
-      "item": [-30.0, 0.0, 55.0]
+      "main_arm": [-75.0, -35.0, 0.0],
+      "item": [0.0, 30.0, 60.0]
     },
     "spear_lowered":  { "main_arm": [-20.0, 5.0, 0.0],   "off_arm": [-45.0, 35.0, 0.0] },
     "trident_lowered": { "main_arm": [-5.0, 5.0, 0.0],   "off_arm": [-45.0, 35.0, 0.0] },
@@ -160,45 +178,54 @@
     "jab_dagger":     { "main_arm": [-80.0, -5.0, 0.0] },
     "jab_spear":      { "main_arm": [-35.0, 0.0, 0.0],   "off_arm": [-50.0, 30.0, 0.0] },
     "_longsword_grip": "Idle two-handed hold between swings (no Better Combat): the sword arm is set outright, so walking does not swing it (walk_bob is ignored here; crouching still leans the grip with the torso). item turns the sword in the fist (pitch tips the blade up or down, roll twists it around the forearm); longsword item turns pivot on the fist's centre, so the hilt stays in the hand. The off arm is not keyed: it is solved every frame (CombatThirdPerson.offHandOnHilt) so its hand grips the hilt about 3px below the sword hand, so off_arm is ignored for the grip and the swings. Model arms are straight, so both hands can only meet roughly in front of the chest: if you move main_arm far out to the side, the off hand will come up short of the hilt.",
-    "longsword_grip": { "main_arm": [-62.0, -50.0, 0.0], "item": [2.0, 0.0, -8.0] },
-    "_heavy_longsword": "Swing and spin keys: at progress t, main_arm angles (relative to the torso), body = upper-body twist in degrees (positive turns toward the off hand, so the cut carries the torso round), item = [pitch, yaw, roll] turn of the held sword (roll twists it around the forearm; with roll near 90 the blade lies flat and pitch swings it round in the cut). Eased like the first-person keys; before the first key and after the last the arms blend with the grip. The swing's item turns are interpolated along the shortest rotation between keys. heavy_longsword: wound up with the blade back over the sword arm's shoulder (t 0.18), cut right to left at chest height (0.36 to 0.6), follow-through with the blade back past the off side (0.72). heavy_longsword_back is the return cut, left to right. off_arm is ignored here (the off hand follows the hilt); longsword_spin still uses its off_arm keys.",
+    "longsword_grip": { "main_arm": [-62.0, -44.0, 0.0], "item": [33.4, 49.6, -7.1] },
+    "_heavy_longsword": "Swing and spin keys: at progress t, main_arm angles (relative to the torso), body = upper-body twist in degrees (positive turns toward the off hand, so the cut carries the torso round), item = [pitch, yaw, roll] turn of the held sword around the fist. Eased like the first-person keys; before the first key and after the last the arms blend with the grip. The swing's item turns are interpolated along the shortest rotation between keys. Keep main_arm yaw plus the body twist within about -85..30 so the arm stays in front of the torso. heavy_longsword: wound up with the blade back over the sword arm's shoulder (t 0.16), a level two-handed cut right to left at chest height with the edge leading (0.34 to 0.6), follow-through low on the off side (0.74), then back to the upright grip. heavy_longsword_back is the mirrored return cut, left to right. off_arm is ignored here (the off hand follows the hilt).",
     "heavy_longsword": {
       "follow_head": 0.5,
       "keys": [
-        {"t": 0.18, "main_arm": [-112, -41, 0], "body": -50, "item": [36, 0, -4], "ease": "out"},
-        {"t": 0.36, "main_arm": [-92, -26, 0], "body": -25, "item": [31, 0, -71], "ease": "in"},
-        {"t": 0.48, "main_arm": [-83, -31, 0], "body": 15, "item": [-40, 0, -74], "ease": "linear"},
-        {"t": 0.6, "main_arm": [-80, -52, 0], "body": 45, "item": [-97, 0, -87], "ease": "linear"},
-        {"t": 0.72, "main_arm": [-67, -66, 0], "body": 60, "item": [-132, 0, -86], "ease": "out"}
+        {"t": 0.16, "main_arm": [-106, -33, 0], "body": -35, "item": [26.1, 54.6, -22.1], "ease": "out"},
+        {"t": 0.34, "main_arm": [-90, -18, 0], "body": -20, "item": [-8.6, 2.6, -82.0], "ease": "in"},
+        {"t": 0.48, "main_arm": [-86, -29, 0], "body": 5, "item": [-47.6, 5.7, -85.5], "ease": "linear"},
+        {"t": 0.6, "main_arm": [-80, -47, 0], "body": 25, "item": [-84.4, 21.0, -68.6], "ease": "linear"},
+        {"t": 0.74, "main_arm": [-64, -49, 0], "body": 35, "item": [-61.6, -161.1, 110.5], "ease": "out"}
       ]
     },
     "heavy_longsword_back": {
       "follow_head": 0.5,
       "keys": [
-        {"t": 0.18, "main_arm": [-109, -45, 0], "body": 50, "item": [1, 0, 43], "ease": "out"},
-        {"t": 0.36, "main_arm": [-89, -39, 0], "body": 25, "item": [-31, 0, 71], "ease": "in"},
-        {"t": 0.48, "main_arm": [-86, -16, 0], "body": -15, "item": [-89, 0, 81], "ease": "linear"},
-        {"t": 0.6, "main_arm": [-79, -18, 0], "body": -45, "item": [-156, 0, 83], "ease": "linear"},
-        {"t": 0.72, "main_arm": [-67, -45, 0], "body": -60, "item": [-206, 0, 32], "ease": "out"},
-        {"t": 0.86, "main_arm": [-75, -25, 0], "body": -25, "item": [-119, 0, 90], "ease": "inout"}
+        {"t": 0.16, "main_arm": [-102, -49, 0], "body": 35, "item": [-12.0, 40.3, 35.4], "ease": "out"},
+        {"t": 0.34, "main_arm": [-90, -46, 0], "body": 20, "item": [-81.8, 94.3, 5.0], "ease": "in"},
+        {"t": 0.48, "main_arm": [-86, -37, 0], "body": -5, "item": [-49.6, 6.2, -85.3], "ease": "linear"},
+        {"t": 0.6, "main_arm": [-78, -23, 0], "body": -25, "item": [-10.1, 9.8, -96.0], "ease": "linear"},
+        {"t": 0.74, "main_arm": [-52, -25, 0], "body": -35, "item": [7.1, 5.0, -129.0], "ease": "out"}
       ]
     },
-    "_longsword_spin": "Right-click spin (plays with Better Combat too): longsword_spin_charge is the hold while charging, the two-handed wind-up with the blade drawn back over the sword arm's shoulder and the torso turned toward it; its one key (t is ignored) gives main_arm, body twist and item like the swing keys, and main_arm outside the key is the one-handed fallback when the offhand is in use. longsword_spin keys work like heavy_longsword's: the wind-up (t 0.12, matching the charge), the cut held out level at chest height while the whole body turns 360 degrees (t 0.12 to 0.85, LongswordSpinClient.bodySpin; right-handers turn left), a follow-through, then back to the grip. off_arm is ignored for both: with an empty offhand the off hand is put on the hilt.",
+    "_heavy_mace": "Mace slam keys: main_arm and off_arm angles, body twist and item turn like the longsword swing keys (off_arm applies with an empty offhand). Wound up overhead with the head cocked behind (t 0.3), slammed down in front (0.48), held on impact, then back to idle.",
+    "heavy_mace": {
+      "follow_head": 0.5,
+      "keys": [
+        {"t": 0.3, "main_arm": [-165, -10, 10], "off_arm": [-30, 15, 0], "body": -15, "item": [20, 0, 0], "ease": "out"},
+        {"t": 0.48, "main_arm": [-50, -15, 0], "off_arm": [-10, 10, 0], "body": 20, "item": [-80, 0, 0], "ease": "in_cubic"},
+        {"t": 0.62, "main_arm": [-42, -15, 0], "off_arm": [-10, 10, 0], "body": 25, "item": [-85, 0, 0], "ease": "out"}
+      ]
+    },
+    "_longsword_spin": "Right-click spin (plays with Better Combat too): longsword_spin_charge is the hold while charging, a two-handed wind-up with the sword drawn back low past the sword-side hip, the blade trailing level behind and the torso turned toward it; its one key (t is ignored) gives main_arm, body twist and item like the swing keys, and main_arm outside the key is the one-handed fallback when the offhand is in use. longsword_spin keys work like heavy_longsword's: the wind-up (t 0.12, matching the charge), the cut held out level at chest height while the whole body turns 360 degrees (t 0.12 to 0.85, LongswordSpinClient.bodySpin; right-handers turn left), a follow-through, then back to the grip. off_arm is ignored for both: with an empty offhand the off hand is put on the hilt.",
     "longsword_spin_charge": {
-      "main_arm": [-112, -41, 0],
+      "main_arm": [-48, -26, 0],
       "follow_head": 0.3,
       "walk_bob": 0.3,
       "keys": [
-        {"t": 1.0, "main_arm": [-112, -41, 0], "body": -50, "item": [36, 0, -4]}
+        {"t": 1.0, "main_arm": [-48, -26, 0], "body": -40, "item": [32.7, 62.5, -143.1]}
       ]
     },
     "longsword_spin": {
       "follow_head": 0.2,
       "keys": [
-        {"t": 0.12, "main_arm": [-112, -41, 0], "body": -50, "item": [36, 0, -4], "ease": "out"},
-        {"t": 0.3, "main_arm": [-81, -30, 0], "body": 0, "item": [-28, 0, -60], "ease": "in"},
-        {"t": 0.75, "main_arm": [-85, -39, 0], "body": 25, "item": [-69, 0, -57], "ease": "linear"},
-        {"t": 0.85, "main_arm": [-71, -60, 0], "body": 55, "item": [-117, 0, -80], "ease": "out"}
+        {"t": 0.12, "main_arm": [-48, -26, 0], "body": -40, "item": [32.7, 62.5, -143.1], "ease": "out"},
+        {"t": 0.3, "main_arm": [-80, -16, 0], "body": -10, "item": [-39.1, 17.7, -76.7], "ease": "in"},
+        {"t": 0.55, "main_arm": [-82, -27, 0], "body": 5, "item": [-48.7, 15.2, -77.8], "ease": "linear"},
+        {"t": 0.75, "main_arm": [-78, -38, 0], "body": 20, "item": [-56.8, 22.4, -71.1], "ease": "linear"},
+        {"t": 0.86, "main_arm": [-64, -49, 0], "body": 35, "item": [-65.9, -162.9, 106.4], "ease": "out"}
       ]
     }
   }

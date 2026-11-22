@@ -11,6 +11,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(HumanoidModel.class)
 public abstract class HumanoidModelPoseMixin {
+    @Inject(method = "setupAttackAnimation(Lnet/minecraft/world/entity/LivingEntity;F)V", at = @At("HEAD"), cancellable = true)
+    private void fightClub$stab(LivingEntity entity, float ageInTicks, CallbackInfo ci) {
+        if (entity instanceof Player player && CombatThirdPerson.stab((HumanoidModel<?>) (Object) this, player)) ci.cancel();
+    }
+
     @Inject(method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V", at = @At("TAIL"))
     private void fightClub$pose(LivingEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
                                      float netHeadYaw, float headPitch, CallbackInfo ci) {

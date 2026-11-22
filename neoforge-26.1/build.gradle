@@ -9,18 +9,42 @@ base {
     archivesName = "${mod_id}-neoforge-26.1"
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs project(':common-26.1').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDir project(':common-26.1').sourceSets.main.resources.srcDirs
+        }
+    }
+    dev {
+        java {
+            srcDirs 'src/dev/java'
+        }
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
 neoForge {
     version = neoforge_version_26_1
     mods {
         create(mod_id) {
             sourceSet sourceSets.main
+            sourceSet sourceSets.dev
         }
     }
     runs {
-        client { client() }
+        client {
+            client()
+            sourceSet = sourceSets.dev
+        }
         server { server() }
     }
 }
+
+neoForge.addModdingDependenciesTo(sourceSets.dev)
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(25) }
@@ -29,6 +53,17 @@ java {
 
 dependencies {
     implementation "com.electronwill.night-config:toml:3.8.3"
+    compileOnly "mezz.jei:jei-26.1-common-api:${jei_version_26_1}"
+    if ((findProperty('dev_jei') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "mezz.jei:jei-26.1-neoforge:${jei_version_26_1}"
+    }
+    if ((findProperty('dev_silent_gear') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:silent-gear:${silent_gear_version_26_1}"
+        runtimeOnly "maven.modrinth:silent-lib:${silent_lib_version_26_1}"
+    }
+    if ((findProperty('dev_spartan_unofficial') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:spartan-weaponry-unofficial:${spartan_unofficial_version_26_1}"
+    }
 }
 
 tasks.withType(ProcessResources).configureEach {
@@ -53,16 +88,7 @@ tasks.withType(Jar).configureEach {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs project(':common-26.1').sourceSets.main.java.srcDirs
-        }
-        resources {
-            srcDir project(':common-26.1').sourceSets.main.resources.srcDirs
-        }
-    }
-}
+
 
 publishing {
     publications {

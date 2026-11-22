@@ -1,0 +1,19 @@
+{
+  "weapon": "longsword",
+  "material": "iron",
+  "items": [
+    "#spartanweaponry:longswords",
+    "spartanweaponry:iron_longsword",
+    "#spartanweaponry:greatswords",
+    "spartanweaponry:iron_greatsword",
+    "#spartanweaponry:katanas",
+    "spartanweaponry:iron_katana",
+    "#spartanweaponry:glaives",
+    "spartanweaponry:iron_glaive",
+    "#spartanweaponry:halberds",
+    "spartanweaponry:iron_halberd",
+    "#spartanweaponry:quarterstaves",
+    "spartanweaponry:iron_quarterstaff"
+  ],
+  "replaces": "all"
+}

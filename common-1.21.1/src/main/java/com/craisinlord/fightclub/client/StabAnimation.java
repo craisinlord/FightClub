@@ -25,15 +25,20 @@ public final class StabAnimation {
         return Mth.clamp(starting - ending, 0.0F, 1.0F);
     }
 
-    public static void thirdPersonArm(ModelPart arm, ModelPart body, float attackTime) {
+    public static void thirdPersonArm(ModelPart arm, float attackTime) {
         if (attackTime <= 0.0F) return;
         float prepare = inOutSine(progress(attackTime, 0.0F, 0.05F));
         float attack = inQuad(progress(attackTime, 0.05F, 0.2F));
         float retract = inOutExpo(progress(attackTime, 0.4F, 1.0F));
-        body.yRot = 0.0F;
-        arm.xRot = -Mth.PI / 10.0F + (90.0F * prepare - 120.0F * attack + 30.0F * retract) * Mth.DEG_TO_RAD;
-        arm.yRot = 0.0F;
-        arm.zRot = 0.0F;
+        arm.xRot += (90.0F * prepare - 120.0F * attack + 30.0F * retract) * Mth.DEG_TO_RAD;
+    }
+
+    public static void thirdPersonItem(PoseStack poseStack, float attackTime, float forward) {
+        if (attackTime <= 0.0F || attackTime >= 1.0F) return;
+        float attack = inQuad(progress(attackTime, 0.05F, 0.2F));
+        float retract = inOutExpo(progress(attackTime, 0.4F, 1.0F));
+        poseStack.rotateAround(Axis.XN.rotationDegrees(70.0F * (attack - retract)), 0.0F, -0.125F, 0.125F);
+        poseStack.translate(0.0F, forward * (attack - retract), 0.0F);
     }
 
     private static float progress(float time, float start, float end) {

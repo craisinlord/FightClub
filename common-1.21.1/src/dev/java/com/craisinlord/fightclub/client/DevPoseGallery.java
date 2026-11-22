@@ -159,7 +159,7 @@ public final class DevPoseGallery {
         client.options.setCameraType(shot.camera());
         client.options.hideGui = !shot.gui();
         boolean sameItems = previous != null && previous.mainItem().equals(shot.mainItem())
-                && java.util.Objects.equals(previous.offItem(), shot.offItem()) && (shot.name().startsWith("ls_") || shot.name().startsWith("jab_fp_"));
+                && java.util.Objects.equals(previous.offItem(), shot.offItem()) && (shot.name().startsWith("ls_") || shot.name().startsWith("jab_fp_") || shot.name().startsWith("mace_"));
         previous = shot;
         timer = (sameItems ? 2 : ITEM_DELAY_TICKS) + shot.waitTicks();
     }
@@ -170,6 +170,13 @@ public final class DevPoseGallery {
             FightClub.LOGGER.info("Pose gallery shot {}: swinging={} swingTime={} attackAnim={} item={}", shot.name(),
                     client.player.swinging, client.player.swingTime, client.player.getAttackAnim(0.0F),
                     client.player.getMainHandItem().getItem());
+            if (client.getEntityRenderDispatcher().getRenderer(client.player) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer renderer) {
+                var model = renderer.getModel();
+                FightClub.LOGGER.info("Pose gallery arms {}: right {} {} {} at {} {} {} body {} left {} {} {}", shot.name(),
+                        Math.toDegrees(model.rightArm.xRot), Math.toDegrees(model.rightArm.yRot), Math.toDegrees(model.rightArm.zRot),
+                        model.rightArm.x, model.rightArm.y, model.rightArm.z, Math.toDegrees(model.body.yRot),
+                        Math.toDegrees(model.leftArm.xRot), Math.toDegrees(model.leftArm.yRot), Math.toDegrees(model.leftArm.zRot));
+            }
         }
         Screenshot.grab(client.gameDirectory, "co_" + shot.name() + ".png", client.getMainRenderTarget(), message -> {});
     }
@@ -236,6 +243,24 @@ public final class DevPoseGallery {
                     CombatClientPoses.debugSwing = frame;
                 }, 4));
             }
+            list.add(new Shot("ls_" + view + "_hold", longsword, null, camera, fp, () -> bodyYaw = yaw, SETTLE_TICKS));
+            Object[][] smearPitches = fp ? new Object[][]{{"up", -30.0F}, {"level", 0.0F}, {"down", 30.0F}, {"steep", 60.0F}}
+                    : new Object[][]{{"level", 0.0F}};
+            for (Object[] p : smearPitches) {
+                float pitch = (Float) p[1];
+                for (int delay : new int[]{4, 6, 8, 10}) {
+                    list.add(new Shot("ls_" + view + "_smeargap_" + p[0] + "_" + delay, longsword, null, camera, fp, () -> {
+                        bodyYaw = yaw;
+                        viewPitch = pitch;
+                    }, 14));
+                    list.add(new Shot("ls_" + view + "_smear_" + p[0] + "_" + delay, longsword, null, camera, fp, () -> {
+                        bodyYaw = yaw;
+                        viewPitch = pitch;
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.player != null) mc.player.swing(InteractionHand.MAIN_HAND);
+                    }, delay));
+                }
+            }
             if (fp) {
                 Object[][] pitches = {{"up", -30.0F}, {"level", 0.0F}, {"down", 30.0F}};
                 for (Object[] p : pitches) {
@@ -270,6 +295,55 @@ public final class DevPoseGallery {
         }
     }
 
+    private static void addMaceShots(List<Shot> list) {
+        float[] frames = {0.0F, 0.12F, 0.22F, 0.30F, 0.38F, 0.44F, 0.48F, 0.55F, 0.62F, 0.75F, 0.88F};
+        Object[][] views = {{"fp", CameraType.FIRST_PERSON, 0.0F}, {"tpb", CameraType.THIRD_PERSON_BACK, 20.0F},
+                {"tpf", CameraType.THIRD_PERSON_FRONT, 35.0F}, {"tps", CameraType.THIRD_PERSON_FRONT, 90.0F}};
+        for (Object[] v : views) {
+            String view = (String) v[0];
+            CameraType camera = (CameraType) v[1];
+            float yaw = (Float) v[2];
+            boolean fp = camera == CameraType.FIRST_PERSON;
+            for (float frame : frames) {
+                list.add(new Shot("mace_" + view + "_swing_" + Math.round(frame * 100), "minecraft:mace", null, camera, fp, () -> {
+                    bodyYaw = yaw;
+                    if (frame > 0.0F) CombatClientPoses.debugSwing = frame;
+                }, 4));
+            }
+        }
+    }
+
+    private static void addThrustShots(List<Shot> list, String spear) {
+        float[] jabFrames = {0.03F, 0.10F, 0.20F, 0.30F, 0.45F, 0.60F, 0.80F, 0.95F};
+        Object[][] views = {{"fp", CameraType.FIRST_PERSON, 0.0F}, {"tpf", CameraType.THIRD_PERSON_FRONT, 35.0F},
+                {"tps", CameraType.THIRD_PERSON_FRONT, 90.0F}};
+        String[][] items = {{"spear", spear}, {"trident", "minecraft:trident"}};
+        for (String[] item : items) {
+            boolean trident = item[0].equals("trident");
+            CombatPose charge = trident ? CombatPose.TRIDENT_LOWERED : CombatPose.SPEAR_LOWERED;
+            for (Object[] v : views) {
+                String view = (String) v[0];
+                CameraType camera = (CameraType) v[1];
+                float yaw = (Float) v[2];
+                boolean fp = camera == CameraType.FIRST_PERSON;
+                list.add(new Shot("thrust_" + item[0] + "_" + view + "_idle", item[1], null, camera, fp, () -> bodyYaw = yaw, SETTLE_TICKS));
+                for (float frame : jabFrames) {
+                    list.add(new Shot("thrust_" + item[0] + "_" + view + "_jab_" + Math.round(frame * 100), item[1], null, camera, fp, () -> {
+                        bodyYaw = yaw;
+                        CombatClientPoses.debugSwing = frame;
+                    }, 4));
+                }
+                for (int ticks : new int[]{1, 2, 3, 5, 12, 40}) {
+                    list.add(new Shot("thrust_" + item[0] + "_" + view + "_charge_" + ticks, item[1], null, camera, fp, () -> {
+                        bodyYaw = yaw;
+                        CombatClientPoses.debugPose = charge;
+                        CombatInputClient.debugProgress = Math.min(1.0F, ticks / 20.0F);
+                    }, ticks));
+                }
+            }
+        }
+    }
+
     private static List<Shot> buildShots() {
         List<Shot> list = new ArrayList<>();
         Minecraft mc = Minecraft.getInstance();
@@ -278,6 +352,8 @@ public final class DevPoseGallery {
         String sword = "minecraft:iron_sword", spear = com.craisinlord.fightclub.combat.CombatWeapons.backportSpears() ? "minecraft:iron_spear" : "fight_club:iron_spear", dagger = "fight_club:iron_dagger";
         String longsword = "fight_club:iron_longsword";
         addLongswordShots(list, longsword, sword);
+        addMaceShots(list);
+        addThrustShots(list, spear);
         list.add(new Shot("jab_fp_idle", dagger, null, fp, true, null, SETTLE_TICKS));
         for (float frame : new float[]{0.10F, 0.20F, 0.30F, 0.40F, 0.50F, 0.62F, 0.75F, 0.88F}) {
             list.add(new Shot("jab_fp_" + Math.round(frame * 100), dagger, null, fp, true,
@@ -477,6 +553,13 @@ public final class DevPoseGallery {
             later(3, () -> pressFor(mc, 2));
         }, 30, () -> logTest(mc, "second tap 3 ticks after the first (expect villager hurt: first hit not cancelled)",
                 villagerHealth(mc) + " charging=" + CombatInputClient.isCharging())));
+        for (String weapon : new String[]{spear, "minecraft:trident"}) {
+            String name = weapon.equals(spear) ? "spear" : "trident";
+            list.add(new Shot("test_tap_release_" + name + "_setup", weapon, null, fp, true, villager, 10));
+            list.add(new Shot("test_tap_release_" + name, weapon, null, fp, true, () -> pressFor(mc, 40), 44,
+                    () -> logTest(mc, name + " released after a full charge (expect swinging=false: no jab after the charge)",
+                            "swinging=" + mc.player.swinging + " charging=" + CombatInputClient.isCharging())));
+        }
     }
 
     private static String villagerHealth(Minecraft mc) {

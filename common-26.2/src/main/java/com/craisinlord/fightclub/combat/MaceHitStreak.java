@@ -21,7 +21,7 @@ public final class MaceHitStreak {
 
     public static void onHit(Player player) {
         if (player.level().isClientSide() || !CombatConfig.enabled(CombatConfig.MACE_HIT_STREAK)
-                || !player.getMainHandItem().is(Items.MACE)) return;
+                || !CombatWeapons.isMace(player.getMainHandItem().getItem())) return;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin("base", "mace");
         if (spec == null || spec.hitStreakSpeedBonus() <= 0.0f || spec.hitStreakMaxStacks() <= 0) return;
         Streak previous = STREAKS.get(player.getUUID());
@@ -37,13 +37,13 @@ public final class MaceHitStreak {
     }
 
     public static void onMiss(Player player) {
-        if (player.getMainHandItem().is(Items.MACE)) reset(player);
+        if (CombatWeapons.isMace(player.getMainHandItem().getItem())) reset(player);
     }
 
     public static void tick(Player player) {
         Streak streak = STREAKS.get(player.getUUID());
         if (streak == null) return;
-        if (!player.getMainHandItem().is(Items.MACE) || player.level().getGameTime() > streak.expireTick()
+        if (!CombatWeapons.isMace(player.getMainHandItem().getItem()) || player.level().getGameTime() > streak.expireTick()
                 || !CombatConfig.enabled(CombatConfig.MACE_HIT_STREAK)) {
             reset(player);
         }

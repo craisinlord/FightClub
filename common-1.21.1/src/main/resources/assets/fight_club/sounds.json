@@ -22,6 +22,30 @@
       { "name": "minecraft:entity/player/attack/sweep6", "pitch": 0.75, "volume": 0.42 }
     ]
   },
+  "weapon.sword.swing": {
+    "subtitle": "subtitles.fight_club.weapon.swing",
+    "sounds": [
+      { "name": "minecraft:entity/player/attack/sweep1", "pitch": 1.2, "volume": 0.32 },
+      { "name": "minecraft:entity/player/attack/sweep4", "pitch": 1.25, "volume": 0.32 },
+      { "name": "minecraft:entity/player/attack/sweep6", "pitch": 1.15, "volume": 0.32 }
+    ]
+  },
+  "weapon.axe.swing": {
+    "subtitle": "subtitles.fight_club.weapon.swing",
+    "sounds": [
+      { "name": "minecraft:entity/player/attack/sweep2", "pitch": 0.88, "volume": 0.38 },
+      { "name": "minecraft:entity/player/attack/sweep3", "pitch": 0.84, "volume": 0.38 },
+      { "name": "minecraft:entity/player/attack/sweep5", "pitch": 0.9, "volume": 0.38 }
+    ]
+  },
+  "weapon.mace.swing": {
+    "subtitle": "subtitles.fight_club.weapon.swing",
+    "sounds": [
+      { "name": "minecraft:entity/player/attack/sweep2", "pitch": 0.52, "volume": 0.5 },
+      { "name": "minecraft:entity/player/attack/sweep4", "pitch": 0.5, "volume": 0.5 },
+      { "name": "minecraft:entity/player/attack/sweep6", "pitch": 0.56, "volume": 0.5 }
+    ]
+  },
   "weapon.longsword.spin": {
     "subtitle": "subtitles.fight_club.weapon.swing",
     "sounds": [

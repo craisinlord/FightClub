@@ -22,6 +22,7 @@ public abstract class LivingEntitySwingMixin {
             case DAGGER -> CombatPose.JAB_DAGGER;
             case SPEAR, TRIDENT -> CombatPose.JAB_SPEAR;
             case LONGSWORD -> CombatPose.HEAVY_LONGSWORD;
+            case MACE -> CombatPose.HEAVY_MACE;
             default -> null;
         };
         if (style == null) return duration;

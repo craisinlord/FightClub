@@ -34,6 +34,7 @@ public abstract class MinecraftInputMixin {
             target = "Lnet/minecraft/client/player/LocalPlayer;swing(Lnet/minecraft/world/InteractionHand;)V"))
     private void fightClub$attackWentThrough(CallbackInfoReturnable<Boolean> cir) {
         CombatInputClient.markAttackWentThrough();
+        com.craisinlord.fightclub.client.LongswordSpinClient.onBlockSwing((Minecraft) (Object) this);
         net.minecraft.client.player.LocalPlayer player = ((Minecraft) (Object) this).player;
         if (player != null) CombatInputClient.onSwing(player);
     }
@@ -48,6 +49,7 @@ public abstract class MinecraftInputMixin {
     @com.llamalad7.mixinextras.injector.v2.WrapWithCondition(method = "handleKeybinds", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/Minecraft;continueAttack(Z)V"))
     private boolean fightClub$noMiningWhileCharging(Minecraft self, boolean leftClick) {
+        if (com.craisinlord.fightclub.client.LongswordSpinClient.blocksMining(self, leftClick)) return false;
         return !(leftClick && CombatInputClient.blocksAttack());
     }
 

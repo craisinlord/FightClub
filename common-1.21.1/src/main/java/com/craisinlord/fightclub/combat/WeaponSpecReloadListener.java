@@ -34,10 +34,11 @@ public class WeaponSpecReloadListener extends SimpleJsonResourceReloadListener {
                 continue;
             }
             try {
-                WeaponSpec spec = WeaponSpec.fromJson(resourceId, entry.getValue().getAsJsonObject());
+                JsonObject json = com.craisinlord.fightclub.compat.IceAndFireStats.scaleSpec(parts[0], entry.getValue().getAsJsonObject());
+                WeaponSpec spec = WeaponSpec.fromJson(resourceId, json);
                 String weapon = parts[1].endsWith(".json") ? parts[1].substring(0, parts[1].length() - 5) : parts[1];
                 parsed.put(parts[0] + "/" + weapon, spec);
-                raw.put(parts[0] + "/" + weapon, entry.getValue().toString());
+                raw.put(parts[0] + "/" + weapon, json.toString());
             } catch (JsonParseException | IllegalStateException exception) {
                 LOGGER.error("Ignoring invalid weapon spec {}: {}", resourceId, exception.getMessage());
             }

@@ -22,6 +22,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemInHandLayer.class)
 public abstract class ItemInHandLayerMixin {
+    @org.spongepowered.asm.mixin.Unique
+    private static final float STAB_FORWARD = 0.38F;
+
     @Inject(method = "renderArmWithItem", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/renderer/ItemInHandRenderer;renderItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemDisplayContext;ZLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"))
     private void fightClub$beforeItem(LivingEntity entity, ItemStack stack, ItemDisplayContext context, HumanoidArm arm,
@@ -44,8 +47,16 @@ public abstract class ItemInHandLayerMixin {
             if (spin != 0.0F) CombatModels.setModelSpin(spin);
             return;
         }
+        boolean usingThis = player.isUsingItem() && player.getUseItem() == stack;
+        if (kind.thrusts() && !usingThis && !com.craisinlord.fightclub.compat.BetterCombatCompat.isLoaded()
+                && arm == player.getMainArm() && stack == player.getMainHandItem()) {
+            float debug = CombatClientPoses.debugSwing(player);
+            float attack = debug >= 0.0F ? debug : player.swingingArm == net.minecraft.world.InteractionHand.MAIN_HAND
+                    ? player.getAttackAnim(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true)) : 0.0F;
+            com.craisinlord.fightclub.client.StabAnimation.thirdPersonItem(poseStack, attack, STAB_FORWARD);
+        }
         if (kind != WeaponKind.SPEAR) return;
-        if (player.isUsingItem() && player.getUseItem() == stack && stack.getUseAnimation() == UseAnim.SPEAR) {
+        if (usingThis && stack.getUseAnimation() == UseAnim.SPEAR) {
             CombatModels.setModelSpin(180.0F);
             return;
         }

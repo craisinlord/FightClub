@@ -32,11 +32,12 @@ public final class CombatConfig {
     public static final String LONGSWORD_SPIN = gameplay("longsword_spin", true, "Hold right-click with a longsword to charge a spin attack that hits everything around you.");
     public static final String MACE_HIT_STREAK = gameplay("mace_hit_streak", true, "Consecutive mace hits stack an attack speed bonus (weapons/base/mace.json); a miss or a pause ends the streak.");
     public static final String ZOMBIE_LONGSWORDS = gameplay("zombie_longswords", true, "Some zombies, husks and zombie villagers spawn holding a longsword.");
+    public static final String HIDE_REPLACED = gameplay("hide_replaced_weapons", true, "Hide Fight Club weapons (no recipe, creative tab or mob spawns) when another installed mod's weapon takes over that weapon and material, e.g. Silent Gear daggers replace Fight Club daggers. Existing items keep working.");
     public static final String SKELETON_KNIVES = gameplay("skeleton_knives", true, "Some skeletons, strays and bogged spawn with a Loyalty dagger they throw. Off also stops existing ones from throwing.");
     public static final String NO_ANVIL_LIMIT = option("vanilla", "remove_anvil_limit", true, true, false, "Remove the anvil's \"Too Expensive!\" limit. XP costs still rise as in vanilla.");
     public static final String POTION_STACK = option("vanilla", "potion_stack_size", 16, false, true, "Stack size for potions, splash potions and lingering potions (1 = vanilla). Needs a restart.");
     public static final String ANIMATIONS = option("client", "animations", true, false, false, "Fight Club's weapon poses and attack animations (first and third person).");
-    public static final String SWING_SOUNDS = option("client", "swing_sounds", true, false, false, "Swing whooshes for daggers, spears, tridents and longswords (off with Better Combat, which has its own).");
+    public static final String SWING_SOUNDS = option("client", "swing_sounds", true, false, false, "Swing whooshes for swords, daggers, longswords, axes, maces, spears and tridents (off with Better Combat, which has its own).");
     public static final String CHARGE_INDICATOR = option("client", "charge_indicator", true, false, false, "Show charge progress on the attack indicator while holding a charge.");
     public static final String POUNCE_OUTLINE = option("client", "pounce_outline", true, false, false, "Outline the mob a charged dagger will pounce on.");
     public static final String POUNCE_FOV = option("client", "pounce_fov", true, false, false, "Narrow the view when a dagger pounce is ready and widen it during the dash (scaled by FOV Effects).");
