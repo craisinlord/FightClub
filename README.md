@@ -1,6 +1,6 @@
 # Fight Club
 
-Fight Club is a combat overhaul for Minecraft 1.21.1 on Fabric and NeoForge. It adds longswords, spears and daggers in every vanilla material, and gives swords, shields, tridents and maces new moves: sword blocking, shield bashes, spear charges, dagger pounces, thrown weapons, a longsword spin and a mace hit streak. Every weapon number lives in a datapack file, every mechanic can be switched off in the config, and other mods can add their own weapons that use the same move sets.
+Fight Club is a combat overhaul for Minecraft 1.21.1 on Fabric and NeoForge. It adds longswords, spears and daggers in every vanilla material, and gives swords, shields, tridents and maces new moves: sword blocking, shield bashes, spear charges, dagger pounces, thrown weapons, a longsword spin and a mace hit streak. Every weapon number is data driven, and everything is very configurable.
 
 This README is for players, modpack developers and mod developers. Pack developers mostly need [Configuration](#configuration) and [Weapon specs](#weapon-specs). Mod developers adding weapons should read [Java API](#java-api).
 
