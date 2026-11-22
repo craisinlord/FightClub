@@ -13,7 +13,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 - [Configuration](#configuration)
 - [Weapon specs](#weapon-specs): file locations, fields, overriding a weapon
 - [Other mods' items](#other-mods-items): giving another mod's dagger, longsword, spear or shield Fight Club's moves by datapack
-- [Built-in mod compatibility](#built-in-mod-compatibility): extra materials, Better Combat, Vanilla Backport
+- [Built-in mod compatibility](#built-in-mod-compatibility): extra materials and their perks, Better Combat, Vanilla Backport
 - [Java API](#java-api): adding weapons from another mod, specs in code, models, queries
 - [Troubleshooting](#troubleshooting)
 
@@ -25,7 +25,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 | Fabric API | Required on Fabric |
 | Better Combat | Optional; see [Better Combat](#better-combat) |
 | Vanilla Backport | Optional; see [Vanilla Backport](#vanilla-backport) |
-| Ice and Fire, Antarchy, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) |
+| Ice and Fire, Antarchy, The Aether, Twilight Forest, Mekanism, Deeper and Darker, The Undergarden, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) (1.21.1 only) |
 
 Fight Club is needed on both the server and the client.
 
@@ -179,7 +179,7 @@ Mapped items get the full move set of their weapon: dagger pounce and throw, lon
 
 ### Extra weapon materials
 
-When one of these mods is installed, Fight Club registers a longsword, spear and dagger in that mod's material, with recipes, textures and specs. Nothing is registered when the mod is absent, and none of them are required. Item ids are `fight_club:<folder>/<material>/<weapon>`, such as `fight_club:iceandfire/dragonsteel_fire/longsword`, and specs use the material name, such as `weapons/dragonsteel_fire/longsword.json`.
+When one of these mods is installed, Fight Club registers a longsword, spear and dagger in that mod's material, with recipes, textures and specs. These materials are in the 1.21.1 versions only. Nothing is registered when the mod is absent, and none of them are required. Item ids are `fight_club:<folder>/<material>/<weapon>`, such as `fight_club:iceandfire/dragonsteel_fire/longsword`, and specs use the material name, such as `weapons/dragonsteel_fire/longsword.json`.
 
 | Material | Enabled by | Item folder | Durability | Longsword / spear / dagger damage | Recipe | Repaired with |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -211,6 +211,32 @@ When one of these mods is installed, Fight Club registers a longsword, spear and
 | Forgotten | The Undergarden | `undergarden/forgotten` | 1876 | 11.9 / 6.8 / 3.4 | Smithing: cloggrum weapon + forgotten template + forgotten ingot | Forgotten ingot |
 
 The damage column is the bundled spec; pack developers can change it like any other [weapon spec](#weapon-specs). The flamed, iced and electrified dragonbone and the three dragonsteels share one row each because their stats match. The Ultimate weapons are new Fight Club items alongside Antarchy's own ultimate sword and basilisk dagger; they don't replace them.
+
+The Mekanism materials are enabled by Mekanism itself, which provides the ingots; Mekanism Tools isn't needed.
+
+### Material perks
+
+Compat weapons keep what the source mod's own sword does. Perks apply to all three weapons, on every kind of hit: normal swings, sweeps, pierces, charges, spins and thrown hits.
+
+| Material | Perk |
+| --- | --- |
+| Silver | Ice and Fire's bonus damage against undead |
+| Flamed, iced and electrified dragonbone; fire, ice and lightning dragonsteel | Ice and Fire's own dragon-blood and dragonsteel effects (burn, freeze or lightning on hit) |
+| Dark metal | Born in Chaos's own on-hit effect for its sharpened dark metal sword |
+| Zanite | Grows stronger as it loses durability, by the Aether's formula: up to 2.5x the base damage when nearly broken |
+| Gravitite | Full-strength hits launch a grounded target into the air |
+| Ironwood | Crafted with Knockback I, like Twilight Forest's ironwood sword |
+| Steeleaf | Crafted with Looting II, like Twilight Forest's steeleaf sword |
+| Knightmetal | +2 damage against targets in a full armor set or with natural armor |
+| Fiery | Sets targets on fire for 15 seconds; fire-resistant item, Uncommon rarity |
+| Refined obsidian | Fire-resistant item |
+| Refined glowstone | Piglins are drawn to it, like Mekanism's refined glowstone sword |
+| Warden | Fire-resistant item, Rare rarity |
+| Froststeel | Hits apply the Undergarden's Chilly effect (level III, 30 seconds) |
+| Utherium | 1.5x damage against Rotspawn |
+| Forgotten | 1.5x damage against Undergarden creatures, except bosses |
+
+Bronze, lapis lazuli, osmium, steel, resonarium, cloggrum, electrum, necromium, plain dragonbone and ultimate have no perk, because the source mod's sword has none. Perk tooltips use the source mod's own text where it has one.
 
 ### Better Combat
 
