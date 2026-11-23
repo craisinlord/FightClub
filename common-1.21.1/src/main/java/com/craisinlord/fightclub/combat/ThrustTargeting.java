@@ -23,8 +23,8 @@ public final class ThrustTargeting {
                     if (target == attacker || target == primary || target.isRemoved() || target.isDeadOrDying()) return false;
                     Vec3 offset = target.getBoundingBox().getCenter().subtract(origin);
                     if (offset.dot(direction) < 0.0) return false;
-                    return target.getBoundingBox().inflate(width).clip(origin, end).isPresent()
-                            || target.getBoundingBox().inflate(width).contains(origin);
+                    AABB box = target.getBoundingBox().inflate(width);
+                    return box.clip(origin, end).isPresent() || box.contains(origin);
                 }).stream()
                 .sorted(Comparator.comparingDouble(target -> target.distanceToSqr(attacker)))
                 .limit(Math.max(1, spec.penetrationCount()))

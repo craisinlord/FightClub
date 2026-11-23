@@ -19,7 +19,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
     private static final EntityDataAccessor<Boolean> EMBEDDED = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Byte> LOYALTY = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> RETURNING = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DEALT_DAMAGE = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
     private int stuckTicks;
+    private int mobLife;
     private int embedTick = Integer.MIN_VALUE / 2;
 
     protected CombatProjectile(EntityType<? extends CombatProjectile> type, Level level) { super(type, level); }
@@ -41,7 +43,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         output.putBoolean("Embedded", isEmbedded());
         output.putBoolean("CreativeThrow", creativeThrow);
         output.putBoolean("MobThrow", mobThrow);
+        output.putInt("MobLife", mobLife);
         output.putBoolean("Returning", isReturning());
+        output.putBoolean("DealtDamage", hasDealtDamage());
     }
 
     @Override protected void readAdditionalSaveData(net.minecraft.world.level.storage.ValueInput input) {
@@ -50,7 +54,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         entityData.set(EMBEDDED, input.getBooleanOr("Embedded", false));
         creativeThrow = input.getBooleanOr("CreativeThrow", false);
         mobThrow = input.getBooleanOr("MobThrow", false);
+        mobLife = input.getIntOr("MobLife", 0);
         entityData.set(RETURNING, input.getBooleanOr("Returning", false));
+        entityData.set(DEALT_DAMAGE, input.getBooleanOr("DealtDamage", false));
     }
 
     @Override protected void defineSynchedData(SynchedEntityData.Builder builder) {
@@ -58,6 +64,7 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         builder.define(EMBEDDED, false);
         builder.define(LOYALTY, (byte) 0);
         builder.define(RETURNING, false);
+        builder.define(DEALT_DAMAGE, false);
     }
     public void setItem(ItemStack stack) {
         entityData.set(ITEM, stack.copy());
@@ -71,7 +78,8 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
     @Override protected double getDefaultGravity() { return 0.03D; }
 
     public boolean isReturning() { return entityData.get(RETURNING); }
-    private int loyalty() { return entityData.get(LOYALTY); }
+    public boolean hasDealtDamage() { return entityData.get(DEALT_DAMAGE); }
+    private int loyalty() { return mobThrow ? 0 : entityData.get(LOYALTY); }
 
     @Override public void tick() {
         if (isReturning()) {
@@ -80,7 +88,7 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         }
         if (isEmbedded()) {
             setOldPosAndRot();
-            if (!level().isClientSide() && mobThrow && !canReturnTo(getOwner())) {
+            if (!level().isClientSide() && mobThrow && ++mobLife >= 1200) {
                 discard();
                 return;
             }
@@ -161,8 +169,10 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
 
     @Override protected void onHit(HitResult result) {
         if (result instanceof EntityHitResult hit) {
+            if (hasDealtDamage()) return;
+            entityData.set(DEALT_DAMAGE, true);
             if (!level().isClientSide()) {
-                if (hit.getEntity() instanceof LivingEntity living && living != getOwner()) {
+                if (hit.getEntity() instanceof LivingEntity living && (living != getOwner() || !isReturning())) {
                     living.hurtServer((net.minecraft.server.level.ServerLevel) level(), this.damageSources().thrown(this, getOwner()), projectileDamage());
                     playSound(CombatSounds.PROJECTILE_HIT, 1.0F, 0.95F + random.nextFloat() * 0.1F);
                 }
@@ -171,15 +181,11 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
                     startReturn();
                     return;
                 }
-                if (!creativeThrow && !mobThrow) dropAsItem();
-            } else if (loyalty() > 0) {
-                setDeltaMovement(getDeltaMovement().multiply(-0.01D, -0.1D, -0.01D));
-                return;
             }
-            discard();
+            setDeltaMovement(getDeltaMovement().multiply(-0.01D, -0.1D, -0.01D));
             return;
         }
-        if (!level().isClientSide() && !isEmbedded()) playSound(CombatSounds.PROJECTILE_STICK, 1.0F, 0.95F + random.nextFloat() * 0.1F);
+        if (!level().isClientSide() && !isEmbedded()) playSound(this instanceof SpearProjectile && !getItem().is(net.minecraft.world.item.Items.TRIDENT) ? CombatSounds.SPEAR_LAND : CombatSounds.PROJECTILE_STICK, 1.0F, 0.95F + random.nextFloat() * 0.1F);
         boolean wasEmbedded = isEmbedded();
         this.entityData.set(EMBEDDED, true);
         this.setDeltaMovement(Vec3.ZERO);
@@ -194,7 +200,18 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         return isEmbedded() || getDeltaMovement().lengthSqr() < 1.0E-7D;
     }
     @Override protected void updateRotation() {
-        if (!rotationFrozen()) super.updateRotation();
+        if (rotationFrozen()) return;
+        if (hasDealtDamage()) {
+            Vec3 motion = getDeltaMovement();
+            float pitch = (float) (net.minecraft.util.Mth.atan2(motion.y, motion.horizontalDistance()) * net.minecraft.util.Mth.RAD_TO_DEG);
+            setXRot(xRotO + net.minecraft.util.Mth.wrapDegrees(pitch - xRotO) * 0.5F);
+            return;
+        }
+        flightRotation();
+    }
+    protected void flightRotation() { super.updateRotation(); }
+    @Override protected boolean canHitEntity(net.minecraft.world.entity.Entity entity) {
+        return !hasDealtDamage() && super.canHitEntity(entity);
     }
 
     @Override public void playerTouch(Player player) {

@@ -9,7 +9,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUseAnimation;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.item.TooltipFlag;
@@ -138,7 +137,8 @@ public final class CombatWeaponItem extends Item {
                     : new DaggerProjectile(level, player, thrownStack);
             projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, spec.throwVelocity(), 1.0f);
             level.addFreshEntity(projectile);
-            level.playSound(null, player, SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
+            level.playSound(null, player, weapon.equals("spear") ? CombatSounds.SPEAR_THROW : CombatSounds.DAGGER_THROW,
+                    SoundSource.PLAYERS, 1.0f, 0.95f + level.getRandom().nextFloat() * 0.1f);
             if (!player.getAbilities().instabuild) stack.shrink(1);
             return true;
         }

@@ -19,7 +19,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
     private static final EntityDataAccessor<Boolean> EMBEDDED = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Byte> LOYALTY = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> RETURNING = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Boolean> DEALT_DAMAGE = SynchedEntityData.defineId(CombatProjectile.class, EntityDataSerializers.BOOLEAN);
     private int stuckTicks;
+    private int mobLife;
     protected CombatProjectile(EntityType<? extends CombatProjectile> type, Level level) { super(type, level); }
     private boolean creativeThrow;
     private boolean mobThrow;
@@ -29,7 +31,7 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         mobThrow = !(owner instanceof Player);
     }
     @Override protected void defineSynchedData(SynchedEntityData.Builder builder) { builder.define(ITEM, ItemStack.EMPTY); builder.define(EMBEDDED, false);
-        builder.define(LOYALTY, (byte) 0); builder.define(RETURNING, false); }
+        builder.define(LOYALTY, (byte) 0); builder.define(RETURNING, false); builder.define(DEALT_DAMAGE, false); }
     public void setItem(ItemStack stack) {
         entityData.set(ITEM, stack.copy());
         if (level() instanceof net.minecraft.server.level.ServerLevel server) {
@@ -43,7 +45,8 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
     private int embedTick = Integer.MIN_VALUE / 2;
 
     public boolean isReturning() { return entityData.get(RETURNING); }
-    private int loyalty() { return entityData.get(LOYALTY); }
+    public boolean hasDealtDamage() { return entityData.get(DEALT_DAMAGE); }
+    private int loyalty() { return mobThrow ? 0 : entityData.get(LOYALTY); }
 
     @Override public void tick() {
         if (isReturning()) {
@@ -52,7 +55,7 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         }
         if (isEmbedded()) {
             setOldPosAndRot();
-            if (!level().isClientSide && mobThrow && !canReturnTo(getOwner())) {
+            if (!level().isClientSide && mobThrow && ++mobLife >= 1200) {
                 discard();
                 return;
             }
@@ -132,13 +135,15 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
     }
     @Override protected void onHit(HitResult result) {
         if (result instanceof EntityHitResult hit) {
+            if (hasDealtDamage()) return;
+            entityData.set(DEALT_DAMAGE, true);
             if (!level().isClientSide) {
-                if (hit.getEntity() instanceof LivingEntity living && living != getOwner()) {
+                if (hit.getEntity() instanceof LivingEntity living && (living != getOwner() || !isReturning())) {
                     LivingEntity thrower = getOwner() instanceof LivingEntity owner ? owner : null;
                     boolean hurt = com.craisinlord.fightclub.compat.CompatAbilities.hurtThrown(thrower, getItem(),
                             () -> living.hurt(damageSources().thrown(this, getOwner()),
                                     com.craisinlord.fightclub.compat.CompatAbilities.thrownDamage(getItem(), projectileDamage())));
-                    if (hurt && thrower != null) {
+                    if (hurt && thrower != null && thrower != living) {
                         com.craisinlord.fightclub.compat.CompatAbilities.onHit(getItem(), living, thrower,
                                 com.craisinlord.fightclub.compat.CompatAbilities.Hit.THROWN);
                     }
@@ -149,15 +154,11 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
                     startReturn();
                     return;
                 }
-                if (!creativeThrow && !mobThrow) dropAsItem();
-            } else if (loyalty() > 0) {
-                setDeltaMovement(getDeltaMovement().multiply(-0.01D, -0.1D, -0.01D));
-                return;
             }
-            discard();
+            setDeltaMovement(getDeltaMovement().multiply(-0.01D, -0.1D, -0.01D));
             return;
         }
-        if (!level().isClientSide && !isEmbedded()) playSound(CombatSounds.PROJECTILE_STICK, 1.0F, 0.95F + random.nextFloat() * 0.1F);
+        if (!level().isClientSide && !isEmbedded()) playSound(this instanceof SpearProjectile && !getItem().is(net.minecraft.world.item.Items.TRIDENT) ? CombatSounds.SPEAR_LAND : CombatSounds.PROJECTILE_STICK, 1.0F, 0.95F + random.nextFloat() * 0.1F);
         boolean wasEmbedded = isEmbedded();
         entityData.set(EMBEDDED, true); setDeltaMovement(Vec3.ZERO); setNoGravity(true); setPos(result.getLocation());
         setOldPosAndRot();
@@ -168,7 +169,18 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         return isEmbedded() || getDeltaMovement().lengthSqr() < 1.0E-7D;
     }
     @Override protected void updateRotation() {
-        if (!rotationFrozen()) super.updateRotation();
+        if (rotationFrozen()) return;
+        if (hasDealtDamage()) {
+            Vec3 motion = getDeltaMovement();
+            float pitch = (float) (net.minecraft.util.Mth.atan2(motion.y, motion.horizontalDistance()) * net.minecraft.util.Mth.RAD_TO_DEG);
+            setXRot(xRotO + net.minecraft.util.Mth.wrapDegrees(pitch - xRotO) * 0.5F);
+            return;
+        }
+        flightRotation();
+    }
+    protected void flightRotation() { super.updateRotation(); }
+    @Override protected boolean canHitEntity(net.minecraft.world.entity.Entity entity) {
+        return !hasDealtDamage() && super.canHitEntity(entity);
     }
 
     @Override protected void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
@@ -177,7 +189,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         tag.putBoolean("Embedded", isEmbedded());
         tag.putBoolean("CreativeThrow", creativeThrow);
         tag.putBoolean("MobThrow", mobThrow);
+        tag.putInt("MobLife", mobLife);
         tag.putBoolean("Returning", isReturning());
+        tag.putBoolean("DealtDamage", hasDealtDamage());
     }
     @Override protected void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
         super.readAdditionalSaveData(tag);
@@ -187,7 +201,9 @@ public abstract class CombatProjectile extends ThrowableProjectile implements It
         entityData.set(EMBEDDED, tag.getBoolean("Embedded"));
         creativeThrow = tag.getBoolean("CreativeThrow");
         mobThrow = tag.getBoolean("MobThrow");
+        mobLife = tag.getInt("MobLife");
         entityData.set(RETURNING, tag.getBoolean("Returning"));
+        entityData.set(DEALT_DAMAGE, tag.getBoolean("DealtDamage"));
     }
     @Override public void playerTouch(Player player) {
         if (level().isClientSide || mobThrow) return;

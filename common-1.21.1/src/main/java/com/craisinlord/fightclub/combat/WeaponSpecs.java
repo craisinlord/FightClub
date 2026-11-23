@@ -47,7 +47,10 @@ public final class WeaponSpecs {
     }
 
     public static WeaponSpec get(String material, String weapon) {
-        String key = material + "/" + weapon;
+        return get(material + "/" + weapon);
+    }
+
+    private static WeaponSpec get(String key) {
         WeaponSpec spec = VALUES.get().get(key);
         return spec != null ? spec : MAPPED.get().get(key);
     }
@@ -61,9 +64,9 @@ public final class WeaponSpecs {
     private static final java.util.Set<String> MISSING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static WeaponSpec getOrLoadBuiltin(String material, String weapon) {
-        WeaponSpec loaded = get(material, weapon);
-        if (loaded != null) return loaded;
         String key = material + "/" + weapon;
+        WeaponSpec loaded = get(key);
+        if (loaded != null) return loaded;
         WeaponSpec registered = DEFAULTS.get(key);
         if (registered != null) return registered;
         if (MISSING.contains(key)) return null;

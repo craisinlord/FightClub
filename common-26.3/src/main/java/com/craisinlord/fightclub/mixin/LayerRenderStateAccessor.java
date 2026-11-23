@@ -2,7 +2,7 @@ package com.craisinlord.fightclub.mixin;
 
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.resources.model.cuboid.ItemTransform;
-import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.geometry.ItemQuads;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
@@ -12,5 +12,5 @@ public interface LayerRenderStateAccessor {
     ItemTransform fightClub$itemTransform();
 
     @Accessor("quads")
-    java.util.List<BakedQuad> fightClub$quads();
+    ItemQuads fightClub$quads();
 }

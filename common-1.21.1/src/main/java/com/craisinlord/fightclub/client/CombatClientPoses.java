@@ -218,6 +218,10 @@ public final class CombatClientPoses {
         return punch((ticks + partialTick) / CombatPoseConfig.get(pose).blendIn());
     }
 
+    static void playVanilla(Player player, net.minecraft.sounds.SoundEvent sound) {
+        player.level().playLocalSound(player.getX(), player.getY(), player.getZ(), sound, player.getSoundSource(), 1.0F, 1.0F, false);
+    }
+
     static void play(Player player, net.minecraft.sounds.SoundEvent sound) {
         player.level().playLocalSound(player.getX(), player.getY(), player.getZ(), sound,
                 net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.95F + player.getRandom().nextFloat() * 0.1F, false);
@@ -257,6 +261,10 @@ public final class CombatClientPoses {
 
         void sounds(Player player) {
             boolean swinging = player.swinging && player.swingingArm == net.minecraft.world.InteractionHand.MAIN_HAND;
+            if (swinging && !wasSwinging && !mining(player) && WeaponKind.of(player.getMainHandItem()) == WeaponKind.SPEAR) {
+                playVanilla(player, com.craisinlord.fightclub.combat.SpearTimeline.wood(player.getMainHandItem().getItem())
+                        ? CombatSounds.SPEAR_WOOD_ATTACK : CombatSounds.SPEAR_ATTACK);
+            }
             if (swinging && !wasSwinging && !BetterCombatCompat.isLoaded() && !mining(player)
                     && com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SWING_SOUNDS)) {
                 ItemStack main = player.getMainHandItem();

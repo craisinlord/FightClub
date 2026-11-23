@@ -97,34 +97,34 @@
     "model_roll": 0.0,
     "duration_ticks": 16
   },
-  "_heavy_longsword": "Longsword swing (without Better Combat): a horizontal cut, right to left, then the left-to-right return cut on the next swing (heavy_longsword_back; it uses heavy_longsword's duration). The blade turns round the grip like a clock hand while the hand sweeps across the view at crosshair height: in from off-screen right, through the middle of the screen (the t 0.45 key puts the grip just below the crosshair with the blade pitched up through it), out off-screen left. Translation y +0.63 lifts the grip from about 0.71 below eye level to about 0.08 below. In third person the swing plays 1.5x as long as here (CombatClientPoses.THIRD_PERSON_SWING_STRETCH). rotation (on the entry) is the idle hold's blade heading and pivot the grip, both relative to vanilla's first-person hand: leave them unless the in-hand model changes. keys: at swing progress t (0..1), translation moves the hand from the idle hold (x right, y up, z toward the camera) and rotation is the blade's heading [pitch, yaw, roll] in degrees (yaw 0 = straight ahead, +90 = left; pitch raises the tip; roll twists the flat, 0 = flat facing up). Each key is eased in from the previous one (ease: linear, in, out, inout, in_cubic, out_cubic); the motion starts from and settles back to the idle hold. longsword_spin uses the same format (it plays with Better Combat too).",
+  "_heavy_longsword": "Longsword swing (without Better Combat): a horizontal cut, right to left, then the left-to-right return cut on the next swing (heavy_longsword_back; it uses heavy_longsword's duration). The blade turns round the grip like a clock hand while the hand sweeps across the view at crosshair height: in from off-screen right, through the middle of the screen (the t 0.45 key puts the grip just below the crosshair with the blade pitched up through it), out off-screen left. Translation y lifts the grip from about 0.54 below eye level: the cut comes in low (+0.27) and rises very slightly as it crosses (+0.36 at the middle, +0.41 at the end). In third person the swing plays 1.5x as long as here (CombatClientPoses.THIRD_PERSON_SWING_STRETCH). rotation (on the entry) is the idle hold's blade heading and pivot the grip, both relative to vanilla's first-person hand: leave them unless the in-hand model changes. keys: at swing progress t (0..1), translation moves the hand from the idle hold (x right, y up, z toward the camera) and rotation is the blade's heading [pitch, yaw, roll] in degrees (yaw 0 = straight ahead, +90 = left; pitch raises the tip; roll twists the flat, 0 = flat facing up). Each key is eased in from the previous one (ease: linear, in, out, inout, in_cubic, out_cubic); the motion starts from and settles back to the idle hold. longsword_spin uses the same format (it plays with Better Combat too).",
   "heavy_longsword": {
     "duration_ticks": 12,
-    "rotation": [68.57, -180, -90],
-    "pivot": [0.07, -0.19, -0.1],
+    "rotation": [85.57, -140, -90],
+    "pivot": [0.01, -0.022, -0.09],
     "keys": [
-      {"t": 0.1, "translation": [0.12, 0.5, 0.0], "rotation": [14, -88, -15], "ease": "out"},
-      {"t": 0.2, "translation": [0.05, 0.56, -0.05], "rotation": [16, -66, -10], "ease": "inout"},
-      {"t": 0.32, "translation": [-0.21, 0.6, -0.11], "rotation": [19, -34, -5], "ease": "linear"},
-      {"t": 0.45, "translation": [-0.58, 0.63, -0.16], "rotation": [22, 0, 0], "ease": "linear"},
-      {"t": 0.58, "translation": [-1.01, 0.6, -0.11], "rotation": [19, 36, 5], "ease": "linear"},
-      {"t": 0.68, "translation": [-1.29, 0.56, -0.05], "rotation": [16, 66, 10], "ease": "linear"},
-      {"t": 0.76, "translation": [-1.45, 0.48, 0.0], "rotation": [13, 88, 12], "ease": "out"},
-      {"t": 0.86, "translation": [-1.05, -0.5, 0.02], "rotation": [-10, 105, 0], "ease": "inout"}
+      {"t": 0.1, "translation": [0.18, 0.27, -0.01], "rotation": [14, -88, -15], "ease": "out"},
+      {"t": 0.2, "translation": [0.11, 0.3, -0.06], "rotation": [16, -66, -10], "ease": "inout"},
+      {"t": 0.32, "translation": [-0.15, 0.33, -0.12], "rotation": [19, -34, -5], "ease": "linear"},
+      {"t": 0.45, "translation": [-0.52, 0.36, -0.17], "rotation": [22, 0, 0], "ease": "linear"},
+      {"t": 0.58, "translation": [-0.95, 0.38, -0.12], "rotation": [19, 36, 5], "ease": "linear"},
+      {"t": 0.68, "translation": [-1.23, 0.4, -0.06], "rotation": [16, 66, 10], "ease": "linear"},
+      {"t": 0.76, "translation": [-1.39, 0.41, -0.01], "rotation": [13, 88, 12], "ease": "out"},
+      {"t": 0.86, "translation": [-0.99, -0.668, 0.01], "rotation": [-10, 105, 0], "ease": "inout"}
     ]
   },
   "heavy_longsword_back": {
-    "rotation": [68.57, -180, -90],
-    "pivot": [0.07, -0.19, -0.1],
+    "rotation": [85.57, -140, -90],
+    "pivot": [0.01, -0.022, -0.09],
     "keys": [
-      {"t": 0.07, "translation": [-0.9, -0.55, -0.1], "rotation": [-30, 92, 0], "ease": "inout"},
-      {"t": 0.15, "translation": [-1.45, 0.48, 0.0], "rotation": [13, 88, 15], "ease": "out"},
-      {"t": 0.24, "translation": [-1.29, 0.56, -0.05], "rotation": [16, 66, 10], "ease": "inout"},
-      {"t": 0.36, "translation": [-1.01, 0.6, -0.11], "rotation": [19, 36, 5], "ease": "linear"},
-      {"t": 0.49, "translation": [-0.58, 0.63, -0.16], "rotation": [22, 0, 0], "ease": "linear"},
-      {"t": 0.62, "translation": [-0.21, 0.6, -0.11], "rotation": [19, -34, -5], "ease": "linear"},
-      {"t": 0.72, "translation": [0.05, 0.56, -0.05], "rotation": [16, -66, -10], "ease": "linear"},
-      {"t": 0.8, "translation": [0.12, 0.5, 0.0], "rotation": [14, -88, -12], "ease": "out"}
+      {"t": 0.07, "translation": [-0.84, -0.718, -0.11], "rotation": [-30, 92, 0], "ease": "inout"},
+      {"t": 0.15, "translation": [-1.39, 0.27, -0.01], "rotation": [13, 88, 15], "ease": "out"},
+      {"t": 0.24, "translation": [-1.23, 0.3, -0.06], "rotation": [16, 66, 10], "ease": "inout"},
+      {"t": 0.36, "translation": [-0.95, 0.33, -0.12], "rotation": [19, 36, 5], "ease": "linear"},
+      {"t": 0.49, "translation": [-0.52, 0.36, -0.17], "rotation": [22, 0, 0], "ease": "linear"},
+      {"t": 0.62, "translation": [-0.15, 0.38, -0.12], "rotation": [19, -34, -5], "ease": "linear"},
+      {"t": 0.72, "translation": [0.11, 0.4, -0.06], "rotation": [16, -66, -10], "ease": "linear"},
+      {"t": 0.8, "translation": [0.18, 0.41, -0.01], "rotation": [14, -88, -12], "ease": "out"}
     ]
   },
   "_heavy_mace": "Mace swing (without Better Combat): a one-handed overhead slam. keys work like jab_dagger's: at swing progress t, translation moves the hand from the idle hold (x right, y up, z toward the camera) and rotation turns the mace about the grip [pitch, yaw, roll] (positive pitch tips the head back toward you). Wound up high over the shoulder, slammed down through the crosshair, a short hold on impact, then back to the idle hold. duration_ticks sets the swing length (third person plays it 1.5x as long).",
@@ -138,36 +138,36 @@
   },
   "longsword_spin": {
     "duration_ticks": 15,
-    "rotation": [68.57, -180, -90],
-    "pivot": [0.07, -0.19, -0.1],
+    "rotation": [85.57, -140, -90],
+    "pivot": [0.01, -0.022, -0.09],
     "keys": [
-      {"t": 0.1, "translation": [-0.05, 0.24, 0.04], "rotation": [14, -72, -15], "ease": "out"},
-      {"t": 0.2, "translation": [-0.15, 0.23, -0.01], "rotation": [10, -55, -10], "ease": "inout"},
-      {"t": 0.32, "translation": [-0.3, 0.22, -0.08], "rotation": [11, -28, -5], "ease": "linear"},
-      {"t": 0.45, "translation": [-0.5, 0.21, -0.16], "rotation": [16, 0, 0], "ease": "linear"},
-      {"t": 0.58, "translation": [-0.7, 0.22, -0.08], "rotation": [11, 30, 5], "ease": "linear"},
-      {"t": 0.68, "translation": [-0.84, 0.23, 0], "rotation": [10, 58, 10], "ease": "linear"},
-      {"t": 0.76, "translation": [-0.92, 0.2, 0.04], "rotation": [8, 72, 12], "ease": "out"},
-      {"t": 0.86, "translation": [-0.7, -0.6, 0.02], "rotation": [-10, 95, 0], "ease": "inout"}
+      {"t": 0.1, "translation": [0.01, 0.072, 0.03], "rotation": [14, -72, -15], "ease": "out"},
+      {"t": 0.2, "translation": [-0.09, 0.062, -0.02], "rotation": [10, -55, -10], "ease": "inout"},
+      {"t": 0.32, "translation": [-0.24, 0.052, -0.09], "rotation": [11, -28, -5], "ease": "linear"},
+      {"t": 0.45, "translation": [-0.44, 0.042, -0.17], "rotation": [16, 0, 0], "ease": "linear"},
+      {"t": 0.58, "translation": [-0.64, 0.052, -0.09], "rotation": [11, 30, 5], "ease": "linear"},
+      {"t": 0.68, "translation": [-0.78, 0.062, -0.01], "rotation": [10, 58, 10], "ease": "linear"},
+      {"t": 0.76, "translation": [-0.86, 0.032, 0.03], "rotation": [8, 72, 12], "ease": "out"},
+      {"t": 0.86, "translation": [-0.64, -0.768, 0.01], "rotation": [-10, 95, 0], "ease": "inout"}
     ]
   },
   "_longsword_spin_charge": "Right-click spin wind-up hold (first person), in heavy_longsword's format: rotation and pivot are the idle hold's heading and grip, and the one key (its t only picks the frame) is the drawn-back hold, blended in over blend_in_ticks: the hands pulled back to the right with the blade trailing level toward the back, ready to swing round into longsword_spin's first key. tremble shakes it as the charge fills.",
   "longsword_spin_charge": {
-    "rotation": [68.57, -180, -90],
-    "pivot": [0.07, -0.19, -0.1],
+    "rotation": [85.57, -140, -90],
+    "pivot": [0.01, -0.022, -0.09],
     "blend_in_ticks": 8,
     "blend_out_ticks": 2,
     "tremble": 0.006,
     "keys": [
-      {"t": 0.5, "translation": [-0.1, 0.5, 0.1], "rotation": [35, -105, -50]}
+      {"t": 0.5, "translation": [-0.04, 0.332, 0.09], "rotation": [35, -105, -50]}
     ]
   },
 
   "third_person": {
     "_comment": "Arm angles in degrees on the player model (X pitch: negative raises the arm forward/up; Y yaw: negative turns the right arm inward). Written for a right-handed player: main_arm is the right arm, off_arm the left (positive Y turns it inward). Mirrored for left-handers. off_arm only applies with an empty offhand, except shield_bash, where it is the arm holding the shield. item turns the held item: [pitch, yaw, roll] in degrees, roll twisting it around the arm's length. Blending uses the timings above.",
     "sword_block": {
-      "main_arm": [-75.0, -35.0, 0.0],
-      "item": [0.0, 30.0, 60.0]
+      "main_arm": [-54.0, -30.0, 0.0],
+      "item": [10.0, 60.0, 50.0]
     },
     "spear_lowered":  { "main_arm": [-20.0, 5.0, 0.0],   "off_arm": [-45.0, 35.0, 0.0] },
     "trident_lowered": { "main_arm": [-5.0, 5.0, 0.0],   "off_arm": [-45.0, 35.0, 0.0] },

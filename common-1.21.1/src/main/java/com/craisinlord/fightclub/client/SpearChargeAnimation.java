@@ -1,6 +1,6 @@
 package com.craisinlord.fightclub.client;
 
-import com.craisinlord.fightclub.combat.CombatChargeState;
+import com.craisinlord.fightclub.combat.SpearTimeline;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.model.geom.ModelPart;
@@ -9,23 +9,23 @@ import net.minecraft.world.entity.player.Player;
 import org.joml.Quaternionf;
 
 public final class SpearChargeAnimation {
-    private static final int SWAY_AFTER_RAISE = 80;
     private static final int SWAY_RAMP = 20;
     private static final float FORWARD_MOVEMENT = 0.38F;
 
     private SpearChargeAnimation() {}
 
-    record Params(float raise, float raiseStart, float raiseMiddle, float raiseEnd, float sway,
-                  float swayIntensity, float swaySlow, float swayFast) {}
+    record Params(float raise, float raiseStart, float raiseMiddle, float raiseEnd, float sway, float lower,
+                  float raiseBack, float swayIntensity, float swaySlow, float swayFast) {}
 
     static Params params(Player player, float time) {
-        int raiseTicks = Math.max(1, CombatChargeState.chargeTicksFor(player.getMainHandItem()));
-        int swayEnd = raiseTicks + SWAY_AFTER_RAISE;
-        float raise = progress(time, 0.0F, raiseTicks);
-        float sway = progress(time, swayEnd - SWAY_RAMP, swayEnd);
-        float intensity = 2.0F * outCirc(sway);
+        SpearTimeline timeline = SpearTimeline.of(player.getMainHandItem());
+        float raise = progress(time, 0.0F, Math.max(1, timeline.raise()));
+        float sway = progress(time, timeline.swayEnd() - SWAY_RAMP, timeline.swayEnd());
+        float lower = outCubic(inOutElastic(progress(time - 20.0F, timeline.lowerEnd() - 40, timeline.lowerEnd())));
+        float raiseBack = progress(time, timeline.done() - 5, timeline.done());
+        float intensity = 2.0F * outCirc(sway) - 2.0F * inCirc(raiseBack);
         return new Params(raise, progress(raise, 0.0F, 0.5F), progress(raise, 0.5F, 0.8F), progress(raise, 0.8F, 1.0F),
-                sway, intensity,
+                sway, lower, raiseBack, intensity,
                 Mth.sin(time * 19.0F * Mth.DEG_TO_RAD) * intensity,
                 Mth.sin(time * 30.0F * Mth.DEG_TO_RAD) * intensity);
     }
@@ -37,7 +37,8 @@ public final class SpearChargeAnimation {
                 side * (p.raise() * 0.15F + p.raiseEnd() * -0.05F + p.sway() * -0.1F + p.swaySlow() * 0.005F),
                 p.raise() * -0.075F + p.raiseMiddle() * 0.075F + p.swayFast() * 0.01F,
                 p.raiseStart() * 0.05F + p.raiseEnd() * -0.05F + p.swaySlow() * 0.005F);
-        rotateAround(poseStack, Axis.XP.rotationDegrees(-65.0F * inOutBack(p.raise()) - 0.5F * p.swayFast()), 0.0F, 0.1F, 0.0F);
+        rotateAround(poseStack, Axis.XP.rotationDegrees(-65.0F * inOutBack(p.raise()) - 35.0F * p.lower()
+                + 100.0F * p.raiseBack() - 0.5F * p.swayFast()), 0.0F, 0.1F, 0.0F);
         rotateAround(poseStack, Axis.YN.rotationDegrees(side * (-90.0F * progress(p.raise(), 0.5F, 0.55F)
                 + 90.0F * p.sway() + 2.0F * p.swaySlow())), side * 0.15F, 0.0F, 0.0F);
     }
@@ -55,7 +56,7 @@ public final class SpearChargeAnimation {
             yRot += -invert * p.swayFast() * Mth.DEG_TO_RAD * p.swayIntensity();
             zRot += -invert * p.swaySlow() * Mth.DEG_TO_RAD * p.swayIntensity() * 0.5F;
             xRot += Mth.DEG_TO_RAD * (-40.0F * p.raiseStart() + 30.0F * p.raiseMiddle() - 20.0F * p.raiseEnd()
-                    + 0.6F * p.swaySlow() * p.swayIntensity());
+                    + 20.0F * p.lower() + 10.0F * p.raiseBack() + 0.6F * p.swaySlow() * p.swayIntensity());
         }
         arm.xRot = Mth.lerp(amount, arm.xRot, xRot);
         arm.yRot = Mth.lerp(amount, arm.yRot, yRot);
@@ -67,8 +68,8 @@ public final class SpearChargeAnimation {
         Params p = params(player, time);
         float invert = rightArm ? 1.0F : -1.0F;
         float raiseModified = 1.0F - outBack(1.0F - p.raise());
-        poseStack.translate(0.0F, 0.0F, -FORWARD_MOVEMENT * raiseModified);
-        rotateAround(poseStack, Axis.XN.rotationDegrees(70.0F * p.raise()), 0.0F, -0.03125F, 0.125F);
+        poseStack.translate(0.0F, 0.0F, -FORWARD_MOVEMENT * (raiseModified - p.raiseBack()));
+        rotateAround(poseStack, Axis.XN.rotationDegrees(70.0F * (p.raise() - p.raiseBack())), 0.0F, -0.03125F, 0.125F);
         rotateAround(poseStack, Axis.YP.rotationDegrees(invert * 90.0F * (p.raise() - p.sway())), 0.0F, 0.0F, 0.125F);
     }
 
@@ -84,6 +85,22 @@ public final class SpearChargeAnimation {
 
     private static float outCirc(float x) {
         return (float) Math.sqrt(1.0F - (x - 1.0F) * (x - 1.0F));
+    }
+
+    private static float inCirc(float x) {
+        return 1.0F - (float) Math.sqrt(1.0F - x * x);
+    }
+
+    private static float outCubic(float x) {
+        float d = 1.0F - x;
+        return 1.0F - d * d * d;
+    }
+
+    private static float inOutElastic(float x) {
+        if (x == 0.0F || x == 1.0F) return x;
+        double sin = Math.sin((20.0 * x - 11.125) * Math.PI * 4.0 / 9.0);
+        return x < 0.5F ? (float) (-(Math.pow(2.0, 20.0 * x - 10.0) * sin) / 2.0)
+                : (float) (Math.pow(2.0, -20.0 * x + 10.0) * sin / 2.0 + 1.0);
     }
 
     private static float outBack(float x) {

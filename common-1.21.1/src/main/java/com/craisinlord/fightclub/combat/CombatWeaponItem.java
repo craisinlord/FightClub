@@ -133,6 +133,11 @@ public final class CombatWeaponItem extends SwordItem {
         if (attacker.level().isClientSide || !(attacker instanceof Player player)) return;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
         if (spec == null) return;
+        if (weapon.equals("spear")) {
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    material.equals("wood") ? CombatSounds.SPEAR_WOOD_HIT : CombatSounds.SPEAR_HIT,
+                    player.getSoundSource(), 1.0f, 1.0f);
+        }
         if (spec.attackStyle() == WeaponSpec.AttackStyle.THRUST) CombatAttacks.pierce(player, target, spec);
         if (spec.attackStyle() == WeaponSpec.AttackStyle.SWEEP && !(weapon.equals("longsword") && LongswordSpin.sweepsArc(player))) {
             CombatAttacks.sweep(player, target, spec);

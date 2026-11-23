@@ -17,6 +17,8 @@ import java.util.Comparator;
 
 public final class CombatVanillaRules {
     private static final Identifier LONGSWORD_OFFHAND = Identifier.fromNamespaceAndPath("fight_club", "longsword_offhand");
+    private static final String[] SWORD_MATERIALS = {"wood", "stone", "copper", "iron", "gold", "diamond", "netherite"};
+    private static final Item[] SWORDS = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.COPPER_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
     private CombatVanillaRules() {}
 
     public static boolean isSword(ItemStack stack) {
@@ -25,9 +27,8 @@ public final class CombatVanillaRules {
     public static boolean isVanillaSword(Item item) { return item == Items.WOODEN_SWORD || item == Items.STONE_SWORD || item == Items.COPPER_SWORD || item == Items.IRON_SWORD || item == Items.GOLDEN_SWORD || item == Items.DIAMOND_SWORD || item == Items.NETHERITE_SWORD; }
     public static WeaponSpec swordSpec(ItemStack stack) {
         if (CombatWeapons.is(stack.getItem(), "sword")) return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(stack.getItem()), "sword");
-        String[] materials = {"wood", "stone", "copper", "iron", "gold", "diamond", "netherite"};
-        Item[] swords = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.COPPER_SWORD, Items.IRON_SWORD, Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
-        for (int i = 0; i < swords.length; i++) if (stack.getItem() == swords[i]) return WeaponSpecs.getOrLoadBuiltin(materials[i], "sword");
+        Item item = stack.getItem();
+        for (int i = 0; i < SWORDS.length; i++) if (item == SWORDS[i]) return WeaponSpecs.getOrLoadBuiltin(SWORD_MATERIALS[i], "sword");
         return null;
     }
     public static boolean isShield(ItemStack stack) { return CombatWeapons.isShield(stack); }
@@ -82,6 +83,15 @@ public final class CombatVanillaRules {
         WeaponSpec spec = swordSpec(defender.getUseItem());
         return spec != null && spec.blocking() && frontal(defender, attacker, spec.blockingAngleDegrees());
     }
+    public static void playSwordBlockEffects(Player defender, Entity attacker) {
+        if (!(defender.level() instanceof net.minecraft.server.level.ServerLevel level)) return;
+        level.playSound(null, defender.getX(), defender.getY(), defender.getZ(), CombatSounds.SWORD_BLOCK,
+                net.minecraft.sounds.SoundSource.PLAYERS, 1.0f, 0.95f + level.getRandom().nextFloat() * 0.1f);
+        Vec3 toward = attacker.position().subtract(defender.position()).normalize();
+        Vec3 spark = defender.getEyePosition().add(toward.scale(0.6)).add(0.0, -0.35, 0.0);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, spark.x, spark.y, spark.z, 6, 0.12, 0.12, 0.12, 0.25);
+    }
+
     public static float swordBlockDamageMultiplier(ItemStack stack) {
         WeaponSpec spec = swordSpec(stack);
         return spec == null ? 0.45f : spec.blockingDamageMultiplier();

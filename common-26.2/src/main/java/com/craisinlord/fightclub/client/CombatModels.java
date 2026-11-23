@@ -51,15 +51,20 @@ public final class CombatModels {
         if (stack.isEmpty() || !inHandContext(context)) return null;
         ExternalWeapons.Entry external = CombatWeapons.external(stack.getItem());
         if (external == null) return null;
-        Identifier id = switch (external.weapon()) {
+        Item item = REFERENCE_ITEMS.computeIfAbsent(external.weapon(), CombatModels::referenceItem);
+        return item == Items.AIR || item == stack.getItem() ? null : new ItemStack(item);
+    }
+
+    private static final java.util.Map<String, Item> REFERENCE_ITEMS = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static Item referenceItem(String weapon) {
+        Identifier id = switch (weapon) {
             case "dagger" -> Identifier.fromNamespaceAndPath(FightClub.MOD_ID, "iron_dagger");
             case "longsword" -> Identifier.fromNamespaceAndPath(FightClub.MOD_ID, "iron_longsword");
             case "spear" -> Identifier.withDefaultNamespace("iron_spear");
             default -> null;
         };
-        if (id == null) return null;
-        Item item = BuiltInRegistries.ITEM.getValue(id);
-        return item == Items.AIR || item == stack.getItem() ? null : new ItemStack(item);
+        return id == null ? Items.AIR : BuiltInRegistries.ITEM.getValue(id);
     }
 
     public static boolean matchesTip(ItemStack stack) {

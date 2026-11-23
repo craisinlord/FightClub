@@ -85,6 +85,13 @@ dependencies {
     if ((findProperty('dev_spartan_unofficial') ?: 'false').toString().toBoolean()) {
         runtimeOnly "maven.modrinth:spartan-weaponry-unofficial:${spartan_unofficial_version_1_21_1}"
     }
+    if ((findProperty('dev_farmers_delight') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:farmers-delight:${farmers_delight_version_1_21_1}"
+    }
+    if ((findProperty('dev_oreganized') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:oreganized:${oreganized_version_1_21_1}"
+        runtimeOnly "maven.modrinth:blueprint:${blueprint_version_1_21_1}"
+    }
 
 }
 

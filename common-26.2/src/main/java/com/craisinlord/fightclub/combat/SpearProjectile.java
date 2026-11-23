@@ -38,8 +38,7 @@ public final class SpearProjectile extends CombatProjectile {
         return Mth.lerp(Math.min(1.0D, falling / DIVE_RAMP), GLIDE_GRAVITY, DIVE_GRAVITY);
     }
 
-    @Override protected void updateRotation() {
-        if (rotationFrozen()) return;
+    @Override protected void flightRotation() {
         Vec3 motion = getDeltaMovement();
         float pitch = (float) (Mth.atan2(motion.y, motion.horizontalDistance()) * Mth.RAD_TO_DEG);
         float yaw = (float) (Mth.atan2(motion.x, motion.z) * Mth.RAD_TO_DEG);

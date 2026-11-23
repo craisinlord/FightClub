@@ -34,6 +34,7 @@ public final class CombatConfig {
     public static final String ZOMBIE_LONGSWORDS = gameplay("zombie_longswords", true, "Some zombies, husks and zombie villagers spawn holding a longsword.");
     public static final String HIDE_REPLACED = gameplay("hide_replaced_weapons", true, "Hide Fight Club weapons (no recipe, creative tab or mob spawns) when another installed mod's weapon takes over that weapon and material, e.g. Silent Gear daggers replace Fight Club daggers. Existing items keep working.");
     public static final String SKELETON_KNIVES = gameplay("skeleton_knives", true, "Some skeletons, strays and bogged spawn with a Loyalty dagger they throw. Off also stops existing ones from throwing.");
+    public static final String POTION_COOLDOWN = gameplay("potion_throw_cooldown", true, "Splash and lingering potions get a short throw cooldown (half an ender pearl's) so stacked potions can't be spammed.");
     public static final String NO_ANVIL_LIMIT = option("vanilla", "remove_anvil_limit", true, true, false, "Remove the anvil's \"Too Expensive!\" limit. XP costs still rise as in vanilla.");
     public static final String POTION_STACK = option("vanilla", "potion_stack_size", 16, false, true, "Stack size for potions, splash potions and lingering potions (1 = vanilla). Needs a restart.");
     public static final String ANIMATIONS = option("client", "animations", true, false, false, "Fight Club's weapon poses and attack animations (first and third person).");

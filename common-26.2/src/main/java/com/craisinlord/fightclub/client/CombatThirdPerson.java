@@ -121,9 +121,11 @@ public final class CombatThirdPerson {
         if (turn != null) offHandOnHilt(main, off, mirrorTurn(turn, mirror), rightHanded, amount);
     }
 
-    public record ItemTurn(Quaternionf rotation, boolean atFist) {}
+    public record ItemTurn(Quaternionf rotation, Vector3f pivot) {}
 
     public static final float FIST_PIVOT = -2.0F / 16.0F;
+    private static final Vector3f FIST = new Vector3f(0.0F, FIST_PIVOT, 0.0F);
+    private static final Vector3f HELD_GRIP = new Vector3f(0.0F, -1.0F / 16.0F, 1.4F / 16.0F);
 
     public static ItemTurn itemTurn(net.minecraft.client.renderer.entity.state.ArmedEntityRenderState state, HumanoidArm arm) {
         if (!CombatConfig.enabled(CombatConfig.ANIMATIONS) || !(state instanceof AvatarRenderState avatar) || arm != avatar.mainArm) return null;
@@ -133,22 +135,23 @@ public final class CombatThirdPerson {
         float partialTick = Mth.clamp(avatar.ageInTicks - player.tickCount, 0.0F, 1.0F);
         CombatClientPoses.View view = CombatClientPoses.view(player, partialTick);
         float held = view == null ? 0.0F : view.amount();
-        if (WeaponKind.of(player.getMainHandItem()) == WeaponKind.LONGSWORD) {
+        WeaponKind kind = WeaponKind.of(player.getMainHandItem());
+        if (kind == WeaponKind.LONGSWORD) {
             Quaternionf turn = longswordTurn(player, view, partialTick, BetterCombatCompat.isLoaded());
-            if (turn != null) return turn.equals(new Quaternionf(), 1.0E-6F) ? null : new ItemTurn(mirrorTurn(turn, mirror), true);
+            if (turn != null) return turn.equals(new Quaternionf(), 1.0E-6F) ? null : new ItemTurn(mirrorTurn(turn, mirror), FIST);
         }
-        if (WeaponKind.of(player.getMainHandItem()) == WeaponKind.MACE && !BetterCombatCompat.isLoaded() && held <= 0.0F) {
+        if (kind == WeaponKind.MACE && !BetterCombatCompat.isLoaded() && held <= 0.0F) {
             float swing = CombatClientPoses.thirdPersonSwing(player, partialTick);
             if (swing > 0.0F) {
                 Quaternionf turn = keyedTurn(CombatPoseConfig.arms(CombatPose.HEAVY_MACE), swing, new Quaternionf());
-                return new ItemTurn(mirrorTurn(turn, mirror), true);
+                return new ItemTurn(mirrorTurn(turn, mirror), FIST);
             }
         }
         if (held <= 0.0F || view.pose() == CombatPose.NONE) return null;
         CombatPoseConfig.ArmPose arms = CombatPoseConfig.arms(view.pose());
         if (arms == null || arms.item() == null || arms.item().lengthSquared() == 0.0F) return null;
         Vector3f item = new Vector3f(arms.item()).mul(held);
-        return new ItemTurn(turn(new Vector3f(item.x(), mirror * item.y(), mirror * item.z())), false);
+        return new ItemTurn(turn(new Vector3f(item.x(), mirror * item.y(), mirror * item.z())), HELD_GRIP);
     }
 
     private static Quaternionf longswordTurn(Player player, CombatClientPoses.View view, float partialTick, boolean betterCombat) {
@@ -161,6 +164,7 @@ public final class CombatThirdPerson {
         CombatPoseConfig.ArmPose gripPose = !betterCombat && player.getOffhandItem().isEmpty()
                 ? CombatPoseConfig.arms(CombatPose.LONGSWORD_GRIP) : null;
         Quaternionf rest = turn(gripPose != null && gripPose.item() != null ? gripPose.item() : new Vector3f());
+        if (gripPose != null) rest = gripLean(gripPose, player, partialTick).mul(rest);
         Quaternionf q;
         if (spin > 0.0F) {
             q = keyedTurn(CombatPoseConfig.arms(CombatPose.LONGSWORD_SPIN), spin, rest);
@@ -172,6 +176,18 @@ public final class CombatThirdPerson {
         }
         if (chargeItem != null) q.slerp(turn(chargeItem), held);
         return q;
+    }
+
+    private static final float GRIP_TILT = 10.0F * Mth.DEG_TO_RAD;
+    private static final float GRIP_HEAD_TILT = 0.45F;
+
+    private static Quaternionf gripLean(CombatPoseConfig.ArmPose grip, Player player, float partialTick) {
+        float angle = GRIP_TILT + Math.max(0.0F, player.getViewXRot(partialTick)) * Mth.DEG_TO_RAD * GRIP_HEAD_TILT;
+        Vector3f arm = grip.main() == null ? new Vector3f() : grip.main();
+        Vector3f axis = new Quaternionf().rotationZYX(Mth.DEG_TO_RAD * arm.z(), Mth.DEG_TO_RAD * arm.y(), Mth.DEG_TO_RAD * arm.x())
+                .conjugate().transform(new Vector3f(1.0F, 0.0F, 0.0F));
+        new Quaternionf().rotationY(Mth.PI).rotateX(Mth.HALF_PI).transform(axis);
+        return new Quaternionf().rotationAxis(angle, axis);
     }
 
     private static Quaternionf keyedTurn(CombatPoseConfig.ArmPose pose, float t, Quaternionf rest) {
@@ -192,7 +208,7 @@ public final class CombatThirdPerson {
         return new Quaternionf(turn.x(), mirror * turn.y(), mirror * turn.z(), turn.w());
     }
 
-    private static final Vector3f HILT_GRIP = new Vector3f(0.0F, 0.2206F, 0.9285F);
+    private static final Vector3f HILT_GRIP = new Vector3f(-1.5F, 0.2206F, 0.9285F);
     private static final Vector3f HILT_POMMEL = new Vector3f(0.0F, -0.9729F, 0.2312F);
     private static final float HILT_GAP = 3.0F, HILT_GAP_MIN = 2.0F, HILT_GAP_MAX = 4.0F;
     private static final float OFF_GRIP_Y = 9.5F;

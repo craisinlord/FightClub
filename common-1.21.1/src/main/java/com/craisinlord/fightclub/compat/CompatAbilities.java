@@ -70,15 +70,20 @@ public final class CompatAbilities {
     private static boolean resolved;
     private static final Map<CompatMaterial, List<Ability>> ABILITIES = new EnumMap<>(CompatMaterial.class);
 
+    private static final Map<String, CompatMaterial> BY_NAME = byName();
+
     private CompatAbilities() {}
+
+    private static Map<String, CompatMaterial> byName() {
+        Map<String, CompatMaterial> map = new java.util.HashMap<>();
+        for (CompatMaterial material : CompatMaterial.values()) map.putIfAbsent(material.material, material);
+        return Map.copyOf(map);
+    }
 
     public static CompatMaterial materialOf(ItemStack stack) {
         if (!(stack.getItem() instanceof CombatWeaponItem item)) return null;
         String name = item.combatMaterial();
-        for (CompatMaterial material : CompatMaterial.values()) {
-            if (material.material.equals(name)) return material;
-        }
-        return null;
+        return name == null ? null : BY_NAME.get(name);
     }
 
     public static void onHit(ItemStack stack, LivingEntity target, LivingEntity attacker, Hit hit) {
@@ -86,7 +91,7 @@ public final class CompatAbilities {
         CompatMaterial material = materialOf(stack);
         if (material == null) return;
         List<Ability> abilities = abilities(material);
-        for (Ability ability : abilities.toArray(new Ability[0])) {
+        for (Ability ability : abilities) {
             try {
                 ability.hit(stack, target, attacker, hit);
             } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
@@ -118,7 +123,7 @@ public final class CompatAbilities {
         CompatMaterial material = materialOf(stack);
         if (material == null) return;
         List<Component> lines = new ArrayList<>();
-        for (Ability ability : abilities(material).toArray(new Ability[0])) {
+        for (Ability ability : abilities(material)) {
             try {
                 ability.tooltip(lines);
             } catch (ReflectiveOperationException | RuntimeException | LinkageError ignored) {
@@ -142,7 +147,7 @@ public final class CompatAbilities {
     private static float incomingDamage(ItemStack stack, LivingEntity target, DamageSource source, float amount, boolean direct) {
         CompatMaterial material = materialOf(stack);
         if (material == null) return amount;
-        for (Ability ability : abilities(material).toArray(new Ability[0])) {
+        for (Ability ability : abilities(material)) {
             try {
                 amount = ability.incomingDamage(stack, target, source, amount, direct);
             } catch (RuntimeException | LinkageError e) {
@@ -155,7 +160,7 @@ public final class CompatAbilities {
     public static void forEachMainHand(ItemStack stack, BiConsumer<Holder<Attribute>, AttributeModifier> action) {
         CompatMaterial material = materialOf(stack);
         if (material == null) return;
-        for (Ability ability : abilities(material).toArray(new Ability[0])) {
+        for (Ability ability : abilities(material)) {
             try {
                 ability.mainHandModifiers(stack, action);
             } catch (RuntimeException | LinkageError ignored) {
@@ -166,7 +171,7 @@ public final class CompatAbilities {
     public static float thrownDamage(ItemStack stack, float damage) {
         CompatMaterial material = materialOf(stack);
         if (material == null) return damage;
-        for (Ability ability : abilities(material).toArray(new Ability[0])) {
+        for (Ability ability : abilities(material)) {
             try {
                 damage = ability.thrownDamage(stack, damage);
             } catch (RuntimeException | LinkageError ignored) {

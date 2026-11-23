@@ -46,5 +46,6 @@ public final class FightClubNeoForgeEvents {
                 || !(event.getSource().getDirectEntity() instanceof net.minecraft.world.entity.LivingEntity attacker)
                 || !CombatVanillaRules.swordBlocks(player, attacker)) return;
         event.setNewDamage(event.getNewDamage() * CombatVanillaRules.swordBlockDamageMultiplier(player.getUseItem()));
+        CombatVanillaRules.playSwordBlockEffects(player, attacker);
     }
 }

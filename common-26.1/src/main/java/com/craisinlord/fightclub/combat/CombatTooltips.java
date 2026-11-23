@@ -31,7 +31,8 @@ public final class CombatTooltips {
 
     public static String kindOf(ItemStack stack) {
         Item item = stack.getItem();
-        if (CombatWeapons.isCombatWeapon(item)) return CombatWeapons.weapon(item);
+        String weapon = CombatWeapons.weapon(item);
+        if (weapon != null) return weapon;
         if (CombatWeapons.isMace(item)) return "mace";
         if (CombatWeapons.isTrident(item)) return "trident";
         if (CombatWeapons.isShield(stack)) return "shield";

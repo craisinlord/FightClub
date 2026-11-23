@@ -58,7 +58,7 @@ public abstract class ItemModelResolverReferenceMixin {
         ItemStackRenderStateAccessor layers = (ItemStackRenderStateAccessor) state;
         List<SpriteContents> sprites = new ArrayList<>();
         for (int i = 0; i < layers.fightClub$activeLayerCount(); i++) {
-            for (BakedQuad quad : ((LayerRenderStateAccessor) layers.fightClub$layers()[i]).fightClub$quads()) {
+            for (BakedQuad quad : ((LayerRenderStateAccessor) layers.fightClub$layers()[i]).fightClub$quads().all()) {
                 SpriteContents sprite = quad.materialInfo().sprite().contents();
                 if (!sprites.contains(sprite)) sprites.add(sprite);
             }

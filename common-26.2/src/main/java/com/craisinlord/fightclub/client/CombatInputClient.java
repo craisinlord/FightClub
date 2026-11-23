@@ -44,14 +44,13 @@ public final class CombatInputClient {
     private static boolean pendingTap;
     private static Item pendingItem;
 
-    private static boolean thrustCharge(ItemStack stack) {
-        return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem())
-                && !CombatChargeState.isDagger(stack.getItem());
+    private static boolean holdCharge(ItemStack stack) {
+        return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
     }
 
     public static void beforeKeybinds(Minecraft client) {
         LocalPlayer player = client.player;
-        if (player == null || !thrustCharge(player.getMainHandItem())) return;
+        if (player == null || !holdCharge(player.getMainHandItem())) return;
         var attackKey = client.options.keyAttack;
         if (charging || pendingTap || waitForRelease) {
             while (attackKey.consumeClick()) {}
@@ -165,7 +164,6 @@ public final class CombatInputClient {
             return;
         }
         ItemStack stack = player.getMainHandItem();
-        boolean chargeWeapon = CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
         boolean down = client.gui.screen() == null && client.options.keyAttack.isDown();
         boolean pressed = down && !wasDown;
         wasDown = down;
@@ -194,10 +192,12 @@ public final class CombatInputClient {
             }
             boolean useBroken = itemCharge ? !player.isUsingItem() : player.isUsingItem();
             if (!down || stack.getItem() != chargeItem || useBroken || player.isSpectator()) {
-                boolean released = !down && stack.getItem() == chargeItem && full;
+                boolean letGo = !down && stack.getItem() == chargeItem;
+                boolean released = letGo && full;
                 LivingEntity pounce = released && dagger ? lockTarget : null;
                 stopCharging(pounce == null ? -1 : pounce.getId());
                 if (pounce != null) PounceClient.start(player, pounce);
+                else if (letGo && dagger) queueTap(client, player);
                 lockTarget = null;
             }
         } else if (waitForRelease) {
@@ -213,9 +213,6 @@ public final class CombatInputClient {
                 endPending();
                 startCharging(client, player, stack);
             }
-        } else if (down && chargeWeapon && CombatChargeState.isDagger(stack.getItem()) && !PounceClient.active()
-                && !player.isUsingItem() && !player.isSpectator() && !player.getCooldowns().isOnCooldown(stack)) {
-            if (++holdTicks >= HOLD_THRESHOLD_TICKS) startCharging(client, player, stack);
         } else {
             holdTicks = 0;
         }

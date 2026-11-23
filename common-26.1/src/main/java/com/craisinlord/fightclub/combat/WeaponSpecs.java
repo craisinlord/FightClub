@@ -17,31 +17,40 @@ public final class WeaponSpecs {
     }
 
     private static final AtomicReference<Map<String, WeaponSpec>> MAPPED = new AtomicReference<>(Map.of());
+    private static final java.util.Set<String> MISSING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static void replaceMapped(Map<String, WeaponSpec> specs) {
         MAPPED.set(Map.copyOf(specs));
     }
 
     public static WeaponSpec get(String material, String weapon) {
-        String key = material + "/" + weapon;
+        return get(material + "/" + weapon);
+    }
+
+    private static WeaponSpec get(String key) {
         WeaponSpec spec = VALUES.get().get(key);
         return spec != null ? spec : MAPPED.get().get(key);
     }
 
     public static WeaponSpec getOrLoadBuiltin(String material, String weapon) {
-        WeaponSpec loaded = get(material, weapon);
-        if (loaded != null) return loaded;
-        String resource = "/data/fight_club/weapons/" + material + "/" + weapon + ".json";
+        String key = material + "/" + weapon;
+        WeaponSpec loaded = get(key);
+        if (loaded != null || MISSING.contains(key)) return loaded;
+        String resource = "/data/fight_club/weapons/" + key + ".json";
         try (var stream = WeaponSpecs.class.getResourceAsStream(resource)) {
-            if (stream == null) return null;
+            if (stream == null) {
+                MISSING.add(key);
+                return null;
+            }
             WeaponSpec spec = WeaponSpec.fromJson(
-                    Identifier.fromNamespaceAndPath("fight_club", "weapons/" + material + "/" + weapon + ".json"),
+                    Identifier.fromNamespaceAndPath("fight_club", "weapons/" + key + ".json"),
                     JsonParser.parseReader(new java.io.InputStreamReader(stream)).getAsJsonObject());
             Map<String, WeaponSpec> merged = new java.util.HashMap<>(VALUES.get());
-            merged.put(material + "/" + weapon, spec);
+            merged.put(key, spec);
             VALUES.set(Collections.unmodifiableMap(merged));
             return spec;
         } catch (Exception exception) {
+            MISSING.add(key);
             return null;
         }
     }

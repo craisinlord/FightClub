@@ -3,7 +3,6 @@ package com.craisinlord.fightclub.combat;
 import com.craisinlord.fightclub.CombatConfig;
 import com.craisinlord.fightclub.FightClub;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
@@ -13,7 +12,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantments;
 
 import java.util.Set;
 
@@ -67,10 +65,7 @@ public final class MobWeapons {
             if (!skeletonKnives() || !isKnifeSkeleton(mob) || random.nextFloat() >= SKELETON_KNIFE_CHANCE) return;
             Item item = pick(random, DAGGER_MATERIALS, DAGGER_WEIGHTS, "dagger");
             if (item == Items.AIR) return;
-            ItemStack stack = new ItemStack(item);
-            mob.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).get(Enchantments.LOYALTY)
-                    .ifPresent(loyalty -> stack.enchant(loyalty, 1 + random.nextInt(3)));
-            mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
+            mob.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(item));
         } catch (RuntimeException e) {
             warn(e);
         }

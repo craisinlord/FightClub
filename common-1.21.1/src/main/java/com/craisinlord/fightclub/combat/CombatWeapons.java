@@ -18,6 +18,7 @@ public final class CombatWeapons {
     public static final List<String> BACKPORT_SPEAR_MATERIALS = List.of("wood", "stone", "copper", "iron", "gold", "diamond", "netherite");
     private static final List<String> BACKPORT_COMPONENTS = List.of("attack_range", "kinetic_weapon", "piercing_weapon", "use_effects", "minimum_attack_range", "swing_animation");
     private static final Map<Item, DataComponentPatch> MOB_COMPONENTS = new ConcurrentHashMap<>();
+    private static final Map<Item, String> BACKPORT_MATERIALS = new ConcurrentHashMap<>();
     private static Boolean backportLoaded;
     private static List<DataComponentType<?>> componentTypes;
 
@@ -90,6 +91,14 @@ public final class CombatWeapons {
 
     public static String backportSpearMaterial(Item item) {
         if (item instanceof CombatWeaponItem || !backportSpears()) return null;
+        String cached = BACKPORT_MATERIALS.get(item);
+        if (cached != null) return cached.isEmpty() ? null : cached;
+        String material = resolveBackportSpearMaterial(item);
+        if (item.builtInRegistryHolder().isBound()) BACKPORT_MATERIALS.put(item, material == null ? "" : material);
+        return material;
+    }
+
+    private static String resolveBackportSpearMaterial(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
         if (!id.getNamespace().equals("minecraft") || !id.getPath().endsWith("_spear")) return null;
         return switch (id.getPath()) {

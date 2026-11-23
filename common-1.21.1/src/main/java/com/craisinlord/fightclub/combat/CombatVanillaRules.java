@@ -17,6 +17,9 @@ import com.craisinlord.fightclub.CombatConfig;
 
 public final class CombatVanillaRules {
     private static final ResourceLocation LONGSWORD_OFFHAND = ResourceLocation.fromNamespaceAndPath("fight_club", "longsword_offhand");
+    private static final String[] SWORD_MATERIALS = {"wood", "stone", "iron", "gold", "diamond", "netherite"};
+    private static final Item[] SWORDS = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD,
+            Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
     private CombatVanillaRules() {}
 
     public static boolean isSword(ItemStack stack) { return stack.getItem() instanceof SwordItem; }
@@ -24,11 +27,9 @@ public final class CombatVanillaRules {
         if (CombatWeapons.is(stack.getItem(), "sword")) {
             return WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(stack.getItem()), "sword");
         }
-        String[] materials = {"wood", "stone", "iron", "gold", "diamond", "netherite"};
-        Item[] swords = {Items.WOODEN_SWORD, Items.STONE_SWORD, Items.IRON_SWORD,
-                Items.GOLDEN_SWORD, Items.DIAMOND_SWORD, Items.NETHERITE_SWORD};
-        for (int i = 0; i < swords.length; i++) if (stack.getItem() == swords[i])
-            return WeaponSpecs.getOrLoadBuiltin(materials[i], "sword");
+        Item item = stack.getItem();
+        for (int i = 0; i < SWORDS.length; i++) if (item == SWORDS[i])
+            return WeaponSpecs.getOrLoadBuiltin(SWORD_MATERIALS[i], "sword");
         return null;
     }
     public static boolean isShield(ItemStack stack) { return CombatWeapons.isShield(stack); }

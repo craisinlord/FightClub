@@ -65,6 +65,7 @@ public final class FightClubFabricEvents {
             if (REDUCED_DAMAGE.get() || !(entity instanceof net.minecraft.world.entity.player.Player player)) return true;
             if (!(source.getDirectEntity() instanceof net.minecraft.world.entity.LivingEntity attacker)
                     || !CombatVanillaRules.swordBlocks(player, attacker)) return true;
+            CombatVanillaRules.playSwordBlockEffects(player, attacker);
             REDUCED_DAMAGE.set(true);
             try {
                 entity.hurt(source, amount * CombatVanillaRules.swordBlockDamageMultiplier(player.getUseItem()));

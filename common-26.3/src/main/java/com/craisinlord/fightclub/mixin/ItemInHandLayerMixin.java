@@ -24,10 +24,7 @@ public abstract class ItemInHandLayerMixin {
     private void fightClub$beforeItem(ArmedEntityRenderState state, ItemStackRenderState item, ItemStack stack, HumanoidArm arm,
                                       PoseStack poseStack, SubmitNodeCollector collector, int light, CallbackInfo ci) {
         com.craisinlord.fightclub.client.CombatThirdPerson.ItemTurn turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemTurn(state, arm);
-        if (turn != null) {
-            if (turn.atFist()) poseStack.rotateAround(turn.rotation(), 0.0F, com.craisinlord.fightclub.client.CombatThirdPerson.FIST_PIVOT, 0.0F);
-            else poseStack.rotate(turn.rotation());
-        }
+        if (turn != null) poseStack.rotateAround(turn.rotation(), turn.pivot().x(), turn.pivot().y(), turn.pivot().z());
         if (!CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
         HumanoidModel.ArmPose pose = arm == HumanoidArm.RIGHT ? state.rightArmPose : state.leftArmPose;
         WeaponKind kind = WeaponKind.of(stack);

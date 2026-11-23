@@ -54,6 +54,7 @@ public final class DevCompatTest {
 
     private static String[] items() {
         return switch (ns) {
+            case "farmersdelight" -> new String[]{"flint_knife", "iron_knife", "golden_knife", "diamond_knife", "netherite_knife"};
             case "simplyswords" -> new String[]{"iron_sai", "diamond_sai", "iron_spear", "diamond_spear", "iron_longsword",
                     "iron_claymore", "iron_twinblade", "iron_katana", "iron_glaive", "iron_halberd", "iron_cutlass", "iron_rapier",
                     "iron_scythe", "iron_warglaive"};
@@ -64,7 +65,7 @@ public final class DevCompatTest {
     }
 
     private static String dagger() {
-        return ns.equals("simplyswords") ? "sai" : "dagger";
+        return ns.equals("simplyswords") ? "sai" : ns.equals("farmersdelight") ? "knife" : "dagger";
     }
 
     public static void tick(Minecraft mc) {
@@ -121,6 +122,17 @@ public final class DevCompatTest {
                     "gamerule sendCommandFeedback false", "kill @e[type=!minecraft:player]"}) run(server, c);
         }));
         STEPS.put(t += 2, () -> org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc.getWindow().getWindow(), 1600, 900));
+        if (ns.equals("fight_club")) {
+            STEPS.put(t += 5, DevCompatTest::reportInHandModels);
+            for (String path : new String[]{"iron_spear", "generic/silver/spear", "oreganized/electrum/spear"}) {
+                t = visualTest(mc, server, t + 10, path);
+            }
+            STEPS.put(t + 20, () -> {
+                log("DONE");
+                mc.stop();
+            });
+            return;
+        }
         for (String path : items()) {
             STEPS.put(t += 4, () -> onServer(server, () -> arena(server, path)));
             STEPS.put(t += 4, () -> onServer(server, () -> reportMapping(server, path)));
@@ -139,6 +151,17 @@ public final class DevCompatTest {
         String d = dagger();
         t = pounceTest(server, t + 10, "iron_" + d);
         t = pounceTest(server, t + 10, "diamond_" + d);
+        if (ns.equals("farmersdelight")) {
+            t = throwTest(mc, server, t + 10, "iron_" + d);
+            t = throwTest(mc, server, t + 10, "diamond_" + d);
+            t = visualTest(mc, server, t + 10, "iron_" + d);
+            t = visualTest(mc, server, t + 10, "flint_" + d);
+            STEPS.put(t + 20, () -> {
+                log("DONE");
+                mc.stop();
+            });
+            return;
+        }
         t = chargeTest(server, t + 10, "iron_spear");
         t = throwTest(mc, server, t + 10, "iron_" + d);
         t = throwTest(mc, server, t + 10, "diamond_" + d);
@@ -171,6 +194,19 @@ public final class DevCompatTest {
                 player.getAttributeValue(Attributes.ENTITY_INTERACTION_RANGE), spec == null ? -1 : spec.reach(),
                 spec == null ? -1 : CombatWeapons.chargeDamage(stack, spec), spec == null ? -1 : CombatWeapons.throwDamage(stack, spec),
                 spec == null ? -1 : CombatWeapons.damageScale(stack, spec), player.getAttributeValue(Attributes.ATTACK_SPEED));
+    }
+
+    private static void reportInHandModels() {
+        int ok = 0, missing = 0;
+        for (ResourceLocation id : BuiltInRegistries.ITEM.keySet()) {
+            if (!id.getNamespace().equals("fight_club") || !id.getPath().contains("/")) continue;
+            if (!id.getPath().endsWith("/spear") && !id.getPath().endsWith("/longsword")) continue;
+            boolean loaded = CombatModels.inHand(new ItemStack(BuiltInRegistries.ITEM.get(id))) != null;
+            if (loaded) ok++;
+            else missing++;
+            log("inHand {}: {}", id, loaded ? "loaded" : "MISSING");
+        }
+        log("inHand summary: loaded={} missing={}", ok, missing);
     }
 
     private static void reportReplaced(MinecraftServer server) {
@@ -268,7 +304,7 @@ public final class DevCompatTest {
     }
 
     private static int visualTest(Minecraft mc, MinecraftServer server, int t, String path) {
-        String name = ns + "_" + path;
+        String name = ns + "_" + path.replace('/', '_');
         STEPS.put(t, () -> onServer(server, () -> {
             run(server, "kill @e[type=!minecraft:player]");
             run(server, "fill -3 -60 7 4 -56 7 minecraft:oak_planks");

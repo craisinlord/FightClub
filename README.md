@@ -14,7 +14,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 - [Weapon specs](#weapon-specs): file locations, fields, overriding a weapon
 - [Other mods' items](#other-mods-items): giving another mod's dagger, longsword, spear or shield Fight Club's moves by datapack
 - [Built-in mod compatibility](#built-in-mod-compatibility): extra materials and their perks, Better Combat, Vanilla Backport
-- [Weapon mods](#weapon-mods): Silent Gear, Simply Swords and Spartan Weaponry, for players and modpack developers
+- [Weapon mods](#weapon-mods): Silent Gear, Simply Swords, Spartan Weaponry and Farmer's Delight knives, for players and modpack developers
 - [Java API](#java-api): adding weapons from another mod, specs in code, models, queries
 - [Troubleshooting](#troubleshooting)
 
@@ -29,6 +29,7 @@ This README is for players, modpack developers and mod developers. Pack develope
 | Silent Gear | Optional (NeoForge); see [Silent Gear](#silent-gear) |
 | Simply Swords | Optional; see [Simply Swords](#simply-swords) |
 | Spartan Weaponry Reborn or Spartan Weaponry Unofficial | Optional (NeoForge); see [Spartan Weaponry](#spartan-weaponry) |
+| Farmer's Delight or Farmer's Delight Refabricated | Optional; see [Farmer's Delight](#farmers-delight) |
 | JEI | Optional; hidden Fight Club weapons stay out of its item list, see [Weapon mods](#weapon-mods) |
 | Ice and Fire, Antarchy, The Aether, Twilight Forest, Mekanism, Deeper and Darker, The Undergarden, Oreganized, Caverns & Chasms, Born in Chaos, Eidolon, Galosphere | Optional; each adds weapon materials, see [Built-in mod compatibility](#built-in-mod-compatibility) (1.21.1 only) |
 
@@ -73,6 +74,7 @@ On a server, the server's `[gameplay]` and `[vanilla]` values are sent to every 
 | `gameplay` | `longsword_spin` | `true` | Hold right-click with a longsword to charge a spin attack that hits everything around you. |
 | `gameplay` | `mace_hit_streak` | `true` | Consecutive mace hits stack an attack speed bonus; a miss or a pause ends the streak. |
 | `gameplay` | `recovery` | `true` | Special attacks have a short recovery before the weapon can be used again. |
+| `gameplay` | `potion_throw_cooldown` | `true` | Splash and lingering potions get a half-second throw cooldown (half an ender pearl's) so stacked potions can't be spammed. |
 | `gameplay` | `hide_replaced_weapons` | `true` | Hide Fight Club weapons (no recipe, creative tab, JEI entry or mob spawns) when another mod's weapon takes over that weapon and material, such as Silent Gear's daggers. Existing items keep working. |
 | `vanilla` | `remove_anvil_limit` | `true` | Removes "Too Expensive!". XP costs still rise as in vanilla. |
 | `vanilla` | `potion_stack_size` | `16` | Stack size for potions, splash potions and lingering potions, 1 to 64 (1 = vanilla). Needs a restart. |
@@ -259,7 +261,7 @@ When Vanilla Backport (`vanillabackport`) is installed, its wood through netheri
 
 ## Weapon mods
 
-Fight Club works alongside other weapon mods instead of competing with them. When Silent Gear, Simply Swords or Spartan Weaponry is installed, their weapons get Fight Club's moves for what they are: their daggers pounce and throw, their longswords, claymores and katanas sweep and spin, and their spears charge and throw. Fight Club's own versions of those weapons then step aside, so a pack doesn't end up with two iron daggers. There's nothing to set up: install the mods together, on the server and every client.
+Fight Club works alongside other weapon mods instead of competing with them. When Silent Gear, Simply Swords, Spartan Weaponry or Farmer's Delight is installed, their weapons get Fight Club's moves for what they are: their daggers and knives pounce and throw, their longswords, claymores and katanas sweep and spin, and their spears charge and throw. Fight Club's own versions of those weapons then step aside, so a pack doesn't end up with two iron daggers. There's nothing to set up: install the mods together, on the server and every client.
 
 ### For players
 
@@ -267,7 +269,7 @@ Fight Club works alongside other weapon mods instead of competing with them. Whe
 - **Ability damage follows the weapon.** Pounce, charge, spin and throw damage scale with the weapon's own hit damage, so a stronger weapon pounces and throws harder. A netherite Silent Gear dagger hits harder than a flint one, and a Simply Swords claymore spins harder than its longsword.
 - **Right-click.** On mapped daggers and spears, right-click is Fight Club's throw; on mapped longswords it's the spin. This replaces the other mod's own throw on those items, such as Simply Swords' instant spear throw or Spartan's dagger throw. Weapons that aren't mapped keep everything they had.
 - **Held and thrown.** The weapon keeps its own model in hand, in flight and stuck in a wall, held in Fight Club's poses.
-- **Fight Club's duplicates are hidden.** When another mod covers a weapon and material, Fight Club's version has no recipe, isn't in the creative tabs or JEI, and mobs stop spawning with it. It's still in the game: ones you already have keep working, and `/give` still works. With Simply Swords, Fight Club's wood, stone and copper weapons stay, because Simply Swords starts at iron.
+- **Fight Club's duplicates are hidden.** When another mod covers a weapon and material, Fight Club's version has no recipe, isn't in the creative tabs or JEI, and mobs stop spawning with it. It's still in the game: ones you already have keep working, and `/give` still works. Only the materials the other mod also has are hidden: with Simply Swords, Fight Club's wood, stone and copper weapons stay, because Simply Swords starts at iron, and with Farmer's Delight only the daggers its knives match are hidden.
 - **Reach doesn't stack.** A weapon gets its own reach or Fight Club's, whichever is longer, never both.
 - **Better Combat.** Simply Swords and Spartan keep their own Better Combat animations, which are made for their weapons. Silent Gear weapons use Fight Club's.
 
@@ -297,7 +299,7 @@ Things worth knowing:
 The 26.x builds include the same weapon mod support: the same mapping files, hiding, recipe removal, damage scaling and held poses, and the JEI plugin. The differences:
 
 - 26.x has vanilla spears instead of Fight Club's, so another mod's spear gets Fight Club's spear moves but doesn't hide anything, and vanilla's spears stay craftable.
-- Mod availability decides what works where. Silent Gear has NeoForge builds for 26.1 and 26.2, and Spartan Weaponry Unofficial has one for 26.1. Simply Swords and Spartan Weaponry Reborn have no 26.x release yet; their mapping files are included and take effect if they get one with the same item ids.
+- Mod availability decides what works where. Silent Gear has NeoForge builds for 26.1 and 26.2, and Spartan Weaponry Unofficial has one for 26.1. Farmer's Delight Refabricated has Fabric builds for 26.1, 26.2 and 26.3, where its copper knife also hides Fight Club's copper dagger. Simply Swords and Spartan Weaponry Reborn have no 26.x release yet; their mapping files are included and take effect if they get one with the same item ids.
 
 ### Silent Gear
 
@@ -339,6 +341,14 @@ Spartan Weaponry has no official 1.21.1 release, so Fight Club supports both por
 | Saber, rapier | Sword: block |
 
 Spartan's passive traits (two-handed, armor piercing, backstab and the rest) still apply. Reach doesn't add up: a weapon whose reach trait already gives it more reach than Fight Club would keeps its own, so a pike reaches further than a Fight Club spear. Fight Club's wood through netherite daggers, longswords and spears are hidden. Parrying daggers, lances, scythes, blunt weapons, axes, throwing weapons and ranged weapons are left to Spartan, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/spartanweaponry/` and `data/fight_club/weapon_items/spartan_weaponry_unofficial/`.
+
+### Farmer's Delight
+
+When Farmer's Delight (NeoForge) or Farmer's Delight Refabricated (Fabric) is installed, its knives become Fight Club daggers: they pounce and throw, and keep their own damage, look and kitchen uses. Cutting boards and harvesting with a knife work as before, since right-clicking a block still goes to the block first; right-clicking the air throws the knife.
+
+Every knife in Farmer's Delight's `farmersdelight:tools/knives` tag is mapped, so knives from Farmer's Delight add-ons that use the tag become daggers too.
+
+Only the daggers Farmer's Delight has its own knife for are hidden: iron, gold, diamond and netherite, plus copper on 26.x where Farmer's Delight has a copper knife. Fight Club's wood, stone and copper daggers (on 1.21.1) and every dagger from [Extra weapon materials](#extra-weapon-materials), such as ultimate or dragonsteel, stay craftable, and add-on knives don't hide anything. The flint knife doesn't hide Fight Club's stone dagger. The mapping is `data/fight_club/weapon_items/farmersdelight/dagger.json`.
 
 ## Java API
 

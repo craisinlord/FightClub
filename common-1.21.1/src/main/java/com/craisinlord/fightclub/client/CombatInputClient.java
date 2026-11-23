@@ -40,14 +40,13 @@ public final class CombatInputClient {
         waitForRelease = true;
     }
 
-    private static boolean thrustCharge(ItemStack stack) {
-        return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem())
-                && !CombatChargeState.isDagger(stack.getItem());
+    private static boolean holdCharge(ItemStack stack) {
+        return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
     }
 
     public static void beforeKeybinds(Minecraft client) {
         LocalPlayer player = client.player;
-        if (player == null || !thrustCharge(player.getMainHandItem())) return;
+        if (player == null || !holdCharge(player.getMainHandItem())) return;
         var attackKey = client.options.keyAttack;
         if (charging || pendingTap || waitForRelease) {
             while (attackKey.consumeClick()) {}
@@ -158,7 +157,6 @@ public final class CombatInputClient {
             return;
         }
         ItemStack stack = player.getMainHandItem();
-        boolean chargeWeapon = CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
         boolean down = client.screen == null && client.options.keyAttack.isDown();
         boolean pressed = down && !wasDown;
         wasDown = down;
@@ -185,13 +183,16 @@ public final class CombatInputClient {
                 readyPlayed = false;
             }
             if (!down || stack.getItem() != chargeItem || player.isUsingItem() || player.isSpectator()) {
+                Item chargeItemBefore = chargeItem;
                 boolean released = !down && stack.getItem() == chargeItem && full;
                 if (released && CombatChargeState.isDagger(stack.getItem())) {
                     net.minecraft.world.entity.LivingEntity target = lockTarget;
                     stopCharging(target == null ? -1 : target.getId());
                     if (target != null) PounceClient.start(player, target);
+                    if (target == null) queueTap(client, player);
                 } else {
                     stopCharging(-1);
+                    if (!down && stack.getItem() == chargeItemBefore && CombatChargeState.isDagger(stack.getItem())) queueTap(client, player);
                 }
             }
         } else if (waitForRelease) {
@@ -210,9 +211,6 @@ public final class CombatInputClient {
                 endPending();
                 startCharging(client, player, stack);
             }
-        } else if (down && chargeWeapon && CombatChargeState.isDagger(stack.getItem())
-                && !PounceClient.active() && !player.isUsingItem() && !player.isSpectator()) {
-            if (++holdTicks >= HOLD_THRESHOLD_TICKS) startCharging(client, player, stack);
         } else {
             holdTicks = 0;
         }
@@ -249,6 +247,10 @@ public final class CombatInputClient {
         if (!CombatChargeState.isDagger(chargeItem)) com.craisinlord.fightclub.compat.BetterCombatCompat.setLocalAttacksPaused(player, true);
         sender.accept(new CombatActionPayload(CombatChargeState.START));
         CombatClientPoses.play(player, CombatSounds.CHARGE_START);
+        if (CombatChargeState.isSpearWeapon(chargeItem)) {
+            CombatClientPoses.playVanilla(player, com.craisinlord.fightclub.combat.SpearTimeline.wood(chargeItem)
+                    ? CombatSounds.SPEAR_WOOD_USE : CombatSounds.SPEAR_USE);
+        }
     }
 
     private static void stopCharging(int pounceTarget) {

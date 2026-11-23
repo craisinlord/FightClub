@@ -40,6 +40,11 @@ public final class CombatChargeState {
         CHARGES.put(player.getUUID(), new ChargeState(player.level().getGameTime(), item, new java.util.HashSet<>()));
         CombatPlatform.sendPoseToTracking(player, new CombatPosePayload(player.getId(), CombatPosePayload.CHARGE_START));
         BetterCombatCompat.setChargeActive(player, true);
+        if (isSpearWeapon(item)) {
+            player.level().playSound(player, player.getX(), player.getY(), player.getZ(),
+                    SpearTimeline.wood(item) ? CombatSounds.SPEAR_WOOD_USE : CombatSounds.SPEAR_USE,
+                    player.getSoundSource(), 1.0f, 1.0f);
+        }
     }
 
     private static void release(Player player, int targetId) {
@@ -61,7 +66,7 @@ public final class CombatChargeState {
             return;
         }
         WeaponSpec spec = thrustSpec(item);
-        if (spec == null || heldTicks < spec.chargeTicks()) return;
+        if (spec == null || heldTicks < spec.chargeTicks() || SpearTimeline.spent(item, heldTicks)) return;
         LivingEntity target = ThrustTargeting.find(player, null, spec).stream().findFirst().orElse(null);
         if (target != null) chargedAttack(player, target, spec);
     }
@@ -72,6 +77,7 @@ public final class CombatChargeState {
 
     public static void tick(Player player) {
         MaceHitStreak.tick(player);
+        DelayedAttacks.tick(player);
         tickPounce(player);
         capDaggerCharge(player);
         ChargeState state = CHARGES.get(player.getUUID());
@@ -84,7 +90,8 @@ public final class CombatChargeState {
                 || !com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.RUNNING_CHARGE)) return;
         Item item = player.getMainHandItem().getItem();
         WeaponSpec spec = item == state.item() ? thrustSpec(item) : null;
-        if (spec == null || player.level().getGameTime() - state.startTick() < spec.chargeTicks()) return;
+        long held = player.level().getGameTime() - state.startTick();
+        if (spec == null || held < spec.chargeTicks() || SpearTimeline.spent(item, held)) return;
         Vec3 move = new Vec3(player.getX() - last.x, 0.0, player.getZ() - last.z);
         double speed = move.length();
         Vec3 look = new Vec3(player.getLookAngle().x, 0.0, player.getLookAngle().z);
@@ -160,7 +167,7 @@ public final class CombatChargeState {
         ChargeState state = CHARGES.get(player.getUUID());
         if (state == null || !isDagger(state.item())) return;
         long held = player.level().getGameTime() - state.startTick();
-        if (held < chargeTicksFor(state.item().getDefaultInstance()) + DAGGER_MAX_FULL_HOLD_TICKS) return;
+        if (held < chargeTicksFor(state.item()) + DAGGER_MAX_FULL_HOLD_TICKS) return;
         CHARGES.remove(player.getUUID());
         CombatPosePayload end = new CombatPosePayload(player.getId(), CombatPosePayload.CHARGE_END);
         CombatPlatform.sendPoseToTracking(player, end);
@@ -240,7 +247,8 @@ public final class CombatChargeState {
     }
 
     public static boolean isChargeWeapon(Item item) {
-        return CombatWeapons.is(item, "dagger") || CombatWeapons.is(item, "spear") || CombatWeapons.isTrident(item);
+        String weapon = CombatWeapons.weapon(item);
+        return "dagger".equals(weapon) || "spear".equals(weapon) || CombatWeapons.isTrident(item);
     }
 
     public static boolean isSpearWeapon(Item item) {
@@ -254,7 +262,10 @@ public final class CombatChargeState {
     public static boolean isLeftCharging(Player player) { return CHARGES.containsKey(player.getUUID()); }
 
     public static int chargeTicksFor(ItemStack stack) {
-        Item item = stack.getItem();
+        return chargeTicksFor(stack.getItem());
+    }
+
+    public static int chargeTicksFor(Item item) {
         WeaponSpec spec = CombatWeapons.is(item, "dagger")
                 ? WeaponSpecs.getOrLoadBuiltin(CombatWeapons.material(item), "dagger")
                 : thrustSpec(item);
@@ -263,6 +274,7 @@ public final class CombatChargeState {
 
     public static void clear(Player player) {
         MaceHitStreak.reset(player);
+        DelayedAttacks.clear(player);
         LongswordSpin.clear(player);
         LAST_POSITION.remove(player.getUUID());
         boolean wasPouncing = POUNCES.remove(player.getUUID()) != null;

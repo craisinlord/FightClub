@@ -18,5 +18,7 @@ public abstract class DevToolsTickMixin {
         com.craisinlord.fightclub.client.DevSilentGearTest.tick(client);
         com.craisinlord.fightclub.client.DevCompatTest.tick(client);
         com.craisinlord.fightclub.client.DevBackportTest.tick(client);
+        com.craisinlord.fightclub.client.DevLongswordReachTest.tick(client);
+        com.craisinlord.fightclub.client.DevLongswordFpShot.tick(client);
     }
 }

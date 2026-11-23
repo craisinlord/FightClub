@@ -23,6 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class LongswordSpin {
     private static final Map<UUID, Long> SPIN_READY = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_ATTACK = new ConcurrentHashMap<>();
+    private record Reset(long tick, float strength) {}
+    private static final Map<UUID, Reset> LAST_RESET = new ConcurrentHashMap<>();
+    private static final long RESET_GRACE_TICKS = 2;
 
     private LongswordSpin() {}
 
@@ -64,31 +67,34 @@ public final class LongswordSpin {
         level.playSound(null, player.getX(), player.getY(), player.getZ(), CombatSounds.LONGSWORD_SPIN,
                 SoundSource.PLAYERS, 1.0f, 0.95f + level.getRandom().nextFloat() * 0.1f);
 
-        double radius = spec.spinRadius();
-        DamageSource source = player.damageSources().playerAttack(player);
-        boolean hit = false;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(radius, 1.0, radius))) {
-            if (!validTarget(player, target) || horizontalGap(player, target) > radius) continue;
-            if (spec.chargeDamage() > 0.0f && target.hurtServer(level, source, CombatWeapons.chargeDamage(stack, spec))) {
-                EnchantmentHelper.doPostAttackEffects(level, target, source);
-            }
-            if (spec.chargeKnockback() > 0.0f) {
-                CombatPlatform.knockback(target, spec.chargeKnockback(), player.getX() - target.getX(), player.getZ() - target.getZ(), player);
-            }
-            hit = true;
-        }
+        LongswordSwings.startSpin(player, stack);
         double y = smearY(player);
         for (int i = 0; i < 6; i++) {
             double angle = i * Math.PI / 3.0;
             double dx = -Math.sin(angle), dz = Math.cos(angle);
             sendSmear(level, player.getX() + dx * 1.4, y + (i % 2) * 0.04, player.getZ() + dz * 1.4, dx, dz, -0.85);
         }
-        if (hit && !player.getAbilities().instabuild) stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
         int cooldown = spec.spinCooldownTicks();
         if (cooldown > 0) {
             SPIN_READY.put(player.getUUID(), level.getGameTime() + cooldown);
             player.getCooldowns().addCooldown(stack, cooldown);
         }
+    }
+
+    public static void spinHit(Player player, ItemStack stack, LivingEntity target) {
+        WeaponSpec spec = spec(stack);
+        if (spec == null || !(player.level() instanceof ServerLevel level)) return;
+        DamageSource source = player.damageSources().playerAttack(player);
+        if (spec.chargeDamage() > 0.0f && target.hurtServer(level, source, CombatWeapons.chargeDamage(stack, spec))) {
+            EnchantmentHelper.doPostAttackEffects(level, target, source);
+        }
+        if (spec.chargeKnockback() > 0.0f) {
+            CombatPlatform.knockback(target, spec.chargeKnockback(), player.getX() - target.getX(), player.getZ() - target.getZ(), player);
+        }
+    }
+
+    public static void spinLanded(Player player, ItemStack stack) {
+        if (!player.getAbilities().instabuild) stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
     }
 
     public static boolean sweepsArc(Player player) {
@@ -107,39 +113,59 @@ public final class LongswordSpin {
         Long attacked = LAST_ATTACK.remove(player.getUUID());
         if (attacked != null && attacked >= player.level().getGameTime() - 1) return;
         if (!sweepsArc(player) || player.isUsingItem() || CombatRecovery.active(player)) return;
-        float strength = player.getAttackStrengthScale(0.5f);
+        float strength = Math.max(player.getAttackStrengthScale(0.5f), strengthBeforeReset(player));
         if (strength < 0.9f) return;
         arcSweep(player, strength, null);
     }
 
-    public static void arcSweep(Player player, float strength, net.minecraft.world.entity.Entity directTarget) {
-        if (!(player.level() instanceof ServerLevel level)) return;
-        ItemStack stack = player.getMainHandItem();
-        WeaponSpec spec = spec(stack);
-        if (spec == null || !sweepsArc(player)) return;
-        if (directTarget != null) LAST_ATTACK.put(player.getUUID(), level.getGameTime());
+    public static void recordReset(Player player) {
+        if (!(player.level() instanceof ServerLevel level) || !isLongsword(player.getMainHandItem())) return;
+        LAST_RESET.put(player.getUUID(), new Reset(level.getGameTime(), player.getAttackStrengthScale(0.5f)));
+    }
 
-        double range = Math.min(spec.reach(), spec.sweepRadius() + 1.0);
-        float base = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE) * (0.2f + strength * strength * 0.8f);
+    private static float strengthBeforeReset(Player player) {
+        Reset reset = LAST_RESET.get(player.getUUID());
+        if (reset == null || player.level().getGameTime() - reset.tick() > RESET_GRACE_TICKS) return 0.0f;
+        return reset.strength();
+    }
+
+    public static void arcSweep(Player player, float strength, net.minecraft.world.entity.Entity directTarget) {
+        if (directTarget != null || !(player.level() instanceof ServerLevel)) return;
+        if (spec(player.getMainHandItem()) == null || !sweepsArc(player)) return;
+        LongswordSwings.start(player, strength, null);
+    }
+
+    public static void markAttacked(Player player) {
+        LAST_ATTACK.put(player.getUUID(), player.level().getGameTime());
+    }
+
+    public static float arcBase(Player player, float strength) {
+        return (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE) * (0.2f + strength * strength * 0.8f);
+    }
+
+    public static double arcRange(WeaponSpec spec) {
+        return Math.min(spec.reach(), spec.sweepRadius() + 1.0);
+    }
+
+    public static boolean arcHit(Player player, ItemStack stack, LivingEntity target, float base) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
         DamageSource source = player.damageSources().playerAttack(player);
+        float damage = EnchantmentHelper.modifyDamage(level, stack, target, source, base);
+        if (!target.hurtServer(level, source, damage)) return false;
         float yaw = player.getYRot() * Mth.DEG_TO_RAD;
-        boolean hit = false;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(range, 0.5, range))) {
-            if (target == directTarget || !validTarget(player, target) || horizontalGap(player, target) > range
-                    || !CombatVanillaRules.frontal(player, target, spec.sweepAngleDegrees())) continue;
-            float damage = EnchantmentHelper.modifyDamage(level, stack, target, source, base);
-            if (target.hurtServer(level, source, damage)) {
-                CombatPlatform.knockback(target, 0.4, Mth.sin(yaw), -Mth.cos(yaw), player);
-                EnchantmentHelper.doPostAttackEffects(level, target, source);
-                hit = true;
-            }
-        }
-        if (!hit && directTarget == null) return;
+        CombatPlatform.knockback(target, 0.4, Mth.sin(yaw), -Mth.cos(yaw), player);
+        EnchantmentHelper.doPostAttackEffects(level, target, source);
+        return true;
+    }
+
+    public static void arcLanded(Player player, ItemStack stack, boolean punch) {
+        if (!(player.level() instanceof ServerLevel level)) return;
         level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP,
                 player.getSoundSource(), 1.0f, 1.0f);
-        if (directTarget != null) return;
+        if (!punch) return;
+        WeaponSpec spec = spec(stack);
         if (!player.getAbilities().instabuild) stack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
-        if (!onSpinCooldown(player)) CombatRecovery.start(player, spec.recoveryTicks());
+        if (spec != null && !onSpinCooldown(player)) CombatRecovery.start(player, spec.recoveryTicks());
     }
 
     private static double smearY(Player player) {
@@ -150,14 +176,14 @@ public final class LongswordSpin {
         level.sendParticles(CombatParticles.LONGSWORD_SWEEP, x, y, z, 0, dx, size, dz, 1.0);
     }
 
-    private static boolean validTarget(Player player, LivingEntity target) {
+    public static boolean validTarget(Player player, LivingEntity target) {
         if (target == player || !target.isAlive() || player.isAlliedTo(target) || target.isSpectator()) return false;
         if (target instanceof OwnableEntity pet && pet.getOwner() == player) return false;
         if (target instanceof Player other && other.isCreative()) return false;
         return !(target instanceof ArmorStand stand && stand.isMarker());
     }
 
-    private static double horizontalGap(Player player, LivingEntity target) {
+    public static double horizontalGap(Player player, LivingEntity target) {
         if (Math.abs(target.getY() - player.getY()) > 2.0) return Double.MAX_VALUE;
         double dx = target.getX() - player.getX(), dz = target.getZ() - player.getZ();
         return Math.max(0.0, Math.sqrt(dx * dx + dz * dz) - (target.getBbWidth() + player.getBbWidth()) * 0.5);
@@ -166,5 +192,7 @@ public final class LongswordSpin {
     public static void clear(Player player) {
         SPIN_READY.remove(player.getUUID());
         LAST_ATTACK.remove(player.getUUID());
+        LongswordSwings.clear(player);
+        LAST_RESET.remove(player.getUUID());
     }
 }

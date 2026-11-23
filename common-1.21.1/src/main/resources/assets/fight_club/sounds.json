@@ -72,11 +72,13 @@
     ]
   },
   "weapon.sword.block": {
-    "subtitle": "subtitles.fight_club.weapon.sword_block",
+    "subtitle": "subtitles.fight_club.weapon.sword_parry",
     "sounds": [
-      { "name": "minecraft:item/shield/block1", "pitch": 1.45, "volume": 0.7 },
-      { "name": "minecraft:item/shield/block3", "pitch": 1.5, "volume": 0.7 },
-      { "name": "minecraft:random/anvil_land", "pitch": 2.0, "volume": 0.18 }
+      { "name": "fight_club:weapon/sword/parry1" },
+      { "name": "fight_club:weapon/sword/parry2" },
+      { "name": "fight_club:weapon/sword/parry3" },
+      { "name": "fight_club:weapon/sword/parry4" },
+      { "name": "fight_club:weapon/sword/parry5" }
     ]
   },
   "weapon.shield.bash": {
@@ -101,17 +103,29 @@
     ]
   },
   "weapon.dagger.throw": {
-    "subtitle": "subtitles.fight_club.weapon.throw",
+    "subtitle": "subtitles.fight_club.weapon.dagger_throw",
     "sounds": [
-      { "name": "minecraft:item/trident/throw1", "pitch": 1.65, "volume": 0.6 },
-      { "name": "minecraft:item/trident/throw2", "pitch": 1.7, "volume": 0.6 }
+      { "name": "fight_club:weapon/dagger/throw1" },
+      { "name": "fight_club:weapon/dagger/throw2" },
+      { "name": "fight_club:weapon/dagger/throw3" },
+      { "name": "fight_club:weapon/dagger/throw4" }
     ]
   },
   "weapon.spear.throw": {
-    "subtitle": "subtitles.fight_club.weapon.throw",
+    "subtitle": "subtitles.fight_club.weapon.spear_throw",
     "sounds": [
-      { "name": "minecraft:item/trident/throw1", "pitch": 1.1, "volume": 0.9 },
-      { "name": "minecraft:item/trident/throw2", "pitch": 1.15, "volume": 0.9 }
+      { "name": "fight_club:weapon/spear/throw1" },
+      { "name": "fight_club:weapon/spear/throw2" },
+      { "name": "fight_club:weapon/spear/throw3" }
+    ]
+  },
+  "weapon.spear.land": {
+    "subtitle": "subtitles.fight_club.weapon.spear_land",
+    "sounds": [
+      { "name": "fight_club:weapon/spear/land1" },
+      { "name": "fight_club:weapon/spear/land2" },
+      { "name": "fight_club:weapon/spear/land3" },
+      { "name": "fight_club:weapon/spear/land4" }
     ]
   },
   "weapon.projectile.hit": {
@@ -126,6 +140,50 @@
     "sounds": [
       { "name": "minecraft:item/trident/ground_impact1", "pitch": 1.3, "volume": 0.8 },
       { "name": "minecraft:item/trident/ground_impact3", "pitch": 1.25, "volume": 0.8 }
+    ]
+  },
+  "item.spear.use": {
+    "subtitle": "subtitles.fight_club.item.spear.use",
+    "sounds": [
+      { "name": "fight_club:item/spear/use" }
+    ]
+  },
+  "item.spear_wood.use": {
+    "subtitle": "subtitles.fight_club.item.spear_wood.use",
+    "sounds": [
+      { "name": "fight_club:item/spear/wood/use" }
+    ]
+  },
+  "item.spear.attack": {
+    "subtitle": "subtitles.fight_club.item.spear.attack",
+    "sounds": [
+      { "name": "fight_club:item/spear/attack1" },
+      { "name": "fight_club:item/spear/attack2" },
+      { "name": "fight_club:item/spear/attack3" }
+    ]
+  },
+  "item.spear_wood.attack": {
+    "subtitle": "subtitles.fight_club.item.spear_wood.attack",
+    "sounds": [
+      { "name": "fight_club:item/spear/wood/attack1" },
+      { "name": "fight_club:item/spear/wood/attack2" },
+      { "name": "fight_club:item/spear/wood/attack3" }
+    ]
+  },
+  "item.spear.hit": {
+    "subtitle": "subtitles.fight_club.item.spear.hit",
+    "sounds": [
+      { "name": "fight_club:item/spear/hit1" },
+      { "name": "fight_club:item/spear/hit2" },
+      { "name": "fight_club:item/spear/hit3" }
+    ]
+  },
+  "item.spear_wood.hit": {
+    "subtitle": "subtitles.fight_club.item.spear_wood.hit",
+    "sounds": [
+      { "name": "fight_club:item/spear/wood/hit1" },
+      { "name": "fight_club:item/spear/wood/hit2" },
+      { "name": "fight_club:item/spear/wood/hit3" }
     ]
   }
 }

@@ -2,7 +2,6 @@ package com.craisinlord.fightclub.combat;
 
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -16,7 +15,7 @@ public final class KnifeThrowGoal extends Goal {
     private static final int WINDUP_TICKS = 12;
     private static final float MAX_MOB_VELOCITY = 2.2F;
     private final PathfinderMob mob;
-    private DaggerProjectile thrown;
+    private boolean thrown;
     private int windup;
     private int nextThrow;
 
@@ -34,18 +33,19 @@ public final class KnifeThrowGoal extends Goal {
     }
 
     @Override public boolean canContinueToUse() {
-        if (thrown != null) return thrown.isAlive() && mob.getMainHandItem().isEmpty();
+        if (thrown) return false;
         LivingEntity target = mob.getTarget();
         return target != null && target.isAlive() && CombatWeapons.is(mob.getMainHandItem().getItem(), "dagger");
     }
 
     @Override public void start() {
         windup = WINDUP_TICKS;
+        thrown = false;
         mob.getNavigation().stop();
     }
 
     @Override public void stop() {
-        thrown = null;
+        thrown = false;
         mob.getMoveControl().strafe(0.0F, 0.0F);
     }
 
@@ -54,11 +54,7 @@ public final class KnifeThrowGoal extends Goal {
     @Override public void tick() {
         LivingEntity target = mob.getTarget();
         if (target != null) mob.getLookControl().setLookAt(target, 30.0F, 30.0F);
-        if (thrown != null) {
-            if (target != null && mob.distanceToSqr(target) < 36.0D) mob.getMoveControl().strafe(-0.5F, 0.0F);
-            else mob.getMoveControl().strafe(0.0F, 0.0F);
-            return;
-        }
+        if (thrown) return;
         if (target == null || --windup > 0) return;
         try {
             throwAt(target);
@@ -87,8 +83,7 @@ public final class KnifeThrowGoal extends Goal {
         mob.level().addFreshEntity(projectile);
         mob.level().playSound(null, mob, CombatSounds.DAGGER_THROW, SoundSource.HOSTILE, 1.0F, 0.95F + mob.getRandom().nextFloat() * 0.1F);
         mob.swing(InteractionHand.MAIN_HAND);
-        mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
-        thrown = projectile;
+        thrown = true;
         nextThrow = mob.tickCount + 40 + mob.getRandom().nextInt(20);
     }
 }

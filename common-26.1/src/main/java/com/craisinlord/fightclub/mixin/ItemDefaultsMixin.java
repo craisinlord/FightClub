@@ -94,7 +94,8 @@ public abstract class ItemDefaultsMixin {
         projectile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f,
                 spec.throwVelocity(), 1.0f);
         level.addFreshEntity(projectile);
-        level.playSound(null, player, SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
+        if (fightClub$isTrident(item)) level.playSound(null, player, SoundEvents.TRIDENT_THROW.value(), SoundSource.PLAYERS, 1.0f, 1.0f);
+        else level.playSound(null, player, com.craisinlord.fightclub.combat.CombatSounds.SPEAR_THROW, SoundSource.PLAYERS, 1.0f, 0.95f + level.getRandom().nextFloat() * 0.1f);
         if (!player.getAbilities().instabuild) stack.shrink(1);
         CombatRecovery.start(player, spec.recoveryTicks());
         cir.setReturnValue(true);

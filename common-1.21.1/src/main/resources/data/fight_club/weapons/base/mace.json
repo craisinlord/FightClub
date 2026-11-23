@@ -3,7 +3,7 @@
   "material": "base",
   "attack_style": "impact",
   "attack_damage": 7.0,
-  "attack_speed": 0.8,
+  "attack_speed": 0.9,
   "reach": 3.0,
   "sweep_radius": 1.5,
   "sweep_angle_degrees": 110.0,

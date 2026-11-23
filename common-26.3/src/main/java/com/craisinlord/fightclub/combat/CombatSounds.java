@@ -26,6 +26,7 @@ public final class CombatSounds {
     public static final SoundEvent DAGGER_CHARGED_STAB = create("weapon.dagger.charged_stab");
     public static final SoundEvent DAGGER_THROW = create("weapon.dagger.throw");
     public static final SoundEvent SPEAR_THROW = create("weapon.spear.throw");
+    public static final SoundEvent SPEAR_LAND = create("weapon.spear.land");
     public static final SoundEvent PROJECTILE_HIT = create("weapon.projectile.hit");
     public static final SoundEvent PROJECTILE_STICK = create("weapon.projectile.stick");
 

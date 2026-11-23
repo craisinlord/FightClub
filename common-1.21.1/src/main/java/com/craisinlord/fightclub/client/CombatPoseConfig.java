@@ -173,42 +173,42 @@ public class CombatPoseConfig implements ResourceManagerReloadListener {
                 new Vector3f(6.0F, 16.0F, 0.0F), 16.0F, 0.0F, 0.0F, 0.0F));
         DEFAULTS.put(CombatPose.JAB_TRIDENT, new Pose(new Vector3f(-0.26F, 0.24F, 0.0F),
                 new Vector3f(10.0F, 20.0F, 0.0F), 16.0F, 0.0F, 0.0F, 0.0F));
-        DEFAULTS.put(CombatPose.HEAVY_LONGSWORD, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
-                new Key(0.1F, new Vector3f(0.12F, 0.5F, 0.0F), deg(14.0F, -88.0F, -15.0F), "out"),
-                new Key(0.2F, new Vector3f(0.05F, 0.56F, -0.05F), deg(16.0F, -66.0F, -10.0F), "inout"),
-                new Key(0.32F, new Vector3f(-0.21F, 0.6F, -0.11F), deg(19.0F, -34.0F, -5.0F), "linear"),
-                new Key(0.45F, new Vector3f(-0.58F, 0.63F, -0.16F), deg(22.0F, 0.0F, 0.0F), "linear"),
-                new Key(0.58F, new Vector3f(-1.01F, 0.6F, -0.11F), deg(19.0F, 36.0F, 5.0F), "linear"),
-                new Key(0.68F, new Vector3f(-1.29F, 0.56F, -0.05F), deg(16.0F, 66.0F, 10.0F), "linear"),
-                new Key(0.76F, new Vector3f(-1.45F, 0.48F, 0.0F), deg(13.0F, 88.0F, 12.0F), "out"),
-                new Key(0.86F, new Vector3f(-1.05F, -0.5F, 0.02F), deg(-10.0F, 105.0F, 0.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
-        DEFAULTS.put(CombatPose.HEAVY_LONGSWORD_BACK, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
-                new Key(0.07F, new Vector3f(-0.9F, -0.55F, -0.1F), deg(-30.0F, 92.0F, 0.0F), "inout"),
-                new Key(0.15F, new Vector3f(-1.45F, 0.48F, 0.0F), deg(13.0F, 88.0F, 15.0F), "out"),
-                new Key(0.24F, new Vector3f(-1.29F, 0.56F, -0.05F), deg(16.0F, 66.0F, 10.0F), "inout"),
-                new Key(0.36F, new Vector3f(-1.01F, 0.6F, -0.11F), deg(19.0F, 36.0F, 5.0F), "linear"),
-                new Key(0.49F, new Vector3f(-0.58F, 0.63F, -0.16F), deg(22.0F, 0.0F, 0.0F), "linear"),
-                new Key(0.62F, new Vector3f(-0.21F, 0.6F, -0.11F), deg(19.0F, -34.0F, -5.0F), "linear"),
-                new Key(0.72F, new Vector3f(0.05F, 0.56F, -0.05F), deg(16.0F, -66.0F, -10.0F), "linear"),
-                new Key(0.8F, new Vector3f(0.12F, 0.5F, 0.0F), deg(14.0F, -88.0F, -12.0F), "out")), new Vector3f(0.07F, -0.19F, -0.1F)));
+        DEFAULTS.put(CombatPose.HEAVY_LONGSWORD, new Pose(new Vector3f(), deg(85.57F, -140.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
+                new Key(0.1F, new Vector3f(0.18F, 0.27F, -0.01F), deg(14.0F, -88.0F, -15.0F), "out"),
+                new Key(0.2F, new Vector3f(0.11F, 0.3F, -0.06F), deg(16.0F, -66.0F, -10.0F), "inout"),
+                new Key(0.32F, new Vector3f(-0.15F, 0.33F, -0.12F), deg(19.0F, -34.0F, -5.0F), "linear"),
+                new Key(0.45F, new Vector3f(-0.52F, 0.36F, -0.17F), deg(22.0F, 0.0F, 0.0F), "linear"),
+                new Key(0.58F, new Vector3f(-0.95F, 0.38F, -0.12F), deg(19.0F, 36.0F, 5.0F), "linear"),
+                new Key(0.68F, new Vector3f(-1.23F, 0.4F, -0.06F), deg(16.0F, 66.0F, 10.0F), "linear"),
+                new Key(0.76F, new Vector3f(-1.39F, 0.41F, -0.01F), deg(13.0F, 88.0F, 12.0F), "out"),
+                new Key(0.86F, new Vector3f(-0.99F, -0.668F, 0.01F), deg(-10.0F, 105.0F, 0.0F), "inout")), new Vector3f(0.01F, -0.022F, -0.09F)));
+        DEFAULTS.put(CombatPose.HEAVY_LONGSWORD_BACK, new Pose(new Vector3f(), deg(85.57F, -140.0F, -90.0F), 12.0F, 0.0F, 0.0F, 0.0F, List.of(
+                new Key(0.07F, new Vector3f(-0.84F, -0.718F, -0.11F), deg(-30.0F, 92.0F, 0.0F), "inout"),
+                new Key(0.15F, new Vector3f(-1.39F, 0.27F, -0.01F), deg(13.0F, 88.0F, 15.0F), "out"),
+                new Key(0.24F, new Vector3f(-1.23F, 0.3F, -0.06F), deg(16.0F, 66.0F, 10.0F), "inout"),
+                new Key(0.36F, new Vector3f(-0.95F, 0.33F, -0.12F), deg(19.0F, 36.0F, 5.0F), "linear"),
+                new Key(0.49F, new Vector3f(-0.52F, 0.36F, -0.17F), deg(22.0F, 0.0F, 0.0F), "linear"),
+                new Key(0.62F, new Vector3f(-0.15F, 0.38F, -0.12F), deg(19.0F, -34.0F, -5.0F), "linear"),
+                new Key(0.72F, new Vector3f(0.11F, 0.4F, -0.06F), deg(16.0F, -66.0F, -10.0F), "linear"),
+                new Key(0.8F, new Vector3f(0.18F, 0.41F, -0.01F), deg(14.0F, -88.0F, -12.0F), "out")), new Vector3f(0.01F, -0.022F, -0.09F)));
         DEFAULTS.put(CombatPose.HEAVY_MACE, new Pose(new Vector3f(), new Vector3f(), 10.0F, 0.0F, 0.0F, 0.0F, List.of(
                 new Key(0.28F, new Vector3f(0.0F, 0.42F, 0.12F), deg(30.0F, 0.0F, -8.0F), "out"),
                 new Key(0.46F, new Vector3f(-0.3F, -0.12F, -0.06F), deg(-60.0F, 0.0F, 6.0F), "in_cubic"),
                 new Key(0.6F, new Vector3f(-0.29F, -0.15F, -0.05F), deg(-64.0F, 0.0F, 6.0F), "out"))));
-        DEFAULTS.put(CombatPose.LONGSWORD_SPIN_CHARGE, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 8.0F, 2.0F, 0.006F, 0.0F, List.of(
-                new Key(0.5F, new Vector3f(-0.1F, 0.5F, 0.1F), deg(35.0F, -105.0F, -50.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
-        DEFAULTS.put(CombatPose.LONGSWORD_SPIN, new Pose(new Vector3f(), deg(68.57F, -180.0F, -90.0F), 15.0F, 0.0F, 0.0F, 0.0F, List.of(
-                new Key(0.1F, new Vector3f(-0.05F, 0.24F, 0.04F), deg(14.0F, -72.0F, -15.0F), "out"),
-                new Key(0.2F, new Vector3f(-0.15F, 0.23F, -0.01F), deg(10.0F, -55.0F, -10.0F), "inout"),
-                new Key(0.32F, new Vector3f(-0.3F, 0.22F, -0.08F), deg(11.0F, -28.0F, -5.0F), "linear"),
-                new Key(0.45F, new Vector3f(-0.5F, 0.21F, -0.16F), deg(16.0F, 0.0F, 0.0F), "linear"),
-                new Key(0.58F, new Vector3f(-0.7F, 0.22F, -0.08F), deg(11.0F, 30.0F, 5.0F), "linear"),
-                new Key(0.68F, new Vector3f(-0.84F, 0.23F, 0.0F), deg(10.0F, 58.0F, 10.0F), "linear"),
-                new Key(0.76F, new Vector3f(-0.92F, 0.2F, 0.04F), deg(8.0F, 72.0F, 12.0F), "out"),
-                new Key(0.86F, new Vector3f(-0.7F, -0.6F, 0.02F), deg(-10.0F, 95.0F, 0.0F), "inout")), new Vector3f(0.07F, -0.19F, -0.1F)));
+        DEFAULTS.put(CombatPose.LONGSWORD_SPIN_CHARGE, new Pose(new Vector3f(), deg(85.57F, -140.0F, -90.0F), 8.0F, 2.0F, 0.006F, 0.0F, List.of(
+                new Key(0.5F, new Vector3f(-0.04F, 0.332F, 0.09F), deg(35.0F, -105.0F, -50.0F), "inout")), new Vector3f(0.01F, -0.022F, -0.09F)));
+        DEFAULTS.put(CombatPose.LONGSWORD_SPIN, new Pose(new Vector3f(), deg(85.57F, -140.0F, -90.0F), 15.0F, 0.0F, 0.0F, 0.0F, List.of(
+                new Key(0.1F, new Vector3f(0.01F, 0.072F, 0.03F), deg(14.0F, -72.0F, -15.0F), "out"),
+                new Key(0.2F, new Vector3f(-0.09F, 0.062F, -0.02F), deg(10.0F, -55.0F, -10.0F), "inout"),
+                new Key(0.32F, new Vector3f(-0.24F, 0.052F, -0.09F), deg(11.0F, -28.0F, -5.0F), "linear"),
+                new Key(0.45F, new Vector3f(-0.44F, 0.042F, -0.17F), deg(16.0F, 0.0F, 0.0F), "linear"),
+                new Key(0.58F, new Vector3f(-0.64F, 0.052F, -0.09F), deg(11.0F, 30.0F, 5.0F), "linear"),
+                new Key(0.68F, new Vector3f(-0.78F, 0.062F, -0.01F), deg(10.0F, 58.0F, 10.0F), "linear"),
+                new Key(0.76F, new Vector3f(-0.86F, 0.032F, 0.03F), deg(8.0F, 72.0F, 12.0F), "out"),
+                new Key(0.86F, new Vector3f(-0.64F, -0.768F, 0.01F), deg(-10.0F, 95.0F, 0.0F), "inout")), new Vector3f(0.01F, -0.022F, -0.09F)));
         poses = new EnumMap<>(DEFAULTS);
 
-        ARM_DEFAULTS.put(CombatPose.SWORD_BLOCK, new ArmPose(deg(-75.0F, -35.0F, 0.0F), null, 0.3F, 0.3F, deg(0.0F, 30.0F, 60.0F)));
+        ARM_DEFAULTS.put(CombatPose.SWORD_BLOCK, new ArmPose(deg(-54.0F, -30.0F, 0.0F), null, 0.3F, 0.3F, deg(10.0F, 60.0F, 50.0F)));
         ARM_DEFAULTS.put(CombatPose.SPEAR_LOWERED, new ArmPose(deg(-20.0F, 5.0F, 0.0F), deg(-45.0F, 35.0F, 0.0F), 0.6F, 0.5F));
         ARM_DEFAULTS.put(CombatPose.TRIDENT_LOWERED, new ArmPose(deg(-5.0F, 5.0F, 0.0F), deg(-45.0F, 35.0F, 0.0F), 0.6F, 0.5F));
         ARM_DEFAULTS.put(CombatPose.DAGGER_CHARGE, new ArmPose(deg(55.0F, 25.0F, 20.0F), null, 0.3F, 0.3F));

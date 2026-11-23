@@ -31,10 +31,7 @@ public abstract class ItemInHandLayerMixin {
                                       PoseStack poseStack, MultiBufferSource buffer, int light, CallbackInfo ci) {
         com.craisinlord.fightclub.client.CombatThirdPerson.ItemTurn turn = com.craisinlord.fightclub.client.CombatThirdPerson.itemTurn(entity, arm,
                 Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true));
-        if (turn != null) {
-            if (turn.atFist()) poseStack.rotateAround(turn.rotation(), 0.0F, com.craisinlord.fightclub.client.CombatThirdPerson.FIST_PIVOT, 0.0F);
-            else poseStack.mulPose(turn.rotation());
-        }
+        if (turn != null) poseStack.rotateAround(turn.rotation(), turn.pivot().x(), turn.pivot().y(), turn.pivot().z());
         if (!(entity instanceof Player player) || !CombatConfig.enabled(CombatConfig.ANIMATIONS)) return;
         WeaponKind kind = WeaponKind.of(stack);
         if (kind == WeaponKind.DAGGER && player.isUsingItem() && player.getUseItem() == stack

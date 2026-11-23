@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "com.craisinlord.fightclub.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["AnvilMenuMixin", "LivingEntityAccessor", "ItemDefaultsMixin", "ItemStackModifiersMixin", "LivingEntityCompatDamageMixin", "ItemStackBackportSpearMixin", "MobBackportSpearMixin", "LivingEntitySwingMixin", "ShieldItemMixin", "MaceSweepMixin", "ShieldAngleMixin", "SwordSweepMixin", "ThrownTridentMixin", "TridentItemMixin", "DaggerChargeImmunityMixin", "WeaponEnchantableMixin", "LongswordSweepMixin", "ZombieWeaponsMixin", "SkeletonKnifeMixin", "RecipeManagerReplacedMixin"],
+  "mixins": ["AttackTickerAccessor", "ThrowablePotionItemMixin", "PlayerAttackDelayMixin", "AnvilMenuMixin", "LivingEntityAccessor", "ItemDefaultsMixin", "ItemStackModifiersMixin", "LivingEntityCompatDamageMixin", "ItemStackBackportSpearMixin", "MobBackportSpearMixin", "LivingEntitySwingMixin", "ShieldItemMixin", "MaceSweepMixin", "ShieldAngleMixin", "SwordSweepMixin", "ThrownTridentMixin", "TridentItemMixin", "DaggerChargeImmunityMixin", "WeaponEnchantableMixin", "LongswordSweepMixin", "ZombieWeaponsMixin", "MobLongswordReachMixin", "SkeletonKnifeMixin", "RecipeManagerReplacedMixin"],
   "client": ["AnvilScreenMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemRendererModelMixin", "MinecraftAccessor", "MinecraftInputMixin", "PlayerRendererSpinMixin", "PounceFovMixin", "PounceOutlineMixin"],
   "plugin": "com.craisinlord.fightclub.FightClubMixinPlugin",
   "injectors": {"defaultRequire": 1}

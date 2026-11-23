@@ -10,7 +10,7 @@
   "thrust_width": 0,
   "penetration_count": 0,
   "critical_hits": false,
-  "offhand_speed_multiplier": 0.75,
+  "offhand_speed_multiplier": 0.65,
   "charge_ticks": 26,
   "charge_damage": 7.8,
   "charge_knockback": 1,

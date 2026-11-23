@@ -9,8 +9,9 @@ public enum WeaponKind {
 
     public static WeaponKind of(ItemStack stack) {
         if (stack.isEmpty()) return NONE;
-        if (CombatWeapons.isCombatWeapon(stack.getItem())) {
-            return switch (CombatWeapons.weapon(stack.getItem())) {
+        String weapon = CombatWeapons.weapon(stack.getItem());
+        if (weapon != null) {
+            return switch (weapon) {
                 case "longsword" -> LONGSWORD;
                 case "spear" -> SPEAR;
                 case "dagger" -> DAGGER;
