@@ -79,7 +79,8 @@ public final class CombatVanillaRules {
     }
 
     public static boolean swordBlocks(Player defender, Entity attacker) {
-        if (!defender.isUsingItem() || !isSword(defender.getUseItem()) || !(attacker instanceof LivingEntity)) return false;
+        if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SWORD_BLOCKING)
+                || !defender.isUsingItem() || !isSword(defender.getUseItem()) || !(attacker instanceof LivingEntity)) return false;
         WeaponSpec spec = swordSpec(defender.getUseItem());
         return spec != null && spec.blocking() && frontal(defender, attacker, spec.blockingAngleDegrees());
     }

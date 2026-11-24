@@ -40,6 +40,7 @@ public final class CombatConfig {
     public static final String ANIMATIONS = option("client", "animations", true, false, false, "Fight Club's weapon poses and attack animations (first and third person).");
     public static final String SWING_SOUNDS = option("client", "swing_sounds", true, false, false, "Swing whooshes for swords, daggers, longswords, axes, maces, spears and tridents (off with Better Combat, which has its own).");
     public static final String CHARGE_INDICATOR = option("client", "charge_indicator", true, false, false, "Show charge progress on the attack indicator while holding a charge.");
+    public static final String OFFHAND_PLACING = option("client", "offhand_placing", true, false, false, "Out of combat, right-clicking a block with a sword, longsword, spear or dagger places the block in your offhand (torches etc.) first; keep holding to use the weapon. Add more items with the fight_club:offhand_priority item tag.");
     public static final String POUNCE_OUTLINE = option("client", "pounce_outline", true, false, false, "Outline the mob a charged dagger will pounce on.");
     public static final String POUNCE_FOV = option("client", "pounce_fov", true, false, false, "Narrow the view when a dagger pounce is ready and widen it during the dash (scaled by FOV Effects).");
 

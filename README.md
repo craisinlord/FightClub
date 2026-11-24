@@ -81,6 +81,7 @@ On a server, the server's `[gameplay]` and `[vanilla]` values are sent to every 
 | `client` | `animations` | `true` | Fight Club's weapon poses and attack animations. |
 | `client` | `swing_sounds` | `true` | Swing whooshes for swords, daggers, longswords, axes, maces, spears and tridents. Always off with Better Combat, which has its own. |
 | `client` | `charge_indicator` | `true` | Show charge progress on the attack indicator. |
+| `client` | `offhand_placing` | `true` | Out of combat, right-clicking a block with a sword, longsword, spear or dagger places the block in your offhand first (torches and other blocks, plus anything in the `fight_club:offhand_priority` item tag). Keep holding to use the weapon. |
 | `client` | `pounce_outline` | `true` | Outline the mob a charged dagger will pounce on. |
 | `client` | `pounce_fov` | `true` | Narrow the view when a pounce is ready and widen it during the dash (scaled by FOV Effects). |
 

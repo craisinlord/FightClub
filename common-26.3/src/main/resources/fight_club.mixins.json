@@ -4,6 +4,6 @@
   "package": "com.craisinlord.fightclub.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": ["AttackTickerAccessor", "ThrowablePotionItemMixin", "PlayerAttackDelayMixin", "ItemDefaultsMixin", "RecipeMapReplacedMixin", "RecipeMapAccessor", "ReloadableServerResourcesCaptureMixin", "SpearReachMixin", "ItemStackModifiersMixin", "LivingEntitySwingMixin", "MaceHitStreakMixin", "TridentItemMixin", "DaggerChargeImmunityMixin", "PlayerCritMixin", "WeaponEnchantableMixin", "LongswordSweepMixin", "ZombieWeaponsMixin", "MobLongswordReachMixin", "SkeletonKnifeMixin", "ItemStackWeaponItemsMixin", "ServerPunchSweepMixin"],
-  "client": ["AvatarRendererArmPoseMixin", "ItemModelResolverReferenceMixin", "ItemStackRenderStateAccessor", "LayerRenderStateAccessor", "AvatarRendererSpinMixin", "FirstPersonHandsSwapMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemTransformSpinMixin", "MinecraftAccessor", "MinecraftInputMixin", "PounceFovMixin", "PounceOutlineMixin"],
+  "client": ["AvatarRendererArmPoseMixin", "ItemModelResolverReferenceMixin", "ItemStackRenderStateAccessor", "LayerRenderStateAccessor", "AvatarRendererSpinMixin", "FirstPersonHandsSwapMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemTransformSpinMixin", "LivingEntityDamageEventMixin", "MinecraftAccessor", "MinecraftInputMixin", "PounceFovMixin", "PounceOutlineMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -115,6 +115,7 @@ public abstract class ItemDefaultsMixin {
     }
 
     private static boolean fightClub$isVanillaSword(Item item) {
+        if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.SWORD_BLOCKING)) return false;
         if (com.craisinlord.fightclub.combat.CombatWeapons.external(item) != null) return false;
         return item == Items.WOODEN_SWORD || item == Items.STONE_SWORD || item == Items.COPPER_SWORD
                 || item == Items.IRON_SWORD || item == Items.GOLDEN_SWORD || item == Items.DIAMOND_SWORD
