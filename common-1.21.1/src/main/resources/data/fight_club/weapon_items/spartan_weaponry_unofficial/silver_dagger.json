@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "silver",
+  "spec": {
+    "attack_damage": 4.0
+  },
+  "items": [
+    "spartan_weaponry_unofficial:silver_dagger"
+  ]
+}

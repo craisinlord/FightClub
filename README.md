@@ -81,6 +81,7 @@ On a server, the server's `[gameplay]` and `[vanilla]` values are sent to every 
 | `client` | `animations` | `true` | Fight Club's weapon poses and attack animations. |
 | `client` | `swing_sounds` | `true` | Swing whooshes for swords, daggers, longswords, axes, maces, spears and tridents. Always off with Better Combat, which has its own. |
 | `client` | `charge_indicator` | `true` | Show charge progress on the attack indicator. |
+| `client` | `offhand_placing` | `true` | Out of combat, right-clicking a block with a sword, longsword, spear or dagger places the block in your offhand first (torches and other blocks, plus anything in the `fight_club:offhand_priority` item tag). Keep holding to use the weapon. |
 | `client` | `pounce_outline` | `true` | Outline the mob a charged dagger will pounce on. |
 | `client` | `pounce_fov` | `true` | Narrow the view when a pounce is ready and widen it during the dash (scaled by FOV Effects). |
 
@@ -166,7 +167,7 @@ A datapack can give another mod's item a Fight Club weapon's moves, with no code
 | `items` | required | Item ids, or item tags starting with `#`. Ids of mods that aren't installed are skipped, so one file can cover optional mods |
 | `right_click` | `true` | Right click throws daggers and spears and charges the longsword spin. Set it to `false` for items that already do something on right click; they keep that and still get the left-click moves |
 | `spec_stats` | `false` | Replace the item's own attack damage and speed with the spec's. By default the item keeps its own, and the spec supplies everything else (reach, sweeps, charges, throws, recovery) |
-| `spec` | none | Spec fields that differ from the material's spec, such as `charge_damage` or `throw_damage`. The items get their own copy of the spec with these fields replaced, so each weapon's ability damage can be tuned on its own |
+| `spec` | none | Spec fields that differ from the material's spec, such as `charge_damage` or `throw_damage`. The items get their own copy of the spec with these fields replaced, so each weapon's ability damage can be tuned on its own. Setting `attack_damage` to the item's own damage makes its abilities hit exactly as hard as the material's Fight Club weapon |
 | `replaces` | none | Fight Club items these items take the place of: a list of materials such as `["iron", "gold"]`, or `"all"` for wood through netherite. When one of the listed item ids is installed, Fight Club's `<material>_<weapon>` items lose their recipes and leave the creative tab, JEI and mob spawns. Existing ones keep working. The `hide_replaced_weapons` config option turns this off |
 
 For example, a dagger that keeps its own hit damage but pounces for 18 and throws for 9:
@@ -275,7 +276,7 @@ Fight Club works alongside other weapon mods instead of competing with them. Whe
 
 ### For modpack developers
 
-Every mapping is an ordinary [weapon item file](#other-mods-items) inside Fight Club's jar, at `data/fight_club/weapon_items/<mod>/<weapon>.json`. A datapack file at the same path replaces it, and changes apply on `/reload`.
+Every mapping is an ordinary [weapon item file](#other-mods-items) inside Fight Club's jar, at `data/fight_club/weapon_items/<mod>/<weapon>.json`, or one file per item for daggers with fixed damage, such as `simplyswords/iron_sai.json`. A datapack file at the same path replaces it, and changes apply on `/reload`.
 
 | To | Do this |
 | --- | --- |
@@ -327,7 +328,9 @@ When Simply Swords is installed, its iron, gold, diamond and netherite weapons g
 | Spear | Spear: charge, thrust and throw (replaces Simply Swords' instant throw) |
 | Cutlass, rapier | Sword: block |
 
-Fight Club's iron, gold, diamond and netherite daggers, longswords and spears are hidden; wood, stone and copper stay, since Simply Swords has none. Runic and unique weapons, scythes, warglaives, chakrams, greataxes and greathammers are left to Simply Swords, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/simplyswords/`.
+Fight Club's iron, gold, diamond and netherite daggers, longswords and spears are hidden; wood, stone and copper stay, since Simply Swords has none. Runic and unique weapons, scythes, warglaives, chakrams, greataxes and greathammers are left to Simply Swords, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/simplyswords/`, with one file per sai.
+
+A sai pounces and throws exactly as hard as the Fight Club dagger of the same material: an iron sai pounces for 11.2 and throws for 5.6.
 
 ### Spartan Weaponry
 
@@ -342,13 +345,17 @@ Spartan Weaponry has no official 1.21.1 release, so Fight Club supports both por
 
 Spartan's passive traits (two-handed, armor piercing, backstab and the rest) still apply. Reach doesn't add up: a weapon whose reach trait already gives it more reach than Fight Club would keeps its own, so a pike reaches further than a Fight Club spear. Fight Club's wood through netherite daggers, longswords and spears are hidden. Parrying daggers, lances, scythes, blunt weapons, axes, throwing weapons and ranged weapons are left to Spartan, along with its own Better Combat animations. The mappings are under `data/fight_club/weapon_items/spartanweaponry/` and `data/fight_club/weapon_items/spartan_weaponry_unofficial/`.
 
+A dagger pounces and throws exactly as hard as the Fight Club dagger of the same material, and has its own mapping file. Daggers in materials Fight Club has no dagger for scale from Spartan's iron dagger: one that hits for 4.5, such as bronze, pounces for 11.2, and steel, at 5, for about 12.4.
+
 ### Farmer's Delight
 
 When Farmer's Delight (NeoForge) or Farmer's Delight Refabricated (Fabric) is installed, its knives become Fight Club daggers: they pounce and throw, and keep their own damage, look and kitchen uses. Cutting boards and harvesting with a knife work as before, since right-clicking a block still goes to the block first; right-clicking the air throws the knife.
 
 Every knife in Farmer's Delight's `farmersdelight:tools/knives` tag is mapped, so knives from Farmer's Delight add-ons that use the tag become daggers too.
 
-Only the daggers Farmer's Delight has its own knife for are hidden: iron, gold, diamond and netherite, plus copper on 26.x where Farmer's Delight has a copper knife. Fight Club's wood, stone and copper daggers (on 1.21.1) and every dagger from [Extra weapon materials](#extra-weapon-materials), such as ultimate or dragonsteel, stay craftable, and add-on knives don't hide anything. The flint knife doesn't hide Fight Club's stone dagger. The mapping is `data/fight_club/weapon_items/farmersdelight/dagger.json`.
+Pounces and throws hit exactly as hard as the Fight Club dagger of the same material (flint matches stone): an iron knife pounces for 11.2 and throws for 5.6, like the iron dagger. Add-on knives scale from the iron knife, so one that hits for 3.5 also pounces for 11.2.
+
+Only the daggers Farmer's Delight has its own knife for are hidden: iron, gold, diamond and netherite, plus copper on 26.x where Farmer's Delight has a copper knife. Fight Club's wood, stone and copper daggers (on 1.21.1) and every dagger from [Extra weapon materials](#extra-weapon-materials), such as ultimate or dragonsteel, stay craftable, and add-on knives don't hide anything. The flint knife doesn't hide Fight Club's stone dagger. The mappings are under `data/fight_club/weapon_items/farmersdelight/`: one file per knife, and `dagger.json` for the tag. Each file's `spec` sets `attack_damage` to the knife's own damage, which is the point where its abilities match the dagger's.
 
 ## Java API
 

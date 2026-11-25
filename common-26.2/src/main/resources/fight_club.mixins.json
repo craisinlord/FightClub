@@ -4,6 +4,6 @@
   "package": "com.craisinlord.fightclub.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": ["AttackTickerAccessor", "ThrowablePotionItemMixin", "PlayerAttackDelayMixin", "ItemDefaultsMixin", "RecipeManagerReplacedMixin", "SpearReachMixin", "ItemStackModifiersMixin", "LivingEntitySwingMixin", "MaceHitStreakMixin", "TridentItemMixin", "DaggerChargeImmunityMixin", "PlayerCritMixin", "WeaponEnchantableMixin", "LongswordSweepMixin", "ZombieWeaponsMixin", "MobLongswordReachMixin", "SkeletonKnifeMixin", "ItemStackWeaponItemsMixin"],
-  "client": ["AvatarRendererArmPoseMixin", "ItemModelResolverReferenceMixin", "ItemStackRenderStateAccessor", "LayerRenderStateAccessor", "AvatarRendererSpinMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemTransformSpinMixin", "LivingEntityAccessor", "MinecraftAccessor", "MinecraftInputMixin", "PounceFovMixin", "PounceOutlineMixin"],
+  "client": ["AvatarRendererArmPoseMixin", "ItemModelResolverReferenceMixin", "ItemStackRenderStateAccessor", "LayerRenderStateAccessor", "AvatarRendererSpinMixin", "GuiChargeIndicatorMixin", "HumanoidModelPoseMixin", "ItemInHandLayerMixin", "ItemInHandRendererMixin", "ItemTransformSpinMixin", "LivingEntityAccessor", "LivingEntityDamageEventMixin", "MinecraftAccessor", "MinecraftInputMixin", "PounceFovMixin", "PounceOutlineMixin"],
   "injectors": {"defaultRequire": 1}
 }

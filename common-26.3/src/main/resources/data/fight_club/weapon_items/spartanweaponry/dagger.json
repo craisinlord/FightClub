@@ -1,9 +1,10 @@
 {
   "weapon": "dagger",
   "material": "iron",
+  "spec": {
+    "attack_damage": 4.5
+  },
   "items": [
-    "#spartanweaponry:daggers",
-    "spartanweaponry:iron_dagger"
-  ],
-  "replaces": "all"
+    "#spartanweaponry:daggers"
+  ]
 }

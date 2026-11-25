@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "electrum",
+  "spec": {
+    "attack_damage": 4.5
+  },
+  "items": [
+    "spartanweaponry:electrum_dagger"
+  ]
+}

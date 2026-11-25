@@ -1,0 +1,13 @@
+{
+  "weapon": "dagger",
+  "material": "gold",
+  "spec": {
+    "attack_damage": 1.5
+  },
+  "items": [
+    "farmersdelight:golden_knife"
+  ],
+  "replaces": [
+    "gold"
+  ]
+}

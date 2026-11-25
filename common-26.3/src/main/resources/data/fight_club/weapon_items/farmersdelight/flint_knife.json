@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "stone",
+  "spec": {
+    "attack_damage": 2.5
+  },
+  "items": [
+    "farmersdelight:flint_knife"
+  ]
+}

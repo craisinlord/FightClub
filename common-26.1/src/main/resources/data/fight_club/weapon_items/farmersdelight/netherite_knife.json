@@ -1,0 +1,13 @@
+{
+  "weapon": "dagger",
+  "material": "netherite",
+  "spec": {
+    "attack_damage": 5.5
+  },
+  "items": [
+    "farmersdelight:netherite_knife"
+  ],
+  "replaces": [
+    "netherite"
+  ]
+}

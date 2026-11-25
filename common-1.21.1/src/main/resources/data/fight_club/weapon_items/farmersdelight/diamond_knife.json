@@ -1,0 +1,13 @@
+{
+  "weapon": "dagger",
+  "material": "diamond",
+  "spec": {
+    "attack_damage": 4.5
+  },
+  "items": [
+    "farmersdelight:diamond_knife"
+  ],
+  "replaces": [
+    "diamond"
+  ]
+}

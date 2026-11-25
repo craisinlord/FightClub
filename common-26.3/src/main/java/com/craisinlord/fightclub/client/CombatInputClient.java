@@ -205,6 +205,7 @@ public final class CombatInputClient {
         } else {
             holdTicks = 0;
         }
+        OffhandPlacing.tick(client);
         PounceClient.tick(player);
         LongswordSpinClient.tick(player);
         CombatClientPoses.tick(client);
@@ -268,6 +269,7 @@ public final class CombatInputClient {
         chargeItem = null;
         holdTicks = 0;
         lockTarget = null;
+        OffhandPlacing.reset();
         PounceClient.reset();
         CombatClientPoses.clear();
     }

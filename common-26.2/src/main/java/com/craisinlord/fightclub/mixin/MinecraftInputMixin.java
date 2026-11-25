@@ -69,6 +69,13 @@ public abstract class MinecraftInputMixin {
         if (CombatInputClient.isCharging()) ci.cancel();
     }
 
+    @Inject(method = "startUseItem", cancellable = true, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;useItem(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResult;"))
+    private void fightClub$offhandBeforeWeapon(CallbackInfo ci, @com.llamalad7.mixinextras.sugar.Local net.minecraft.world.InteractionHand hand) {
+        if (hand == net.minecraft.world.InteractionHand.MAIN_HAND
+                && com.craisinlord.fightclub.client.OffhandPlacing.tryPlace((Minecraft) (Object) this)) ci.cancel();
+    }
+
     @Redirect(method = "handleKeybinds", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/multiplayer/MultiPlayerGameMode;releaseUsingItem(Lnet/minecraft/world/entity/player/Player;)V"))
     private void fightClub$keepSpearCharge(MultiPlayerGameMode gameMode, Player player) {

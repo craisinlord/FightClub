@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "gold",
+  "spec": {
+    "attack_damage": 2.5
+  },
+  "items": [
+    "spartanweaponry:golden_dagger"
+  ]
+}

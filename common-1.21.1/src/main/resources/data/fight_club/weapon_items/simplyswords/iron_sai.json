@@ -1,0 +1,13 @@
+{
+  "weapon": "dagger",
+  "material": "iron",
+  "spec": {
+    "attack_damage": 3.0
+  },
+  "items": [
+    "simplyswords:iron_sai"
+  ],
+  "replaces": [
+    "iron"
+  ]
+}

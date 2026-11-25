@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "copper",
+  "spec": {
+    "attack_damage": 4.0
+  },
+  "items": [
+    "spartan_weaponry_unofficial:copper_dagger"
+  ]
+}

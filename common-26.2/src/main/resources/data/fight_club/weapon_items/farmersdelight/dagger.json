@@ -1,20 +1,10 @@
 {
   "weapon": "dagger",
   "material": "iron",
+  "spec": {
+    "attack_damage": 3.5
+  },
   "items": [
-    "#farmersdelight:tools/knives",
-    "farmersdelight:flint_knife",
-    "farmersdelight:copper_knife",
-    "farmersdelight:iron_knife",
-    "farmersdelight:golden_knife",
-    "farmersdelight:diamond_knife",
-    "farmersdelight:netherite_knife"
-  ],
-  "replaces": [
-    "copper",
-    "iron",
-    "gold",
-    "diamond",
-    "netherite"
+    "#farmersdelight:tools/knives"
   ]
 }

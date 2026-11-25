@@ -1,0 +1,13 @@
+{
+  "weapon": "dagger",
+  "material": "gold",
+  "spec": {
+    "attack_damage": 1.0
+  },
+  "items": [
+    "simplyswords:gold_sai"
+  ],
+  "replaces": [
+    "gold"
+  ]
+}

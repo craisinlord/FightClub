@@ -1,0 +1,10 @@
+{
+  "weapon": "dagger",
+  "material": "diamond",
+  "spec": {
+    "attack_damage": 5.5
+  },
+  "items": [
+    "spartan_weaponry_unofficial:diamond_dagger"
+  ]
+}
