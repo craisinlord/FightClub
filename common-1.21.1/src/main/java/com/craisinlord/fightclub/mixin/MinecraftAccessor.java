@@ -8,4 +8,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 public interface MinecraftAccessor {
     @Invoker("startAttack")
     boolean fightClub$startAttack();
+
+    @Invoker("startUseItem")
+    void fightClub$startUseItem();
 }

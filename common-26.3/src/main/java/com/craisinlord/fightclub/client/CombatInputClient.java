@@ -30,6 +30,8 @@ public final class CombatInputClient {
     private static boolean readyPlayed;
     private static LivingEntity lockTarget;
     private static boolean waitForRelease;
+    private static boolean useKeyCharge;
+    private static boolean replayingUse;
     private static long bashReadyTick;
     private static int bashLockTicks;
 
@@ -48,21 +50,51 @@ public final class CombatInputClient {
         return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
     }
 
+    public static boolean chargesWithUse(ItemStack stack) {
+        String weapon = CombatWeapons.weapon(stack.getItem());
+        return ("spear".equals(weapon) || "dagger".equals(weapon)) && !CombatConfig.throwing(weapon);
+    }
+
+    private static net.minecraft.client.KeyMapping chargeKey(Minecraft client) {
+        return useKeyCharge ? client.options.keyUse : client.options.keyAttack;
+    }
+
+    private static boolean chargeKeyDown(Minecraft client) {
+        return client.gui.screen() == null && chargeKey(client).isDown();
+    }
+
+    private static void endTap(Minecraft client, LocalPlayer player) {
+        if (useKeyCharge) replayUse(client);
+        else queueTap(client, player);
+    }
+
+    private static void replayUse(Minecraft client) {
+        replayingUse = true;
+        try {
+            ((com.craisinlord.fightclub.mixin.MinecraftAccessor) client).fightClub$startUseItem();
+        } finally {
+            replayingUse = false;
+        }
+    }
+
     public static void beforeKeybinds(Minecraft client) {
         LocalPlayer player = client.player;
         if (player == null || !holdCharge(player.getMainHandItem())) return;
-        var attackKey = client.options.keyAttack;
         if (charging || pendingTap || waitForRelease) {
-            while (attackKey.consumeClick()) {}
+            var heldKey = chargeKey(client);
+            while (heldKey.consumeClick()) {}
             return;
         }
         if (player.isUsingItem() || player.isSpectator() || PounceClient.active()) return;
         if (client.hitResult != null && client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
                 && !player.getMainHandItem().has(net.minecraft.core.component.DataComponents.PIERCING_WEAPON)) return;
+        boolean useKey = chargesWithUse(player.getMainHandItem());
+        var key = useKey ? client.options.keyUse : client.options.keyAttack;
         boolean clicked = false;
-        while (attackKey.consumeClick()) clicked = true;
+        while (key.consumeClick()) clicked = true;
         if (!clicked) return;
         clearTapBuffer();
+        useKeyCharge = useKey;
         pendingTap = true;
         pendingItem = player.getMainHandItem().getItem();
         holdTicks = 0;
@@ -153,9 +185,10 @@ public final class CombatInputClient {
             return;
         }
         ItemStack stack = player.getMainHandItem();
-        boolean down = client.gui.screen() == null && client.options.keyAttack.isDown();
-        boolean pressed = down && !wasDown;
-        wasDown = down;
+        boolean attackDown = client.gui.screen() == null && client.options.keyAttack.isDown();
+        boolean pressed = attackDown && !wasDown;
+        wasDown = attackDown;
+        boolean down = chargeKeyDown(client);
 
         if (pressed && CombatConfig.enabled(CombatConfig.SHIELD_BASH) && player.isUsingItem() && CombatVanillaRules.isShield(player.getUseItem())
                 && client.level.getGameTime() >= bashReadyTick) {
@@ -186,7 +219,7 @@ public final class CombatInputClient {
                 LivingEntity pounce = released && dagger ? lockTarget : null;
                 stopCharging(pounce == null ? -1 : pounce.getId());
                 if (pounce != null) PounceClient.start(player, pounce);
-                else if (letGo && dagger) queueTap(client, player);
+                else if (letGo && dagger && !useKeyCharge) queueTap(client, player);
                 lockTarget = null;
             }
         } else if (waitForRelease) {
@@ -197,7 +230,7 @@ public final class CombatInputClient {
                 endPending();
             } else if (!down) {
                 endPending();
-                queueTap(client, player);
+                endTap(client, player);
             } else if (++holdTicks >= HOLD_THRESHOLD_TICKS && !player.getCooldowns().isOnCooldown(stack)) {
                 endPending();
                 startCharging(client, player, stack);
@@ -222,7 +255,9 @@ public final class CombatInputClient {
         return charging && lockTarget != null && chargeProgress(client, 0.0F) >= 1.0F;
     }
 
-    public static boolean blocksAttack() { return isCharging() || pendingTap || waitForRelease || PounceClient.active(); }
+    public static boolean blocksAttack() { return isCharging() || (!useKeyCharge && (pendingTap || waitForRelease)) || PounceClient.active(); }
+
+    public static boolean blocksUse() { return !replayingUse && (isCharging() || (useKeyCharge && (pendingTap || waitForRelease))); }
 
     private static void startCharging(Minecraft client, LocalPlayer player, ItemStack stack) {
         charging = true;
@@ -262,6 +297,7 @@ public final class CombatInputClient {
         endPending();
         clearTapBuffer();
         waitForRelease = false;
+        useKeyCharge = false;
         wasDown = false;
         bashReadyTick = 0;
         bashLockTicks = 0;

@@ -30,7 +30,34 @@ public final class CombatWeapons {
     }
 
     public static boolean registersOwn(String material, String weapon) {
+        if (material.equals("copper") && !backportSpears()) return false;
         return !weapon.equals("spear") || !backportSpears() || !BACKPORT_SPEAR_MATERIALS.contains(material);
+    }
+
+    public static boolean isHidden(Item item) {
+        return ExternalWeapons.isReplaced(item) || copperDisabled(item);
+    }
+
+    public static java.util.Set<Item> hiddenItems() {
+        java.util.Set<Item> hidden = new java.util.HashSet<>(ExternalWeapons.replacedItems());
+        hidden.addAll(disabledCopperItems());
+        return hidden;
+    }
+
+    public static java.util.Set<Item> disabledCopperItems() {
+        java.util.Set<Item> disabled = new java.util.HashSet<>();
+        if (backportSpears() && !com.craisinlord.fightclub.compat.VanillaBackportCompat.copperToolset()) {
+            for (Item item : BuiltInRegistries.ITEM) if (copperWeapon(item)) disabled.add(item);
+        }
+        return disabled;
+    }
+
+    private static boolean copperDisabled(Item item) {
+        return copperWeapon(item) && !com.craisinlord.fightclub.compat.VanillaBackportCompat.copperToolset();
+    }
+
+    private static boolean copperWeapon(Item item) {
+        return item instanceof CombatWeaponItem weapon && weapon.combatMaterial().equals("copper");
     }
 
     public static boolean isCombatWeapon(Item item) {

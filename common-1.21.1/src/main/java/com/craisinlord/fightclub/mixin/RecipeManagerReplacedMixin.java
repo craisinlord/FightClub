@@ -27,9 +27,11 @@ public abstract class RecipeManagerReplacedMixin {
 
     @Inject(method = "apply(Ljava/util/Map;Lnet/minecraft/server/packs/resources/ResourceManager;Lnet/minecraft/util/profiling/ProfilerFiller;)V", at = @At("TAIL"))
     private void fightClub$dropReplacedRecipes(Map<ResourceLocation, JsonElement> map, ResourceManager manager, ProfilerFiller profiler, CallbackInfo ci) {
-        if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.HIDE_REPLACED)) return;
-        if (!com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.HIDE_REPLACED)) return;
-        Set<Item> replaced = ExternalWeapons.replacedIn(ExternalWeapons.readRaw(manager));
+        Set<Item> replaced = new java.util.HashSet<>();
+        if (com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.HIDE_REPLACED)) {
+            replaced.addAll(ExternalWeapons.replacedIn(ExternalWeapons.readRaw(manager)));
+        }
+        replaced.addAll(com.craisinlord.fightclub.combat.CombatWeapons.disabledCopperItems());
         if (replaced.isEmpty()) return;
         RecipeManager self = (RecipeManager) (Object) this;
         List<RecipeHolder<?>> kept = new ArrayList<>();
@@ -47,6 +49,6 @@ public abstract class RecipeManagerReplacedMixin {
         }
         if (dropped == 0) return;
         self.replaceRecipes(kept);
-        com.craisinlord.fightclub.FightClub.LOGGER.info("Fight Club: disabled {} recipes for weapons replaced by other mods", dropped);
+        com.craisinlord.fightclub.FightClub.LOGGER.info("Fight Club: disabled {} recipes for hidden weapons", dropped);
     }
 }

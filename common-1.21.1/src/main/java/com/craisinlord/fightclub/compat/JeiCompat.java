@@ -48,7 +48,7 @@ public final class JeiCompat implements IModPlugin {
             ingredients.addIngredientsAtRuntime(VanillaTypes.ITEM_STACK, List.copyOf(HIDDEN));
             HIDDEN.clear();
         }
-        java.util.Set<Item> replaced = ExternalWeapons.replacedItems();
+        java.util.Set<Item> replaced = com.craisinlord.fightclub.combat.CombatWeapons.hiddenItems();
         if (replaced.isEmpty()) return;
         for (ItemStack stack : ingredients.getAllIngredients(VanillaTypes.ITEM_STACK)) {
             if (replaced.contains(stack.getItem())) HIDDEN.add(stack);

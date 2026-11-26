@@ -74,12 +74,12 @@ public final class CombatTooltips {
     private static Component controls(String kind) {
         List<String> parts = new ArrayList<>();
         boolean charge = on(CombatConfig.CHARGED_ATTACKS);
-        boolean toss = on(CombatConfig.THROWING);
+        boolean toss = CombatConfig.throwing(kind);
         switch (kind) {
             case "sword" -> { if (on(CombatConfig.SWORD_BLOCKING)) parts.add("block"); }
             case "longsword" -> { if (on(CombatConfig.LONGSWORD_SPIN)) parts.add("spin"); if (on(CombatConfig.LONGSWORD_OFFHAND)) parts.add("offhand"); }
-            case "spear" -> { if (charge) parts.add("charge"); if (toss) parts.add("throw"); }
-            case "dagger" -> { if (charge) parts.add("stab"); if (toss) parts.add("throw"); }
+            case "spear" -> { if (charge) parts.add(toss ? "charge" : "charge_use"); if (toss) parts.add("throw"); }
+            case "dagger" -> { if (charge) parts.add(toss ? "stab" : "stab_use"); if (toss) parts.add("throw"); }
             case "trident" -> { if (charge) parts.add("charge"); parts.add("throw"); }
             case "mace" -> { if (on(CombatConfig.MACE_HIT_STREAK)) parts.add("streak"); }
             case "shield" -> { if (on(CombatConfig.SHIELD_BASH)) parts.add("bash"); }

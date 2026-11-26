@@ -95,7 +95,7 @@ public final class CombatWeaponItem extends Item {
         if (!weapon.equals("dagger") && !weapon.equals("spear")) return false;
         WeaponSpec spec = WeaponSpecs.getOrLoadBuiltin(material, weapon);
         return spec != null && spec.throwing()
-                && com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.THROWING);
+                && com.craisinlord.fightclub.CombatConfig.throwing(weapon);
     }
 
     @Override

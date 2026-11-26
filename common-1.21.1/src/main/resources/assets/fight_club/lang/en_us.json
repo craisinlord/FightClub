@@ -15,6 +15,8 @@
   "tooltip.fight_club.control.offhand": "Slower with an occupied offhand",
   "tooltip.fight_club.control.charge": "Hold to charge",
   "tooltip.fight_club.control.stab": "Hold to pounce",
+  "tooltip.fight_club.control.charge_use": "Hold right-click to charge",
+  "tooltip.fight_club.control.stab_use": "Hold right-click to pounce",
   "tooltip.fight_club.control.throw": "Right-click to throw",
   "tooltip.fight_club.control.streak": "Consecutive hits attack faster",
   "tooltip.fight_club.control.spin": "Hold right-click to charge a spin",

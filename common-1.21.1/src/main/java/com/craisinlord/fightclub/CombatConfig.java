@@ -25,9 +25,11 @@ public final class CombatConfig {
     public static final String SPEAR_CHARGE_CRITS = gameplay("spear_charge_crits", true, "Spears and tridents crit only on charged hits: every charge hit plays the crit effects (no extra damage), and normal jump crits are off.");
     public static final String PENETRATION = gameplay("thrust_penetration", true, "Spear and trident thrusts pierce mobs lined up behind the target.");
     public static final String DATA_SWEEPS = gameplay("data_driven_sweeps", true, "Sweeps use each weapon's sweep radius and angle (longsword wider, mace sweeps). Off: vanilla sweeps.");
-    public static final String CHARGED_ATTACKS = gameplay("charged_attacks", true, "Hold attack with a spear or trident to lower it for a charge, or with a dagger to pounce on the mob nearest your crosshair.");
+    public static final String CHARGED_ATTACKS = gameplay("charged_attacks", true, "Hold attack with a spear or trident to lower it for a charge, or with a dagger to pounce on the mob nearest your crosshair. Spears and daggers that can't be thrown charge with right-click instead.");
     public static final String RUNNING_CHARGE = gameplay("running_charge", true, "With a spear or trident lowered, running into a mob strikes it without releasing.");
-    public static final String THROWING = gameplay("weapon_throwing", true, "Right-click to throw spears and daggers.");
+    public static final String SPEAR_THROWING = gameplay("spear_throwing", true, "Right-click to throw spears. Off: right-click charges spears and Loyalty can't be applied to them.");
+    public static final String DAGGER_THROWING = gameplay("dagger_throwing", true, "Right-click to throw daggers. Off: right-click charges the dagger pounce and Loyalty can't be applied to them.");
+    private static final String LEGACY_THROWING = "weapon_throwing";
     public static final String RECOVERY = gameplay("recovery", true, "Special attacks (charged hits, throws, smashes) have a short recovery before the weapon can be used again.");
     public static final String LONGSWORD_SPIN = gameplay("longsword_spin", true, "Hold right-click with a longsword to charge a spin attack that hits everything around you.");
     public static final String MACE_HIT_STREAK = gameplay("mace_hit_streak", true, "Consecutive mace hits stack an attack speed bonus (weapons/base/mace.json); a miss or a pause ends the streak.");
@@ -60,6 +62,14 @@ public final class CombatConfig {
         return VALUES.get(key) instanceof Boolean value ? value : (Boolean) OPTIONS.get(key).defaultValue();
     }
 
+    public static boolean throwing(String weapon) {
+        return switch (weapon) {
+            case "spear" -> enabled(SPEAR_THROWING);
+            case "dagger" -> enabled(DAGGER_THROWING);
+            default -> false;
+        };
+    }
+
     public static int intValue(String key) {
         return VALUES.get(key) instanceof Number value ? value.intValue() : ((Number) OPTIONS.get(key).defaultValue()).intValue();
     }
@@ -80,6 +90,11 @@ public final class CombatConfig {
             } catch (IOException exception) {
                 FightClub.LOGGER.error("Couldn't read {}; using defaults: {}", file, exception.getMessage());
             }
+        }
+        String legacyThrowing = raw.get(LEGACY_THROWING);
+        if (legacyThrowing != null) {
+            raw.putIfAbsent(SPEAR_THROWING, legacyThrowing);
+            raw.putIfAbsent(DAGGER_THROWING, legacyThrowing);
         }
         for (Option option : OPTIONS.values()) {
             String value = raw.get(option.key());

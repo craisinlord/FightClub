@@ -88,6 +88,17 @@ dependencies {
     if ((findProperty('dev_farmers_delight') ?: 'false').toString().toBoolean()) {
         runtimeOnly "maven.modrinth:farmers-delight:${farmers_delight_version_1_21_1}"
     }
+    if ((findProperty('dev_ante') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:ante:wV654RfI"
+    }
+    if ((findProperty('dev_vanilla_backport') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:vanillabackport:mGS7BxD4"
+        runtimeOnly "maven.modrinth:platform:rh4p4ixM"
+    }
+    if ((findProperty('dev_emf') ?: 'false').toString().toBoolean()) {
+        runtimeOnly "maven.modrinth:entity-model-features:3.3.12-neoforge-1.21"
+        runtimeOnly "maven.modrinth:entitytexturefeatures:7.2.7-neoforge-1.21"
+    }
     if ((findProperty('dev_oreganized') ?: 'false').toString().toBoolean()) {
         runtimeOnly "maven.modrinth:oreganized:${oreganized_version_1_21_1}"
         runtimeOnly "maven.modrinth:blueprint:${blueprint_version_1_21_1}"

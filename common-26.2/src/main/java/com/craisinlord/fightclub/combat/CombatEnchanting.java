@@ -26,8 +26,9 @@ public final class CombatEnchanting {
     }
 
     private static boolean loyalty(Enchantment enchantment, ItemStack stack) {
-        return enchantment.effects().has(EnchantmentEffectComponents.TRIDENT_RETURN_ACCELERATION)
-                && (CombatChargeState.isSpearWeapon(stack.getItem()) || CombatChargeState.isDagger(stack.getItem()));
+        if (!enchantment.effects().has(EnchantmentEffectComponents.TRIDENT_RETURN_ACCELERATION)) return false;
+        String weapon = CombatWeapons.weapon(stack.getItem());
+        return weapon != null && CombatWeaponItem.canThrow(CombatWeapons.material(stack.getItem()), weapon);
     }
 
     private static ItemStack reference(Enchantment enchantment, ItemStack stack) {

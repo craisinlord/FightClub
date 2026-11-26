@@ -5,9 +5,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 
-@Mixin(AnvilMenu.class)
+@Mixin(value = AnvilMenu.class, priority = 500)
 public abstract class AnvilMenuMixin {
-    @ModifyConstant(method = "createResult", constant = @Constant(intValue = 40, ordinal = 2))
+    @ModifyConstant(method = "createResult", constant = @Constant(intValue = 40, ordinal = 2), require = 0)
     private int fightClub$noTooExpensive(int limit) {
         return com.craisinlord.fightclub.CombatConfig.enabled(com.craisinlord.fightclub.CombatConfig.NO_ANVIL_LIMIT) ? Integer.MAX_VALUE : limit;
     }

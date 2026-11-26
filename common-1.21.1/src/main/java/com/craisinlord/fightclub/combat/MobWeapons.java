@@ -77,7 +77,7 @@ public final class MobWeapons {
             roll -= weights[i];
             if (roll < 0) {
                 Item item = BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath(FightClub.MOD_ID, materials[i] + "_" + weapon));
-                return ExternalWeapons.isReplaced(item) ? Items.AIR : item;
+                return CombatWeapons.isHidden(item) ? Items.AIR : item;
             }
         }
         return Items.AIR;

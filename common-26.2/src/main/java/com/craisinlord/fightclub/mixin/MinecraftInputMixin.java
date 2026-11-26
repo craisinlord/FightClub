@@ -66,7 +66,7 @@ public abstract class MinecraftInputMixin {
 
     @Inject(method = "startUseItem", at = @At("HEAD"), cancellable = true)
     private void fightClub$noUseWhileCharging(CallbackInfo ci) {
-        if (CombatInputClient.isCharging()) ci.cancel();
+        if (CombatInputClient.blocksUse()) ci.cancel();
     }
 
     @Inject(method = "startUseItem", cancellable = true, at = @At(value = "INVOKE",

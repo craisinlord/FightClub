@@ -30,6 +30,8 @@ public final class CombatInputClient {
     private static boolean readyPlayed;
     private static net.minecraft.world.entity.LivingEntity lockTarget;
     private static boolean waitForRelease;
+    private static boolean useKeyCharge;
+    private static boolean replayingUse;
 
     static void serverEndedCharge() {
         if (!charging) return;
@@ -44,23 +46,53 @@ public final class CombatInputClient {
         return CombatConfig.enabled(CombatConfig.CHARGED_ATTACKS) && CombatChargeState.isChargeWeapon(stack.getItem());
     }
 
+    public static boolean chargesWithUse(ItemStack stack) {
+        String weapon = CombatWeapons.weapon(stack.getItem());
+        return ("spear".equals(weapon) || "dagger".equals(weapon)) && !CombatConfig.throwing(weapon);
+    }
+
+    private static net.minecraft.client.KeyMapping chargeKey(Minecraft client) {
+        return useKeyCharge ? client.options.keyUse : client.options.keyAttack;
+    }
+
+    private static boolean chargeKeyDown(Minecraft client) {
+        return client.screen == null && chargeKey(client).isDown();
+    }
+
     public static void beforeKeybinds(Minecraft client) {
         LocalPlayer player = client.player;
         if (player == null || !holdCharge(player.getMainHandItem())) return;
-        var attackKey = client.options.keyAttack;
         if (charging || pendingTap || waitForRelease) {
-            while (attackKey.consumeClick()) {}
+            var heldKey = chargeKey(client);
+            while (heldKey.consumeClick()) {}
             return;
         }
         if (player.isUsingItem() || player.isSpectator() || PounceClient.active()) return;
         if (client.hitResult != null && client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) return;
+        boolean useKey = chargesWithUse(player.getMainHandItem());
+        var key = useKey ? client.options.keyUse : client.options.keyAttack;
         boolean clicked = false;
-        while (attackKey.consumeClick()) clicked = true;
+        while (key.consumeClick()) clicked = true;
         if (!clicked) return;
         clearTapBuffer();
+        useKeyCharge = useKey;
         pendingTap = true;
         pendingItem = player.getMainHandItem().getItem();
         holdTicks = 0;
+    }
+
+    private static void endTap(Minecraft client, LocalPlayer player) {
+        if (useKeyCharge) replayUse(client);
+        else queueTap(client, player);
+    }
+
+    private static void replayUse(Minecraft client) {
+        replayingUse = true;
+        try {
+            ((com.craisinlord.fightclub.mixin.MinecraftAccessor) client).fightClub$startUseItem();
+        } finally {
+            replayingUse = false;
+        }
     }
 
     private static void endPending() {
@@ -157,9 +189,10 @@ public final class CombatInputClient {
             return;
         }
         ItemStack stack = player.getMainHandItem();
-        boolean down = client.screen == null && client.options.keyAttack.isDown();
-        boolean pressed = down && !wasDown;
-        wasDown = down;
+        boolean attackDown = client.screen == null && client.options.keyAttack.isDown();
+        boolean pressed = attackDown && !wasDown;
+        wasDown = attackDown;
+        boolean down = chargeKeyDown(client);
 
         if (pressed && CombatConfig.enabled(CombatConfig.SHIELD_BASH) && player.isUsingItem() && CombatVanillaRules.isShield(player.getUseItem())
                 && client.level.getGameTime() >= bashReadyTick) {
@@ -189,10 +222,10 @@ public final class CombatInputClient {
                     net.minecraft.world.entity.LivingEntity target = lockTarget;
                     stopCharging(target == null ? -1 : target.getId());
                     if (target != null) PounceClient.start(player, target);
-                    if (target == null) queueTap(client, player);
+                    if (target == null && !useKeyCharge) queueTap(client, player);
                 } else {
                     stopCharging(-1);
-                    if (!down && stack.getItem() == chargeItemBefore && CombatChargeState.isDagger(stack.getItem())) queueTap(client, player);
+                    if (!down && !useKeyCharge && stack.getItem() == chargeItemBefore && CombatChargeState.isDagger(stack.getItem())) queueTap(client, player);
                 }
             }
         } else if (waitForRelease) {
@@ -206,7 +239,7 @@ public final class CombatInputClient {
                 endPending();
             } else if (!down) {
                 endPending();
-                queueTap(client, player);
+                endTap(client, player);
             } else if (++holdTicks >= HOLD_THRESHOLD_TICKS && !player.getCooldowns().isOnCooldown(stack.getItem())) {
                 endPending();
                 startCharging(client, player, stack);
@@ -236,7 +269,9 @@ public final class CombatInputClient {
         return charging && lockTarget != null && chargeProgress(client, 0.0F) >= 1.0F;
     }
 
-    public static boolean blocksAttack() { return isCharging() || pendingTap || waitForRelease || PounceClient.active(); }
+    public static boolean blocksAttack() { return isCharging() || (!useKeyCharge && (pendingTap || waitForRelease)) || PounceClient.active(); }
+
+    public static boolean blocksUse() { return !replayingUse && (isCharging() || (useKeyCharge && (pendingTap || waitForRelease))); }
 
     private static void startCharging(Minecraft client, LocalPlayer player, ItemStack stack) {
         charging = true;
@@ -262,7 +297,7 @@ public final class CombatInputClient {
         holdTicks = 0;
         Minecraft client = Minecraft.getInstance();
         if (thrust && client.player != null) {
-            boolean stillHeld = client.screen == null && client.options.keyAttack.isDown();
+            boolean stillHeld = chargeKeyDown(client);
             if (stillHeld) waitForRelease = true;
             else com.craisinlord.fightclub.compat.BetterCombatCompat.setLocalAttacksPaused(client.player, false);
         }
@@ -273,6 +308,7 @@ public final class CombatInputClient {
         endPending();
         clearTapBuffer();
         waitForRelease = false;
+        useKeyCharge = false;
         wasDown = false;
         bashReadyTick = 0;
         bashLockTicks = 0;
